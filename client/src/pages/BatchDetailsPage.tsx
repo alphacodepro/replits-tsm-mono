@@ -9,6 +9,7 @@ import StudentTable from "@/components/StudentTable";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import PaymentHistoryDialog from "@/components/PaymentHistoryDialog";
 import EmptyState from "@/components/EmptyState";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   ArrowLeft,
   Plus,
@@ -39,6 +40,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<StudentWithPaymentInfo | null>(null);
 
   const { data: batchData, isLoading: batchLoading } = useQuery({
     queryKey: ["/api/batches", batchId],
@@ -59,6 +62,25 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     onError: (error: Error) => {
       toast({
         title: "Error adding student",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: studentApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      toast({
+        title: "Student deleted",
+        description: "The student has been removed successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting student",
         description: error.message,
         variant: "destructive",
       });
@@ -91,6 +113,22 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       title: "Link copied!",
       description: "Registration link copied to clipboard",
     });
+  };
+
+  const handleDeleteClick = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      setStudentToDelete(student);
+      setDeleteConfirmOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (studentToDelete) {
+      deleteStudentMutation.mutate(studentToDelete.id);
+      setDeleteConfirmOpen(false);
+      setStudentToDelete(null);
+    }
   };
 
   if (batchLoading) {
@@ -211,7 +249,11 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
             />
           )
         ) : (
-          <StudentTable students={filteredStudents} onViewPayments={handleViewPayments} />
+          <StudentTable 
+            students={filteredStudents} 
+            onViewPayments={handleViewPayments}
+            onDeleteStudent={handleDeleteClick}
+          />
         )}
       </main>
 
@@ -236,6 +278,16 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           batchFee={batch.fee}
         />
       )}
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Student"
+        description={`Are you sure you want to delete ${studentToDelete?.fullName}? This will permanently delete all payment records for this student. This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        confirmText="Delete Student"
+        destructive
+      />
     </div>
   );
 }

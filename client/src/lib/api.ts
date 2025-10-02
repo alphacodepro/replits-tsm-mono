@@ -144,6 +144,11 @@ export const studentApi = {
   get: (id: string) =>
     apiRequest<{ student: Student; payments: Payment[]; totalPaid: number }>(`/api/students/${id}`),
 
+  delete: (id: string) =>
+    apiRequest<{ success: boolean }>(`/api/students/${id}`, {
+      method: "DELETE",
+    }),
+
   register: (token: string, data: { fullName: string; phone: string; email?: string; standard: string }) =>
     apiRequest<{ student: Student; batchName: string }>(`/api/register/${token}`, {
       method: "POST",

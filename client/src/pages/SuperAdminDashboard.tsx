@@ -7,6 +7,7 @@ import StatCard from "@/components/StatCard";
 import TeacherCard from "@/components/TeacherCard";
 import EmptyState from "@/components/EmptyState";
 import CreateTeacherDialog from "@/components/CreateTeacherDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Plus, Search, Users, BookOpen, GraduationCap, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { teacherApi, statsApi, authApi } from "@/lib/api";
@@ -17,6 +18,8 @@ export default function SuperAdminDashboard() {
   const [, setLocation] = useLocation();
   const [createTeacherOpen, setCreateTeacherOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [teacherToDelete, setTeacherToDelete] = useState<{ id: string; fullName: string } | null>(null);
 
   const { data: teachersData, isLoading: teachersLoading } = useQuery({
     queryKey: ["/api/teachers"],
@@ -112,12 +115,21 @@ export default function SuperAdminDashboard() {
   };
 
   const handleDelete = (id: string, fullName: string) => {
-    deleteTeacherMutation.mutate(id);
-    toast({
-      title: "Teacher deleted",
-      description: `${fullName} has been removed from the system`,
-      variant: "destructive",
-    });
+    setTeacherToDelete({ id, fullName });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (teacherToDelete) {
+      deleteTeacherMutation.mutate(teacherToDelete.id);
+      toast({
+        title: "Teacher deleted",
+        description: `${teacherToDelete.fullName} has been removed from the system`,
+        variant: "destructive",
+      });
+      setDeleteConfirmOpen(false);
+      setTeacherToDelete(null);
+    }
   };
 
   if (teachersLoading) {
@@ -217,6 +229,16 @@ export default function SuperAdminDashboard() {
         open={createTeacherOpen}
         onOpenChange={setCreateTeacherOpen}
         onSubmit={(data) => createTeacherMutation.mutate(data)}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Teacher"
+        description={`Are you sure you want to delete ${teacherToDelete?.fullName}? This will permanently delete all batches, students, and payment records associated with this teacher. This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        confirmText="Delete Teacher"
+        destructive
       />
     </div>
   );

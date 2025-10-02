@@ -38,6 +38,7 @@ export interface IStorage {
   getStudentsByBatch(batchId: string): Promise<Student[]>;
   getStudentById(studentId: string): Promise<Student | undefined>;
   getAllStudentsByTeacher(teacherId: string): Promise<Student[]>;
+  deleteStudent(studentId: string): Promise<void>;
 
   // Payment methods
   createPayment(payment: InsertPayment): Promise<Payment>;
@@ -173,6 +174,10 @@ export class DbStorage implements IStorage {
       .where(eq(schema.batches.teacherId, teacherId));
 
     return result.map((row) => row.student);
+  }
+
+  async deleteStudent(studentId: string): Promise<void> {
+    await db.delete(schema.students).where(eq(schema.students.id, studentId));
   }
 
   async createPayment(insertPayment: InsertPayment): Promise<Payment> {

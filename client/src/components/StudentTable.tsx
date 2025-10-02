@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Mail, Phone } from "lucide-react";
+import { Eye, Mail, Phone, Trash2 } from "lucide-react";
 
 interface Student {
   id: string;
@@ -24,9 +24,10 @@ interface Student {
 interface StudentTableProps {
   students: Student[];
   onViewPayments: (studentId: string) => void;
+  onDeleteStudent: (studentId: string) => void;
 }
 
-export default function StudentTable({ students, onViewPayments }: StudentTableProps) {
+export default function StudentTable({ students, onViewPayments, onDeleteStudent }: StudentTableProps) {
   return (
     <div className="border rounded-md">
       <Table>
@@ -85,15 +86,25 @@ export default function StudentTable({ students, onViewPayments }: StudentTableP
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    onClick={() => onViewPayments(student.id)}
-                    variant="ghost"
-                    size="sm"
-                    data-testid={`button-view-payments-${student.id}`}
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Payments
-                  </Button>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      onClick={() => onViewPayments(student.id)}
+                      variant="ghost"
+                      size="sm"
+                      data-testid={`button-view-payments-${student.id}`}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Payments
+                    </Button>
+                    <Button
+                      onClick={() => onDeleteStudent(student.id)}
+                      variant="ghost"
+                      size="icon"
+                      data-testid={`button-delete-student-${student.id}`}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))

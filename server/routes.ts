@@ -317,6 +317,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/students/:id", requireAuth, requireRole("teacher"), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const student = await storage.getStudentById(id);
+
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      const batch = await storage.getBatchById(student.batchId);
+      if (!batch || batch.teacherId !== req.session.userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      await storage.deleteStudent(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete student error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Payment routes
   app.post("/api/payments", requireAuth, requireRole("teacher"), async (req: Request, res: Response) => {
     try {

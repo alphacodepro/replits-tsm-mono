@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Users, IndianRupee, QrCode, Link as LinkIcon } from "lucide-react";
+import { BookOpen, Users, IndianRupee, QrCode, Link as LinkIcon, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface BatchCardProps {
@@ -13,6 +13,7 @@ interface BatchCardProps {
   onViewDetails: () => void;
   onShowQR: () => void;
   onCopyLink: () => void;
+  onDelete: () => void;
 }
 
 export default function BatchCard({
@@ -24,6 +25,7 @@ export default function BatchCard({
   onViewDetails,
   onShowQR,
   onCopyLink,
+  onDelete,
 }: BatchCardProps) {
   return (
     <Card className="p-6 hover-elevate">
@@ -73,6 +75,14 @@ export default function BatchCard({
             data-testid="button-copy-link"
           >
             <LinkIcon className="w-4 h-4" />
+          </Button>
+          <Button 
+            onClick={onDelete} 
+            variant="outline" 
+            size="icon"
+            data-testid="button-delete-batch"
+          >
+            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
       </div>

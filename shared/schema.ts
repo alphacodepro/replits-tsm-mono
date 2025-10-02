@@ -17,7 +17,7 @@ export const users = pgTable("users", {
 
 export const batches = pgTable("batches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  teacherId: varchar("teacher_id").notNull().references(() => users.id),
+  teacherId: varchar("teacher_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   subject: text("subject"),
   fee: integer("fee").notNull(),
@@ -28,7 +28,7 @@ export const batches = pgTable("batches", {
 
 export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  batchId: varchar("batch_id").notNull().references(() => batches.id),
+  batchId: varchar("batch_id").notNull().references(() => batches.id, { onDelete: "cascade" }),
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
   email: text("email"),
@@ -38,7 +38,7 @@ export const students = pgTable("students", {
 
 export const payments = pgTable("payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  studentId: varchar("student_id").notNull().references(() => students.id),
+  studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
   amount: integer("amount").notNull(),
   paidAt: timestamp("paid_at").notNull().default(sql`now()`),
 });

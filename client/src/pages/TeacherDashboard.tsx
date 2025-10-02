@@ -8,6 +8,7 @@ import BatchCard from "@/components/BatchCard";
 import EmptyState from "@/components/EmptyState";
 import CreateBatchDialog from "@/components/CreateBatchDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Plus, Search, BookOpen, Users, IndianRupee, Clock, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, statsApi, authApi } from "@/lib/api";
@@ -20,6 +21,8 @@ export default function TeacherDashboard() {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [batchToDelete, setBatchToDelete] = useState<any>(null);
 
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
     queryKey: ["/api/batches"],
@@ -111,6 +114,19 @@ export default function TeacherDashboard() {
     setLocation(`/batch/${batchId}`);
   };
 
+  const handleDeleteClick = (batch: any) => {
+    setBatchToDelete(batch);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (batchToDelete) {
+      deleteBatchMutation.mutate(batchToDelete.id);
+      setDeleteConfirmOpen(false);
+      setBatchToDelete(null);
+    }
+  };
+
   if (batchesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -199,6 +215,7 @@ export default function TeacherDashboard() {
                 onViewDetails={() => handleViewDetails(batch.id)}
                 onShowQR={() => handleShowQR(batch)}
                 onCopyLink={() => handleCopyLink(batch)}
+                onDelete={() => handleDeleteClick(batch)}
               />
             ))}
           </div>
@@ -219,6 +236,16 @@ export default function TeacherDashboard() {
           registrationUrl={`${window.location.origin}/register/${selectedBatch.registrationToken}`}
         />
       )}
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Batch"
+        description={`Are you sure you want to delete "${batchToDelete?.name}"? This will permanently delete all students and payment records in this batch. This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        confirmText="Delete Batch"
+        destructive
+      />
     </div>
   );
 }
