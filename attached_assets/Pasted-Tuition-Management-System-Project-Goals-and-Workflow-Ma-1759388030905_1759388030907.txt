@@ -1,0 +1,128 @@
+Tuition Management System – Project Goals and Workflow
+________________________________________
+Main Goal
+To build a multi-tenant tuition management system where multiple teachers can manage their batches, students, and fees, while a super admin has oversight and control over all teachers. The system should be scalable, intuitive, and ready for real-world usage.
+
+System Flow & Dashboards
+1. Login Page
+•	A single login form → username & password.
+•	System checks credentials in DB.
+•	Based on the role field (e.g., "teacher" or "superadmin"), user is redirected to the correct dashboard.
+	
+
+Tuition Management System – Teacher Dashboard (Complete Flow)
+________________________________________
+1. Login Page
+•	Teacher (or super admin) enters username and password.
+•	System checks credentials and role:
+o	Teacher → redirected to Teacher Dashboard
+o	Super Admin → redirected to Super Admin Dashboard
+•	Users only see data belonging to their role.
+________________________________________
+2. Initial Dashboard Overview (First-Time Login)
+•	Quick Stats (all start at 0 for new teacher):
+o	Total Batches: 0
+o	Total Students: 0
+o	Fees Collected: ₹0
+o	Pending Payments: ₹0
+•	Dashboard shows prompt / button: “Create your first batch to get started.”
+________________________________________
+3. Batch Management (First Step)
+•	Teacher creates a new batch:
+o	Batch Name (e.g., “Maths Class 10”)
+o	Subject (optional)
+o	date which is auto filed 
+o	Batch Fee → teacher enters fee amount (Month or year)
+o	after the creation of the bathch it will have an button or something to share link to add studnet , or option to show qr , which will show qr to studnet so that they can scan it and fill the form and after there submission they will be added direclty to that batch with all there information 
+•	Dashboard updates → Total Batches = 1.
+________________________________________
+4. Student Management (Second Step)
+Details Collected from Student:
+•	Full Name
+•	Phone Number (mandatory)
+•	Email (optional)
+•	Standard / Class
+•	Join Date (auto-fills with today, editable manually)
+Two Methods to Add Students:
+1.	Manual Add
+o	Teacher enters the student’s details.
+o	Saves → student added to batch automatically.
+2.	QR Code / Unique Link (Self-Registration)
+o	System generates a QR code or link per batch.
+o	Student/parent fills details via the link.
+o	Student auto-added to batch.
+•	Dashboard updates → Total Students increases.
+________________________________________
+5. Payments Management (Third Step)
+A. Batch Fee Setup
+•	Fee entered while creating batch is linked to all students in that batch.
+•	Teacher decides fee period (monthly/yearly).
+B. Student Fee Assignment (Automatic)
+•	When a student joins (manual/QR), batch fee is auto-applied.
+•	No need for teacher to enter fee per student individually.
+C. Recording / Updating Payment
+•	Teacher clicks on a student → sees payment statement table:
+| Date | Amount Paid | Remaining Fee |
+•	To record a new payment:
+o	Enter amount paid today.
+o	System auto-updates table with date, amount, and remaining fee.
+•	Teacher can edit previous entries if needed.
+D. Dashboard Impact
+•	Fees Collected / Pending Payments update automatically.
+•	Teacher sees full history at a glance → no complicated steps.
+________________________________________
+6. Dashboard Charts / Reports (Ongoing Use)
+•	Graphs update automatically as data grows:
+o	Monthly Fees Collection Trend
+o	Students per Batch distribution
+•	Teacher can filter/search by batch or student.
+Super Admin Dashboard – Overview and Structure
+________________________________________
+1. Purpose of the Super Admin Dashboard
+•	Central hub to manage all teachers.
+•	Provides global insights on system usage without showing detailed student information.
+•	Designed for monitoring, control, and quick oversight of the system.
+________________________________________
+2. Key Sections / Components
+1.	Quick Stats / Overview
+o	Total Teachers
+o	Total Batches
+o	Total Students (overall in the system)
+2.	Teacher Management Section
+o	Create teacher accounts (username & password)
+o	Activate / deactivate / remove teacher accounts
+o	View teacher basic information: name, phone number, email, join date
+o	Click on a teacher to see summary numbers only:
+	Number of batches created by that teacher
+	Number of students per batch
+	Total number of students added by that teacher
+3.	Batch & Student Overview (Summary Only)
+o	System-wide totals of batches and students
+o	No individual student details are visible to the super admin
+4.	Analytics / Reports Section (Optional)
+o	Graphs showing overall number of teachers, batches, and students
+o	Summary trends for monitoring system growth
+________________________________________
+3. First-Time User Flow
+•	Dashboard initially shows 0 stats (system is empty)
+•	Super admin creates teacher accounts first
+•	Teachers start creating batches and adding students
+•	Super admin sees updated summary numbers per teacher and system-wide
+________________________________________
+4. Ongoing Use
+•	Manage teacher accounts (add, activate, deactivate)
+•	Monitor teacher performance via summary numbers (batches, students)
+•	Track system-wide totals for batches and students
+•	Optional analytics for system growth
+________________________________________
+
+
+Database Goals
+•	Store teachers, batches, students, and payments.
+•	Maintain relationships:
+o	Each teacher → multiple batches.
+o	Each batch → multiple students.
+o	Each student → multiple payment records.
+•	Ensure data integrity and enable fast queries for dashboards and reports.
+________________________________________
+
