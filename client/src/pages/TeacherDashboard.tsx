@@ -76,7 +76,8 @@ export default function TeacherDashboard() {
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.clear();
       setLocation("/");
     },
     onError: (error: Error) => {
