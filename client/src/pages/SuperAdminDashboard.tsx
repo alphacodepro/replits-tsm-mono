@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StatCard from "@/components/StatCard";
@@ -7,43 +9,92 @@ import EmptyState from "@/components/EmptyState";
 import CreateTeacherDialog from "@/components/CreateTeacherDialog";
 import { Plus, Search, Users, BookOpen, GraduationCap, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { teacherApi, statsApi, authApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [createTeacherOpen, setCreateTeacherOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const teachers = [
-    {
-      id: '1',
-      fullName: 'Priya Sharma',
-      username: 'priya.sharma',
-      email: 'priya@example.com',
-      phone: '+91 98765 43210',
-      isActive: true,
-      batchCount: 5,
-      studentCount: 125,
+  const { data: teachersData, isLoading: teachersLoading } = useQuery({
+    queryKey: ["/api/teachers"],
+    queryFn: () => teacherApi.list(),
+  });
+
+  const { data: statsData } = useQuery({
+    queryKey: ["/api/stats/system"],
+    queryFn: () => statsApi.system(),
+  });
+
+  const createTeacherMutation = useMutation({
+    mutationFn: teacherApi.create,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/system"] });
+      setCreateTeacherOpen(false);
+      toast({
+        title: "Teacher created!",
+        description: `${data.teacher.fullName} has been added to the system`,
+      });
     },
-    {
-      id: '2',
-      fullName: 'Rajesh Kumar',
-      username: 'rajesh.kumar',
-      email: 'rajesh@example.com',
-      phone: '+91 98765 43211',
-      isActive: true,
-      batchCount: 3,
-      studentCount: 78,
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating teacher",
+        description: error.message,
+        variant: "destructive",
+      });
     },
-    {
-      id: '3',
-      fullName: 'Amit Patel',
-      username: 'amit.patel',
-      phone: '+91 98765 43212',
-      isActive: false,
-      batchCount: 2,
-      studentCount: 45,
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      teacherApi.updateStatus(id, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
     },
-  ];
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating teacher status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTeacherMutation = useMutation({
+    mutationFn: teacherApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/system"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting teacher",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: authApi.logout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error logging out",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const teachers = teachersData?.teachers || [];
+  const stats = statsData || { teacherCount: 0, batchCount: 0, studentCount: 0 };
 
   const filteredTeachers = teachers.filter((teacher) =>
     teacher.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -51,8 +102,31 @@ export default function SuperAdminDashboard() {
     (teacher.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  const totalBatches = teachers.reduce((sum, t) => sum + t.batchCount, 0);
-  const totalStudents = teachers.reduce((sum, t) => sum + t.studentCount, 0);
+  const handleToggleStatus = (id: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    toggleStatusMutation.mutate({ id, isActive: newStatus });
+    toast({
+      title: newStatus ? "Teacher activated" : "Teacher deactivated",
+      description: `Teacher has been ${newStatus ? 'activated' : 'deactivated'}`,
+    });
+  };
+
+  const handleDelete = (id: string, fullName: string) => {
+    deleteTeacherMutation.mutate(id);
+    toast({
+      title: "Teacher deleted",
+      description: `${fullName} has been removed from the system`,
+      variant: "destructive",
+    });
+  };
+
+  if (teachersLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,7 +142,12 @@ export default function SuperAdminDashboard() {
                 <p className="text-sm text-muted-foreground">System Overview & Management</p>
               </div>
             </div>
-            <Button variant="outline" data-testid="button-logout">
+            <Button 
+              variant="outline"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              data-testid="button-logout"
+            >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
@@ -78,9 +157,9 @@ export default function SuperAdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <StatCard title="Total Teachers" value={teachers.length} icon={Users} />
-          <StatCard title="Total Batches" value={totalBatches} icon={BookOpen} />
-          <StatCard title="Total Students" value={totalStudents} icon={GraduationCap} />
+          <StatCard title="Total Teachers" value={stats.teacherCount} icon={Users} />
+          <StatCard title="Total Batches" value={stats.batchCount} icon={BookOpen} />
+          <StatCard title="Total Students" value={stats.studentCount} icon={GraduationCap} />
         </div>
 
         <div className="mb-6">
@@ -126,21 +205,8 @@ export default function SuperAdminDashboard() {
                 key={teacher.id}
                 {...teacher}
                 onViewDetails={() => console.log('View teacher', teacher.id)}
-                onToggleStatus={() => {
-                  console.log('Toggle status', teacher.id);
-                  toast({
-                    title: teacher.isActive ? "Teacher deactivated" : "Teacher activated",
-                    description: `${teacher.fullName} has been ${teacher.isActive ? 'deactivated' : 'activated'}`,
-                  });
-                }}
-                onDelete={() => {
-                  console.log('Delete teacher', teacher.id);
-                  toast({
-                    title: "Teacher deleted",
-                    description: `${teacher.fullName} has been removed from the system`,
-                    variant: "destructive",
-                  });
-                }}
+                onToggleStatus={() => handleToggleStatus(teacher.id, teacher.isActive)}
+                onDelete={() => handleDelete(teacher.id, teacher.fullName)}
               />
             ))}
           </div>
@@ -150,13 +216,7 @@ export default function SuperAdminDashboard() {
       <CreateTeacherDialog
         open={createTeacherOpen}
         onOpenChange={setCreateTeacherOpen}
-        onSubmit={(data) => {
-          console.log('Create teacher:', data);
-          toast({
-            title: "Teacher created!",
-            description: `${data.fullName} has been added to the system`,
-          });
-        }}
+        onSubmit={(data) => createTeacherMutation.mutate(data)}
       />
     </div>
   );

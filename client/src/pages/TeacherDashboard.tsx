@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StatCard from "@/components/StatCard";
@@ -8,49 +10,88 @@ import CreateBatchDialog from "@/components/CreateBatchDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import { Plus, Search, BookOpen, Users, IndianRupee, Clock, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { batchApi, statsApi, authApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [createBatchOpen, setCreateBatchOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const batches = [
-    {
-      id: '1',
-      name: 'Mathematics Class 10',
-      subject: 'Advanced Mathematics',
-      fee: 5000,
-      feePeriod: 'month',
-      studentCount: 25,
-      registrationToken: 'abc123',
+  const { data: batchesData, isLoading: batchesLoading } = useQuery({
+    queryKey: ["/api/batches"],
+    queryFn: () => batchApi.list(),
+  });
+
+  const { data: statsData } = useQuery({
+    queryKey: ["/api/stats/teacher"],
+    queryFn: () => statsApi.teacher(),
+  });
+
+  const createBatchMutation = useMutation({
+    mutationFn: batchApi.create,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      setCreateBatchOpen(false);
+      toast({
+        title: "Batch created!",
+        description: `${data.batch.name} has been created successfully`,
+      });
     },
-    {
-      id: '2',
-      name: 'Physics Class 12',
-      subject: 'Mechanics & Waves',
-      fee: 6000,
-      feePeriod: 'month',
-      studentCount: 18,
-      registrationToken: 'def456',
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating batch",
+        description: error.message,
+        variant: "destructive",
+      });
     },
-    {
-      id: '3',
-      name: 'Chemistry Basics',
-      fee: 4500,
-      feePeriod: 'month',
-      studentCount: 30,
-      registrationToken: 'ghi789',
+  });
+
+  const deleteBatchMutation = useMutation({
+    mutationFn: batchApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      toast({
+        title: "Batch deleted",
+        description: "The batch has been removed successfully",
+      });
     },
-  ];
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting batch",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: authApi.logout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error logging out",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const batches = batchesData?.batches || [];
+  const stats = statsData || { batchCount: 0, studentCount: 0, feesCollected: 0, pendingPayments: 0 };
 
   const filteredBatches = batches.filter((batch) =>
     batch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (batch.subject?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
-
-  const totalStudents = batches.reduce((sum, b) => sum + b.studentCount, 0);
 
   const handleShowQR = (batch: any) => {
     setSelectedBatch(batch);
@@ -66,6 +107,18 @@ export default function TeacherDashboard() {
     });
   };
 
+  const handleViewDetails = (batchId: string) => {
+    setLocation(`/batch/${batchId}`);
+  };
+
+  if (batchesLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
@@ -80,7 +133,12 @@ export default function TeacherDashboard() {
                 <p className="text-sm text-muted-foreground">Welcome back, Teacher</p>
               </div>
             </div>
-            <Button variant="outline" data-testid="button-logout">
+            <Button 
+              variant="outline" 
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              data-testid="button-logout"
+            >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
@@ -90,10 +148,10 @@ export default function TeacherDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard title="Total Batches" value={batches.length} icon={BookOpen} />
-          <StatCard title="Total Students" value={totalStudents} icon={Users} />
-          <StatCard title="Fees Collected" value="₹45,000" icon={IndianRupee} />
-          <StatCard title="Pending Payments" value="₹12,000" icon={Clock} />
+          <StatCard title="Total Batches" value={stats.batchCount} icon={BookOpen} />
+          <StatCard title="Total Students" value={stats.studentCount} icon={Users} />
+          <StatCard title="Fees Collected" value={`₹${stats.feesCollected.toLocaleString()}`} icon={IndianRupee} />
+          <StatCard title="Pending Payments" value={`₹${stats.pendingPayments.toLocaleString()}`} icon={Clock} />
         </div>
 
         <div className="mb-6">
@@ -138,7 +196,7 @@ export default function TeacherDashboard() {
               <BatchCard
                 key={batch.id}
                 {...batch}
-                onViewDetails={() => console.log('View batch', batch.id)}
+                onViewDetails={() => handleViewDetails(batch.id)}
                 onShowQR={() => handleShowQR(batch)}
                 onCopyLink={() => handleCopyLink(batch)}
               />
@@ -150,13 +208,7 @@ export default function TeacherDashboard() {
       <CreateBatchDialog
         open={createBatchOpen}
         onOpenChange={setCreateBatchOpen}
-        onSubmit={(data) => {
-          console.log('Create batch:', data);
-          toast({
-            title: "Batch created!",
-            description: `${data.name} has been created successfully`,
-          });
-        }}
+        onSubmit={(data) => createBatchMutation.mutate(data)}
       />
 
       {selectedBatch && (

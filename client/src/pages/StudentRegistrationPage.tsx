@@ -1,24 +1,78 @@
 import { useState } from "react";
+import { useRoute } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BookOpen, CheckCircle } from "lucide-react";
+import { studentApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function StudentRegistrationPage() {
+  const { toast } = useToast();
+  const [, params] = useRoute("/register/:token");
+  const token = params?.token || "";
+  
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [standard, setStandard] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [registeredBatchName, setRegisteredBatchName] = useState("");
 
-  const batchName = "Mathematics Class 10";
+  const { data: batchData, isLoading: batchLoading, error } = useQuery({
+    queryKey: ["/api/register", token],
+    queryFn: () => studentApi.getRegistrationInfo(token),
+    enabled: !!token,
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: (data: { fullName: string; phone: string; email?: string; standard: string }) =>
+      studentApi.register(token, data),
+    onSuccess: (data) => {
+      setRegisteredBatchName(data.batchName);
+      setSubmitted(true);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Student registration:', { fullName, phone, email, standard });
-    setSubmitted(true);
+    registerMutation.mutate({
+      fullName,
+      phone,
+      email: email || undefined,
+      standard,
+    });
   };
+
+  if (batchLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-muted-foreground">Loading batch information...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md p-8 text-center">
+          <h1 className="text-2xl font-bold mb-2">Invalid Registration Link</h1>
+          <p className="text-muted-foreground">
+            This registration link is invalid or has expired. Please contact your teacher for a valid link.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -31,7 +85,7 @@ export default function StudentRegistrationPage() {
           </div>
           <h1 className="text-2xl font-bold mb-2">Registration Successful!</h1>
           <p className="text-muted-foreground mb-6">
-            You have been successfully registered for {batchName}. Your teacher will contact you soon with further details.
+            You have been successfully registered for {registeredBatchName}. Your teacher will contact you soon with further details.
           </p>
           <Button onClick={() => window.close()} className="w-full">
             Close
@@ -40,6 +94,8 @@ export default function StudentRegistrationPage() {
       </div>
     );
   }
+
+  const batchName = batchData?.batch.name || "";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -98,8 +154,13 @@ export default function StudentRegistrationPage() {
               data-testid="input-registration-standard"
             />
           </div>
-          <Button type="submit" className="w-full" data-testid="button-register">
-            Register
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={registerMutation.isPending}
+            data-testid="button-register"
+          >
+            {registerMutation.isPending ? "Registering..." : "Register"}
           </Button>
         </form>
       </Card>

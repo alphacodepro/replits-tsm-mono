@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { authApi } from "@/lib/api";
 import LoginPage from "@/pages/LoginPage";
 import TeacherDashboard from "@/pages/TeacherDashboard";
 import BatchDetailsPage from "@/pages/BatchDetailsPage";
@@ -12,32 +12,53 @@ import StudentRegistrationPage from "@/pages/StudentRegistrationPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const [currentUser, setCurrentUser] = useState<{ role: string } | null>(null);
+  const [, setLocation] = useLocation();
+  
+  const { data: userData, isLoading } = useQuery<{ user: any }>({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+  });
 
-  const handleLogin = (username: string, password: string) => {
-    console.log('Login attempt:', username);
-    if (username === 'admin') {
-      setCurrentUser({ role: 'superadmin' });
-    } else {
-      setCurrentUser({ role: 'teacher' });
+  const handleLogin = async (username: string, password: string) => {
+    try {
+      await authApi.login(username, password);
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setLocation("/");
+    } catch (error) {
+      throw error;
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  const user = userData?.user;
+
   return (
     <Switch>
+      <Route path="/register/:token" component={StudentRegistrationPage} />
+      <Route path="/batch/:id">
+        {(params) => {
+          if (!user) return <LoginPage onLogin={handleLogin} />;
+          return <BatchDetailsPage batchId={params.id} />;
+        }}
+      </Route>
       <Route path="/">
         {() => {
-          if (!currentUser) {
+          if (!user) {
             return <LoginPage onLogin={handleLogin} />;
           }
-          if (currentUser.role === 'superadmin') {
+          if (user.role === 'superadmin') {
             return <SuperAdminDashboard />;
           }
           return <TeacherDashboard />;
         }}
       </Route>
-      <Route path="/batch/:id" component={BatchDetailsPage} />
-      <Route path="/register/:token" component={StudentRegistrationPage} />
       <Route component={NotFound} />
     </Switch>
   );

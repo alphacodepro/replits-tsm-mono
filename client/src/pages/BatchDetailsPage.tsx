@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -18,60 +20,57 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { batchApi, studentApi, Student as ApiStudent } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 
-export default function BatchDetailsPage() {
+interface StudentWithPaymentInfo extends ApiStudent {
+  totalPaid: number;
+  totalDue: number;
+}
+
+interface BatchDetailsPageProps {
+  batchId: string;
+}
+
+export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [addStudentOpen, setAddStudentOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const batch = {
-    id: '1',
-    name: 'Mathematics Class 10',
-    subject: 'Advanced Mathematics',
-    fee: 5000,
-    feePeriod: 'month',
-    registrationToken: 'abc123',
-  };
+  const { data: batchData, isLoading: batchLoading } = useQuery({
+    queryKey: ["/api/batches", batchId],
+    queryFn: () => batchApi.get(batchId),
+  });
 
-  const students = [
-    {
-      id: '1',
-      fullName: 'Rahul Sharma',
-      phone: '+91 98765 43210',
-      email: 'rahul@example.com',
-      standard: 'Class 10',
-      joinDate: '2024-01-15',
-      totalPaid: 15000,
-      totalDue: 0,
+  const addStudentMutation = useMutation({
+    mutationFn: studentApi.create,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      setAddStudentOpen(false);
+      toast({
+        title: "Student added!",
+        description: `${data.student.fullName} has been added to ${batchData?.batch.name}`,
+      });
     },
-    {
-      id: '2',
-      fullName: 'Priya Patel',
-      phone: '+91 98765 43211',
-      email: 'priya@example.com',
-      standard: 'Class 10',
-      joinDate: '2024-02-01',
-      totalPaid: 10000,
-      totalDue: 5000,
+    onError: (error: Error) => {
+      toast({
+        title: "Error adding student",
+        description: error.message,
+        variant: "destructive",
+      });
     },
-    {
-      id: '3',
-      fullName: 'Amit Kumar',
-      phone: '+91 98765 43212',
-      standard: 'Class 10',
-      joinDate: '2024-02-10',
-      totalPaid: 5000,
-      totalDue: 10000,
-    },
-  ];
+  });
 
-  const mockPayments = [
-    { id: '1', amount: 5000, paidAt: '2024-01-15' },
-    { id: '2', amount: 5000, paidAt: '2024-02-15' },
-    { id: '3', amount: 5000, paidAt: '2024-03-15' },
-  ];
+  const batch = batchData?.batch;
+  const students: StudentWithPaymentInfo[] = (batchData?.students || []).map(student => ({
+    ...student,
+    totalPaid: 0,
+    totalDue: batch?.fee || 0,
+  }));
 
   const filteredStudents = students.filter((student) =>
     student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,16 +78,13 @@ export default function BatchDetailsPage() {
     (student.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  const totalCollected = students.reduce((sum, s) => sum + s.totalPaid, 0);
-  const totalPending = students.reduce((sum, s) => sum + s.totalDue, 0);
-
   const handleViewPayments = (studentId: string) => {
-    const student = students.find((s) => s.id === studentId);
-    setSelectedStudent(student);
+    setSelectedStudentId(studentId);
     setPaymentDialogOpen(true);
   };
 
   const handleCopyLink = () => {
+    if (!batch) return;
     const url = `${window.location.origin}/register/${batch.registrationToken}`;
     navigator.clipboard.writeText(url);
     toast({
@@ -97,11 +93,27 @@ export default function BatchDetailsPage() {
     });
   };
 
+  if (batchLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!batch) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Batch not found</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Button variant="ghost" data-testid="button-back">
+          <Button variant="ghost" onClick={() => setLocation("/")} data-testid="button-back">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -154,11 +166,11 @@ export default function BatchDetailsPage() {
           </Card>
           <Card className="p-6">
             <p className="text-sm text-muted-foreground mb-2">Fees Collected</p>
-            <p className="text-3xl font-bold text-chart-2">₹{totalCollected.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-chart-2">₹0</p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-muted-foreground mb-2">Pending Payments</p>
-            <p className="text-3xl font-bold text-chart-3">₹{totalPending.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-chart-3">₹0</p>
           </Card>
         </div>
 
@@ -208,28 +220,20 @@ export default function BatchDetailsPage() {
         onOpenChange={setAddStudentOpen}
         batchName={batch.name}
         onSubmit={(data) => {
-          console.log('Add student:', data);
-          toast({
-            title: "Student added!",
-            description: `${data.fullName} has been added to ${batch.name}`,
+          addStudentMutation.mutate({
+            batchId: batch.id,
+            ...data,
+            joinDate: new Date().toISOString().split('T')[0],
           });
         }}
       />
 
-      {selectedStudent && (
+      {selectedStudentId && (
         <PaymentHistoryDialog
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
-          studentName={selectedStudent.fullName}
-          totalFee={batch.fee * 3}
-          payments={mockPayments}
-          onAddPayment={(amount) => {
-            console.log('Add payment:', amount);
-            toast({
-              title: "Payment recorded!",
-              description: `₹${amount.toLocaleString()} payment has been recorded`,
-            });
-          }}
+          studentId={selectedStudentId}
+          batchFee={batch.fee}
         />
       )}
     </div>

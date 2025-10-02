@@ -9,7 +9,7 @@ interface BatchCardProps {
   subject?: string;
   fee: number;
   feePeriod: string;
-  studentCount: number;
+  studentCount?: number;
   onViewDetails: () => void;
   onShowQR: () => void;
   onCopyLink: () => void;
@@ -40,7 +40,7 @@ export default function BatchCard({
           </div>
           <Badge variant="secondary" className="shrink-0">
             <Users className="w-3 h-3 mr-1" />
-            {studentCount}
+            {studentCount || 0}
           </Badge>
         </div>
 
