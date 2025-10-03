@@ -6,9 +6,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Mail, Phone, Trash2 } from "lucide-react";
+import { Eye, Mail, Phone, Trash2, Calendar, GraduationCap } from "lucide-react";
 
 interface Student {
   id: string;
@@ -28,30 +29,111 @@ interface StudentTableProps {
 }
 
 export default function StudentTable({ students, onViewPayments, onDeleteStudent }: StudentTableProps) {
+  if (students.length === 0) {
+    return (
+      <div className="border rounded-md p-8 text-center text-muted-foreground">
+        No students added yet
+      </div>
+    );
+  }
+
   return (
-    <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Class</TableHead>
-            <TableHead>Join Date</TableHead>
-            <TableHead className="text-right">Paid</TableHead>
-            <TableHead className="text-right">Due</TableHead>
-            <TableHead className="text-right">Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {students.length === 0 ? (
+    <>
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {students.map((student) => (
+          <Card key={student.id} className="p-4" data-testid={`card-student-${student.id}`}>
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg" data-testid={`text-student-name-${student.id}`}>
+                    {student.fullName}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                    <GraduationCap className="w-4 h-4" />
+                    <span>Class {student.standard}</span>
+                  </div>
+                </div>
+                {student.totalDue === 0 ? (
+                  <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20">
+                    Paid
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-chart-3/10 text-chart-3 border-chart-3/20">
+                    Pending
+                  </Badge>
+                )}
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="w-4 h-4" />
+                  <span>{student.phone}</span>
+                </div>
+                {student.email && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                    <span>{student.email}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="w-4 h-4" />
+                  <span>Joined {student.joinDate}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-3 border-t">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Fees Paid</p>
+                  <p className="font-semibold text-chart-2">₹{student.totalPaid.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Due Amount</p>
+                  <p className="font-semibold text-chart-3">₹{student.totalDue.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-3 border-t">
+                <Button
+                  onClick={() => onViewPayments(student.id)}
+                  variant="outline"
+                  className="flex-1"
+                  data-testid={`button-view-payments-${student.id}`}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Payments
+                </Button>
+                <Button
+                  onClick={() => onDeleteStudent(student.id)}
+                  variant="outline"
+                  size="icon"
+                  data-testid={`button-delete-student-${student.id}`}
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block border rounded-md">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                No students added yet
-              </TableCell>
+              <TableHead>Name</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Class</TableHead>
+              <TableHead>Join Date</TableHead>
+              <TableHead className="text-right">Paid</TableHead>
+              <TableHead className="text-right">Due</TableHead>
+              <TableHead className="text-right">Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ) : (
-            students.map((student) => (
+          </TableHeader>
+          <TableBody>
+            {students.map((student) => (
               <TableRow key={student.id} className="hover-elevate">
                 <TableCell className="font-medium" data-testid={`text-student-name-${student.id}`}>
                   {student.fullName}
@@ -107,10 +189,10 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                   </div>
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
