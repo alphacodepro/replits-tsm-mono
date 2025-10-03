@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import StudentTable from "@/components/StudentTable";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import PaymentHistoryDialog from "@/components/PaymentHistoryDialog";
+import QRCodeDialog from "@/components/QRCodeDialog";
 import EmptyState from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
@@ -38,6 +39,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [, setLocation] = useLocation();
   const [addStudentOpen, setAddStudentOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -90,8 +92,13 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const batch = batchData?.batch;
   const students: StudentWithPaymentInfo[] = (batchData?.students || []).map(student => ({
     ...student,
-    totalPaid: 0,
-    totalDue: batch?.fee || 0,
+    joinDate: new Date(student.joinDate).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    }),
+    totalPaid: student.totalPaid || 0,
+    totalDue: student.totalDue || 0,
   }));
 
   const filteredStudents = students.filter((student) =>
@@ -189,7 +196,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 <LinkIcon className="w-4 h-4 mr-2" />
                 Copy Link
               </Button>
-              <Button variant="outline" data-testid="button-show-qr-code">
+              <Button variant="outline" onClick={() => setQrDialogOpen(true)} data-testid="button-show-qr-code">
                 <QrCode className="w-4 h-4 mr-2" />
                 Show QR
               </Button>
@@ -204,11 +211,15 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           </Card>
           <Card className="p-6">
             <p className="text-sm text-muted-foreground mb-2">Fees Collected</p>
-            <p className="text-3xl font-bold text-chart-2">₹0</p>
+            <p className="text-3xl font-bold text-chart-2">
+              ₹{students.reduce((sum, s) => sum + (s.totalPaid || 0), 0).toLocaleString()}
+            </p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-muted-foreground mb-2">Pending Payments</p>
-            <p className="text-3xl font-bold text-chart-3">₹0</p>
+            <p className="text-3xl font-bold text-chart-3">
+              ₹{students.reduce((sum, s) => sum + (s.totalDue || 0), 0).toLocaleString()}
+            </p>
           </Card>
         </div>
 
@@ -265,7 +276,6 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           addStudentMutation.mutate({
             batchId: batch.id,
             ...data,
-            joinDate: new Date().toISOString().split('T')[0],
           });
         }}
       />
@@ -278,6 +288,13 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           batchFee={batch.fee}
         />
       )}
+
+      <QRCodeDialog
+        open={qrDialogOpen}
+        onOpenChange={setQrDialogOpen}
+        batchName={batch.name}
+        registrationUrl={`${window.location.origin}/register/${batch.registrationToken}`}
+      />
 
       <ConfirmDialog
         open={deleteConfirmOpen}

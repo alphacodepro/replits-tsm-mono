@@ -202,7 +202,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const students = await storage.getStudentsByBatch(id);
-      res.json({ batch, students });
+      
+      const studentsWithPayments = await Promise.all(
+        students.map(async (student) => {
+          const payments = await storage.getPaymentsByStudent(student.id);
+          const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+          
+          const joinMonths = Math.ceil(
+            (new Date().getTime() - new Date(student.joinDate).getTime()) / (1000 * 60 * 60 * 24 * 30)
+          );
+          const expectedTotal = batch.feePeriod === "month" ? batch.fee * joinMonths : batch.fee;
+          const totalDue = Math.max(0, expectedTotal - totalPaid);
+          
+          return {
+            ...student,
+            totalPaid,
+            totalDue,
+          };
+        })
+      );
+      
+      res.json({ batch, students: studentsWithPayments });
     } catch (error) {
       console.error("Get batch error:", error);
       res.status(500).json({ error: "Internal server error" });

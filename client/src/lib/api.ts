@@ -45,6 +45,8 @@ export interface Student {
   email?: string;
   standard: string;
   joinDate: string;
+  totalPaid?: number;
+  totalDue?: number;
 }
 
 export interface Payment {
@@ -134,7 +136,6 @@ export const studentApi = {
     phone: string;
     email?: string;
     standard: string;
-    joinDate: string;
   }) =>
     apiRequest<{ student: Student }>("/api/students", {
       method: "POST",

@@ -56,6 +56,7 @@ export const insertBatchSchema = createInsertSchema(batches).omit({
 
 export const insertStudentSchema = createInsertSchema(students).omit({
   id: true,
+  joinDate: true,
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).omit({
