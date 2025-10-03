@@ -21,6 +21,7 @@ export interface User {
   username: string;
   role: string;
   fullName: string;
+  instituteName?: string;
   email?: string;
   phone?: string;
   isActive: boolean;
@@ -88,6 +89,7 @@ export const teacherApi = {
     fullName: string;
     username: string;
     password: string;
+    instituteName?: string;
     email?: string;
     phone?: string;
   }) =>

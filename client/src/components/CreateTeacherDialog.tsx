@@ -18,6 +18,7 @@ interface CreateTeacherDialogProps {
     fullName: string;
     username: string;
     password: string;
+    instituteName?: string;
     email: string;
     phone: string;
   }) => void;
@@ -31,6 +32,7 @@ export default function CreateTeacherDialog({
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [instituteName, setInstituteName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -40,12 +42,14 @@ export default function CreateTeacherDialog({
       fullName,
       username,
       password,
+      instituteName: instituteName || undefined,
       email,
       phone,
     });
     setFullName("");
     setUsername("");
     setPassword("");
+    setInstituteName("");
     setEmail("");
     setPhone("");
     onOpenChange(false);
@@ -94,6 +98,16 @@ export default function CreateTeacherDialog({
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 data-testid="input-teacher-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="instituteName">Institute Name</Label>
+              <Input
+                id="instituteName"
+                placeholder="ABC Academy"
+                value={instituteName}
+                onChange={(e) => setInstituteName(e.target.value)}
+                data-testid="input-teacher-institute"
               />
             </div>
             <div className="space-y-2">
