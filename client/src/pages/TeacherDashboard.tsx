@@ -24,6 +24,11 @@ export default function TeacherDashboard() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<any>(null);
 
+  const { data: userData } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: () => authApi.me(),
+  });
+
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
     queryKey: ["/api/batches"],
     queryFn: () => batchApi.list(),
@@ -146,8 +151,8 @@ export default function TeacherDashboard() {
                 <BookOpen className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">Teacher Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Welcome back, Teacher</p>
+                <h1 className="text-xl font-bold">{userData?.user?.instituteName || "Teacher Dashboard"}</h1>
+                <p className="text-sm text-muted-foreground">Welcome back, {userData?.user?.fullName || "Teacher"}</p>
               </div>
             </div>
             <Button 
