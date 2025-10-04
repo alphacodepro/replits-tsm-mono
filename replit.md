@@ -34,6 +34,10 @@ Preferred communication style: Simple, everyday language.
 - Modal dialogs for CRUD operations
 - QR code generation for student registration links
 - Toast notifications for user feedback
+- Branded registration forms with institute name hierarchy:
+  - Institute name displayed as main heading (text-3xl)
+  - "Student Registration" as subheading (text-lg semibold)
+  - Batch name as tertiary information (muted text)
 
 ### Backend Architecture
 
@@ -76,6 +80,7 @@ Preferred communication style: Simple, everyday language.
    - Role field for access control
    - Active/inactive status flag
    - Contact information (email, phone)
+   - Institute name for branding (used in student registration)
 
 2. **Batches Table**: Class/course groupings managed by teachers
    - References users table (teacher_id)
