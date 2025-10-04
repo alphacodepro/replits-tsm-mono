@@ -9,7 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import CreateBatchDialog from "@/components/CreateBatchDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { Plus, Search, BookOpen, Users, IndianRupee, Clock, LogOut } from "lucide-react";
+import { Plus, Search, BookOpen, Users, IndianRupee, Clock, LogOut, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, statsApi, authApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -23,6 +23,7 @@ export default function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<any>(null);
+  const [showStats, setShowStats] = useState(true);
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -169,12 +170,26 @@ export default function TeacherDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard title="Total Batches" value={stats.batchCount} icon={BookOpen} />
-          <StatCard title="Total Students" value={stats.studentCount} icon={Users} />
-          <StatCard title="Fees Collected" value={`₹${stats.feesCollected.toLocaleString()}`} icon={IndianRupee} />
-          <StatCard title="Pending Payments" value={`₹${stats.pendingPayments.toLocaleString()}`} icon={Clock} />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-muted-foreground">Dashboard Overview</h2>
+          <Button 
+            onClick={() => setShowStats(!showStats)} 
+            variant="outline" 
+            size="icon"
+            data-testid="button-toggle-stats"
+          >
+            {showStats ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </Button>
         </div>
+        
+        {showStats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <StatCard title="Total Batches" value={stats.batchCount} icon={BookOpen} />
+            <StatCard title="Total Students" value={stats.studentCount} icon={Users} />
+            <StatCard title="Fees Collected" value={`₹${stats.feesCollected.toLocaleString()}`} icon={IndianRupee} />
+            <StatCard title="Pending Payments" value={`₹${stats.pendingPayments.toLocaleString()}`} icon={Clock} />
+          </div>
+        )}
 
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
