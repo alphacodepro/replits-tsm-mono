@@ -38,8 +38,8 @@ export default function TeacherCard({
   onDelete,
 }: TeacherCardProps) {
   return (
-    <Card className="p-6 hover-elevate">
-      <div className="space-y-4">
+    <Card className="p-6 hover-elevate h-full">
+      <div className="h-full flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1">
             <div className="bg-primary/10 p-3 rounded-md">
@@ -81,7 +81,7 @@ export default function TeacherCard({
           </DropdownMenu>
         </div>
 
-        <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-sm flex-1">
           {email && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Mail className="w-4 h-4" />
