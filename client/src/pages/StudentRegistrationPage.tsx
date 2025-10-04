@@ -104,6 +104,7 @@ export default function StudentRegistrationPage() {
   }
 
   const batchName = batchData?.batch.name || "";
+  const instituteName = batchData?.instituteName || "Tuition Center";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -112,8 +113,9 @@ export default function StudentRegistrationPage() {
           <div className="bg-primary/10 p-4 rounded-full mb-4">
             <BookOpen className="w-12 h-12 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold">Student Registration</h1>
-          <p className="text-muted-foreground mt-2 text-center">{batchName}</p>
+          <h1 className="text-3xl font-bold text-center">{instituteName}</h1>
+          <p className="text-lg font-semibold mt-3">Student Registration</p>
+          <p className="text-muted-foreground mt-1 text-center">{batchName}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

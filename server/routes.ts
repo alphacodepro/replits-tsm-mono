@@ -320,7 +320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Invalid registration link" });
       }
 
-      res.json({ batch });
+      // Get teacher's institute name
+      const teacher = await storage.getUserById(batch.teacherId);
+      const instituteName = teacher?.instituteName || "Tuition Center";
+
+      res.json({ batch, instituteName });
     } catch (error) {
       console.error("Get registration info error:", error);
       res.status(500).json({ error: "Internal server error" });

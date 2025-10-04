@@ -158,7 +158,7 @@ export const studentApi = {
       body: JSON.stringify(data),
     }),
 
-  getRegistrationInfo: (token: string) => apiRequest<{ batch: Batch }>(`/api/register/${token}`),
+  getRegistrationInfo: (token: string) => apiRequest<{ batch: Batch; instituteName: string }>(`/api/register/${token}`),
 };
 
 // Payment API
