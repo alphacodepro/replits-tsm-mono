@@ -44,7 +44,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <div className="bg-primary/10 p-4 rounded-full mb-4">
             <BookOpen className="w-12 h-12 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>Tuition Management System</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-center" style={{ fontFamily: 'Poppins, sans-serif', letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+            Tuition Management System
+          </h1>
           <p className="text-muted-foreground mt-2">Sign in to continue</p>
         </div>
 
