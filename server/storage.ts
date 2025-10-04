@@ -25,6 +25,7 @@ export interface IStorage {
   getAllTeachers(): Promise<User[]>;
   updateUserStatus(userId: string, isActive: boolean): Promise<void>;
   updateUserPassword(userId: string, newPassword: string): Promise<void>;
+  updateUserCredentials(userId: string, username: string, password: string): Promise<void>;
   deleteUser(userId: string): Promise<void>;
 
   // Batch methods
@@ -106,6 +107,14 @@ export class DbStorage implements IStorage {
     await db
       .update(schema.users)
       .set({ password: hashedPassword })
+      .where(eq(schema.users.id, userId));
+  }
+
+  async updateUserCredentials(userId: string, username: string, password: string): Promise<void> {
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    await db
+      .update(schema.users)
+      .set({ username, password: hashedPassword })
       .where(eq(schema.users.id, userId));
   }
 

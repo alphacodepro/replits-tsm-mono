@@ -93,6 +93,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/profile/credentials", requireAuth, async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const updateCredentialsSchema = z.object({
+        username: z.string().trim().min(1, "Username is required"),
+        password: z.string().trim().min(4, "Password must be at least 4 characters"),
+        currentPassword: z.string().trim().min(1, "Current password is required"),
+      });
+
+      const validationResult = updateCredentialsSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: validationResult.error.errors[0]?.message || "Invalid input" 
+        });
+      }
+
+      const { username, password, currentPassword } = validationResult.data;
+      const userId = req.session.userId!;
+
+      // Verify current password
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isCurrentPasswordValid = await storage.verifyPassword(user.username, currentPassword);
+      if (!isCurrentPasswordValid) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      // Check if new username is already taken by another user
+      if (username !== user.username) {
+        const existingUser = await storage.getUserByUsername(username);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ error: "Username already exists" });
+        }
+      }
+
+      // Update credentials
+      await storage.updateUserCredentials(userId, username, password);
+
+      // Destroy session to force re-login
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+        }
+      });
+
+      res.json({ success: true, message: "Credentials updated successfully" });
+    } catch (error) {
+      console.error("Update credentials error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Teacher routes
   app.post("/api/teachers", requireAuth, requireRole("superadmin"), async (req: Request, res: Response) => {
     try {

@@ -104,6 +104,12 @@ export const authApi = {
   logout: () => apiRequest<{ success: boolean }>("/api/auth/logout", { method: "POST" }),
 
   me: () => apiRequest<{ user: User }>("/api/auth/me"),
+
+  updateCredentials: (data: { username: string; password: string; currentPassword: string }) =>
+    apiRequest<{ success: boolean; message: string }>("/api/profile/credentials", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
 };
 
 // Teacher API

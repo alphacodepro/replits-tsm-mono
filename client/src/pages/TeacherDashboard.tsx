@@ -9,7 +9,8 @@ import EmptyState from "@/components/EmptyState";
 import CreateBatchDialog from "@/components/CreateBatchDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { Plus, Search, BookOpen, Users, IndianRupee, Clock, LogOut, Eye, EyeOff } from "lucide-react";
+import ChangeCredentialsDialog from "@/components/ChangeCredentialsDialog";
+import { Plus, Search, BookOpen, Users, IndianRupee, Clock, LogOut, Eye, EyeOff, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, statsApi, authApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -24,6 +25,7 @@ export default function TeacherDashboard() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<any>(null);
   const [showStats, setShowStats] = useState(true);
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -156,15 +158,25 @@ export default function TeacherDashboard() {
                 <p className="text-sm text-muted-foreground">Welcome back, {userData?.user?.fullName || "Teacher"}</p>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              data-testid="button-logout"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => setCredentialsDialogOpen(true)}
+                data-testid="button-settings"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -266,6 +278,17 @@ export default function TeacherDashboard() {
         onConfirm={handleConfirmDelete}
         confirmText="Delete Batch"
         destructive
+      />
+
+      <ChangeCredentialsDialog
+        open={credentialsDialogOpen}
+        onOpenChange={setCredentialsDialogOpen}
+        currentUsername={userData?.user?.username || ""}
+        onSuccess={() => {
+          queryClient.setQueryData(["/api/auth/me"], null);
+          queryClient.clear();
+          setLocation("/");
+        }}
       />
     </div>
   );
