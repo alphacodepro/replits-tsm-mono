@@ -87,13 +87,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
-
-        <div className="mt-6 p-4 bg-muted/50 rounded-md">
-          <p className="text-sm text-muted-foreground text-center">
-            <strong>Demo Credentials:</strong><br />
-            Super Admin: prasad / 1935
-          </p>
-        </div>
       </Card>
     </div>
   );
