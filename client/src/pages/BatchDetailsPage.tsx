@@ -42,6 +42,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "pending">("all");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<StudentWithPaymentInfo | null>(null);
 
@@ -97,15 +98,27 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       month: 'short', 
       day: 'numeric' 
     }),
-    totalPaid: student.totalPaid || 0,
-    totalDue: student.totalDue || 0,
+    totalPaid: student.totalPaid ?? 0,
+    totalDue: student.totalDue ?? 0,
   }));
 
-  const filteredStudents = students.filter((student) =>
+  // Apply search filter first
+  const searchFilteredStudents = students.filter((student) =>
     student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.phone.includes(searchQuery) ||
     (student.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+
+  // Then apply payment filter
+  const filteredStudents = searchFilteredStudents.filter((student) => {
+    if (paymentFilter === "all") return true;
+    if (paymentFilter === "paid") return (student.totalDue ?? 0) === 0;
+    return (student.totalDue ?? 0) > 0; // pending
+  });
+
+  // Calculate counts from search-filtered results for consistency
+  const paidCount = searchFilteredStudents.filter(s => (s.totalDue ?? 0) === 0).length;
+  const pendingCount = searchFilteredStudents.filter(s => (s.totalDue ?? 0) > 0).length;
 
   const handleViewPayments = (studentId: string) => {
     setSelectedStudentId(studentId);
@@ -231,24 +244,62 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               Add Student
             </Button>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search students..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-              data-testid="input-search-students"
-            />
+          
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search students..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="input-search-students"
+              />
+            </div>
+            
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant={paymentFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPaymentFilter("all")}
+                data-testid="button-filter-all"
+              >
+                All ({searchFilteredStudents.length})
+              </Button>
+              <Button
+                variant={paymentFilter === "paid" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPaymentFilter("paid")}
+                data-testid="button-filter-paid"
+                className={paymentFilter === "paid" ? "" : "text-chart-2 hover:text-chart-2"}
+              >
+                Paid ({paidCount})
+              </Button>
+              <Button
+                variant={paymentFilter === "pending" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPaymentFilter("pending")}
+                data-testid="button-filter-pending"
+                className={paymentFilter === "pending" ? "" : "text-chart-3 hover:text-chart-3"}
+              >
+                Pending ({pendingCount})
+              </Button>
+            </div>
           </div>
         </div>
 
         {filteredStudents.length === 0 ? (
-          searchQuery ? (
+          searchQuery || paymentFilter !== "all" ? (
             <EmptyState
               icon={Search}
               title="No students found"
-              description={`No students match "${searchQuery}"`}
+              description={
+                searchQuery && paymentFilter !== "all"
+                  ? `No students match "${searchQuery}" with ${paymentFilter} status`
+                  : searchQuery
+                  ? `No students match "${searchQuery}"`
+                  : `No students with ${paymentFilter} payments`
+              }
             />
           ) : (
             <EmptyState
