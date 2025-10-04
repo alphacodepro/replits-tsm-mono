@@ -10,7 +10,7 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, icon: Icon, iconBgColor = "bg-primary/10" }: StatCardProps) {
   return (
-    <Card className="p-6">
+    <Card className="p-6 hover-elevate">
       <div className="flex items-start gap-4">
         <div className={`${iconBgColor} p-3 rounded-md`}>
           <Icon className="w-6 h-6 text-primary" />
