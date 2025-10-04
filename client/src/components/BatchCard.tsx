@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Users, IndianRupee, QrCode, Link as LinkIcon, Trash2 } from "lucide-react";
+import { BookOpen, Users, IndianRupee, QrCode, Link as LinkIcon, Trash2, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface BatchCardProps {
@@ -27,6 +28,8 @@ export default function BatchCard({
   onCopyLink,
   onDelete,
 }: BatchCardProps) {
+  const [showDetails, setShowDetails] = useState(true);
+
   return (
     <Card className="p-6 hover-elevate">
       <div className="space-y-4">
@@ -36,7 +39,7 @@ export default function BatchCard({
               <BookOpen className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold" data-testid="text-batch-name">{name}</h3>
             </div>
-            {subject && (
+            {showDetails && subject && (
               <p className="text-sm text-muted-foreground">{subject}</p>
             )}
           </div>
@@ -46,11 +49,13 @@ export default function BatchCard({
           </Badge>
         </div>
 
-        <div className="flex items-center gap-2 text-sm">
-          <IndianRupee className="w-4 h-4 text-muted-foreground" />
-          <span className="font-medium">₹{fee.toLocaleString()}</span>
-          <span className="text-muted-foreground">/ {feePeriod}</span>
-        </div>
+        {showDetails && (
+          <div className="flex items-center gap-2 text-sm">
+            <IndianRupee className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium">₹{fee.toLocaleString()}</span>
+            <span className="text-muted-foreground">/ {feePeriod}</span>
+          </div>
+        )}
 
         <div className="flex gap-2 pt-2">
           <Button 
@@ -59,6 +64,14 @@ export default function BatchCard({
             data-testid="button-view-batch"
           >
             View Details
+          </Button>
+          <Button 
+            onClick={() => setShowDetails(!showDetails)} 
+            variant="outline" 
+            size="icon"
+            data-testid="button-toggle-details"
+          >
+            {showDetails ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </Button>
           <Button 
             onClick={onShowQR} 
