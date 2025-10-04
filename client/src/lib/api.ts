@@ -10,7 +10,30 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = "An error occurred";
+    
+    try {
+      const errorData = JSON.parse(text);
+      const rawError = errorData.error || errorData.message;
+      errorMessage = rawError ? String(rawError) : errorMessage;
+    } catch {
+      errorMessage = text || errorMessage;
+    }
+
+    const lowerErrorMessage = String(errorMessage).toLowerCase();
+    if (res.status === 401 && lowerErrorMessage.includes("invalid")) {
+      errorMessage = "Invalid username or password";
+    } else if (res.status === 401) {
+      errorMessage = "Unauthorized access";
+    } else if (res.status === 403) {
+      errorMessage = "Access denied";
+    } else if (res.status === 404) {
+      errorMessage = "Resource not found";
+    } else if (res.status >= 500) {
+      errorMessage = "Server error. Please try again later";
+    }
+
+    throw new Error(errorMessage);
   }
 
   return await res.json();
