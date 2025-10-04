@@ -30,14 +30,22 @@ export default function StudentRegistrationPage() {
   const registerMutation = useMutation({
     mutationFn: (data: { fullName: string; phone: string; email?: string; standard: string }) =>
       studentApi.register(token, data),
+    retry: 3, // Retry up to 3 times for failed requests
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff: 1s, 2s, 4s (max 5s)
     onSuccess: (data) => {
       setRegisteredBatchName(data.batchName);
       setSubmitted(true);
     },
     onError: (error: Error) => {
+      // Check if it's a rate limit error (429) or server busy error (503)
+      const errorMessage = error.message.toLowerCase();
+      const isRetryableError = errorMessage.includes('429') || errorMessage.includes('503') || errorMessage.includes('too many');
+      
       toast({
         title: "Registration failed",
-        description: error.message,
+        description: isRetryableError 
+          ? "Server is busy. Please wait a moment and try again."
+          : error.message,
         variant: "destructive",
       });
     },

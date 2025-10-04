@@ -11,5 +11,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 15, // Conservative pool size within Neon limits for concurrent registrations
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
 export const db = drizzle({ client: pool, schema });

@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import session from "express-session";
+import { rateLimit } from "express-rate-limit";
 import { insertUserSchema, insertBatchSchema, insertStudentSchema, insertPaymentSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -271,8 +272,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rate limiter for registration endpoint - allows bursts while preventing abuse
+  const registrationLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute window
+    max: 300, // Allow 300 requests per minute per IP (handles concurrent registration bursts)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many registration attempts. Please try again in a moment." },
+    skip: (req) => {
+      // Skip rate limiting for authenticated users (teachers adding students manually)
+      return !!req.session?.userId;
+    }
+  });
+
   // Public student registration route
-  app.post("/api/register/:token", async (req: Request, res: Response) => {
+  app.post("/api/register/:token", registrationLimiter, async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
       const batch = await storage.getBatchByToken(token);
