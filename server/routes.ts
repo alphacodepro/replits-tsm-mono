@@ -129,6 +129,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/teachers/:id", requireAuth, requireRole("superadmin"), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const teacher = await storage.getUserById(id);
+      
+      if (!teacher || teacher.role !== "teacher") {
+        return res.status(404).json({ error: "Teacher not found" });
+      }
+
+      const batches = await storage.getBatchesByTeacher(id);
+      const stats = await storage.getTeacherStats(id);
+      const { password: _, ...teacherWithoutPassword } = teacher;
+
+      res.json({
+        teacher: teacherWithoutPassword,
+        batches,
+        stats,
+      });
+    } catch (error) {
+      console.error("Get teacher details error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/teachers/:id/reset-password", requireAuth, requireRole("superadmin"), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const teacher = await storage.getUserById(id);
+      
+      if (!teacher || teacher.role !== "teacher") {
+        return res.status(404).json({ error: "Teacher not found" });
+      }
+
+      // Generate a cryptographically secure random password
+      const { randomBytes } = await import("crypto");
+      const newPassword = randomBytes(8).toString('base64').slice(0, 12).replace(/[+/=]/g, (char) => {
+        if (char === '+') return 'A';
+        if (char === '/') return 'b';
+        return 'C';
+      });
+      
+      await storage.updateUserPassword(id, newPassword);
+
+      res.json({ 
+        success: true, 
+        newPassword,
+        username: teacher.username 
+      });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.patch("/api/teachers/:id/status", requireAuth, requireRole("superadmin"), async (req: Request, res: Response) => {
     try {
       const { id } = req.params;

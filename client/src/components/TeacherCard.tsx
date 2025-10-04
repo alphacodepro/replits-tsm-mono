@@ -13,6 +13,7 @@ interface TeacherCardProps {
   id: string;
   fullName: string;
   username: string;
+  instituteName?: string;
   email?: string;
   phone?: string;
   isActive: boolean;
@@ -26,6 +27,7 @@ interface TeacherCardProps {
 export default function TeacherCard({
   fullName,
   username,
+  instituteName,
   email,
   phone,
   isActive,
@@ -45,7 +47,9 @@ export default function TeacherCard({
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-semibold" data-testid="text-teacher-name">{fullName}</h3>
+                <h3 className="text-lg font-semibold" data-testid="text-institute-name">
+                  {instituteName || "No Institute"}
+                </h3>
                 {isActive ? (
                   <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20">
                     Active
@@ -56,7 +60,8 @@ export default function TeacherCard({
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">@{username}</p>
+              <p className="text-sm text-muted-foreground" data-testid="text-teacher-name">{fullName}</p>
+              <p className="text-xs text-muted-foreground">@{username}</p>
             </div>
           </div>
           <DropdownMenu>

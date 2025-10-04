@@ -7,6 +7,7 @@ import StatCard from "@/components/StatCard";
 import TeacherCard from "@/components/TeacherCard";
 import EmptyState from "@/components/EmptyState";
 import CreateTeacherDialog from "@/components/CreateTeacherDialog";
+import TeacherDetailsDialog from "@/components/TeacherDetailsDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Plus, Search, Users, BookOpen, GraduationCap, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ export default function SuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<{ id: string; fullName: string } | null>(null);
+  const [detailsTeacherId, setDetailsTeacherId] = useState<string | null>(null);
 
   const { data: teachersData, isLoading: teachersLoading } = useQuery({
     queryKey: ["/api/teachers"],
@@ -217,7 +219,7 @@ export default function SuperAdminDashboard() {
               <TeacherCard
                 key={teacher.id}
                 {...teacher}
-                onViewDetails={() => console.log('View teacher', teacher.id)}
+                onViewDetails={() => setDetailsTeacherId(teacher.id)}
                 onToggleStatus={() => handleToggleStatus(teacher.id, teacher.isActive)}
                 onDelete={() => handleDelete(teacher.id, teacher.fullName)}
               />
@@ -230,6 +232,12 @@ export default function SuperAdminDashboard() {
         open={createTeacherOpen}
         onOpenChange={setCreateTeacherOpen}
         onSubmit={(data) => createTeacherMutation.mutate(data)}
+      />
+
+      <TeacherDetailsDialog
+        teacherId={detailsTeacherId}
+        open={!!detailsTeacherId}
+        onOpenChange={(open) => !open && setDetailsTeacherId(null)}
       />
 
       <ConfirmDialog

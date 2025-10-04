@@ -100,6 +100,14 @@ export const teacherApi = {
 
   list: () => apiRequest<{ teachers: (User & { batchCount: number; studentCount: number })[] }>("/api/teachers"),
 
+  get: (id: string) =>
+    apiRequest<{ teacher: User; batches: Batch[]; stats: { batchCount: number; studentCount: number } }>(`/api/teachers/${id}`),
+
+  resetPassword: (id: string) =>
+    apiRequest<{ success: boolean; newPassword: string; username: string }>(`/api/teachers/${id}/reset-password`, {
+      method: "POST",
+    }),
+
   updateStatus: (id: string, isActive: boolean) =>
     apiRequest<{ success: boolean }>(`/api/teachers/${id}/status`, {
       method: "PATCH",
