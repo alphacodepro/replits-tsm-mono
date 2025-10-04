@@ -28,6 +28,7 @@ interface PaymentHistoryDialogProps {
   onOpenChange: (open: boolean) => void;
   studentId: string;
   batchFee: number;
+  feePeriod: string;
 }
 
 export default function PaymentHistoryDialog({
@@ -35,6 +36,7 @@ export default function PaymentHistoryDialog({
   onOpenChange,
   studentId,
   batchFee,
+  feePeriod,
 }: PaymentHistoryDialogProps) {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
@@ -71,13 +73,43 @@ export default function PaymentHistoryDialog({
   const student = studentData?.student;
   const payments = studentData?.payments || [];
   const totalPaid = studentData?.totalPaid || 0;
-  const remaining = batchFee - totalPaid;
+  
+  // Calculate expected total fee based on period and join date
+  let expectedTotalFee = batchFee;
+  if (student && feePeriod === "month") {
+    const joinMonths = Math.ceil(
+      (new Date().getTime() - new Date(student.joinDate).getTime()) / (1000 * 60 * 60 * 24 * 30)
+    );
+    expectedTotalFee = batchFee * joinMonths;
+  }
+  
+  const remaining = expectedTotalFee - totalPaid;
 
   const handleAddPayment = (e: React.FormEvent) => {
     e.preventDefault();
+    const paymentAmount = Number(amount);
+    
+    if (paymentAmount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Payment amount must be greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (paymentAmount > remaining) {
+      toast({
+        title: "Amount exceeds remaining balance",
+        description: `Maximum payment allowed is ₹${remaining.toLocaleString()}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     addPaymentMutation.mutate({
       studentId,
-      amount: Number(amount),
+      amount: paymentAmount,
     });
   };
 
@@ -97,7 +129,7 @@ export default function PaymentHistoryDialog({
             <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-md">
               <div>
                 <p className="text-sm text-muted-foreground">Total Fee</p>
-                <p className="text-2xl font-bold">₹{batchFee.toLocaleString()}</p>
+                <p className="text-2xl font-bold">₹{expectedTotalFee.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Paid</p>
@@ -130,7 +162,7 @@ export default function PaymentHistoryDialog({
                       const paidSoFar = payments
                         .slice(0, index + 1)
                         .reduce((sum, p) => sum + p.amount, 0);
-                      const remainingAtTime = batchFee - paidSoFar;
+                      const remainingAtTime = expectedTotalFee - paidSoFar;
 
                       return (
                         <TableRow key={payment.id}>
@@ -159,9 +191,14 @@ export default function PaymentHistoryDialog({
                     placeholder="5000"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    min="1"
+                    max={remaining}
                     required
                     data-testid="input-payment-amount"
                   />
+                  <p className="text-sm text-muted-foreground">
+                    Maximum amount: ₹{remaining.toLocaleString()}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <Button 
@@ -187,10 +224,11 @@ export default function PaymentHistoryDialog({
               <Button
                 onClick={() => setShowAddPayment(true)}
                 className="w-full"
+                disabled={remaining <= 0}
                 data-testid="button-add-payment"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Payment
+                {remaining <= 0 ? "Fully Paid" : "Add Payment"}
               </Button>
             )}
           </div>

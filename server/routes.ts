@@ -374,6 +374,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Forbidden" });
       }
 
+      // Validate payment amount doesn't exceed remaining balance
+      const payments = await storage.getPaymentsByStudent(student.id);
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+      
+      // Calculate expected total fee based on period and join date
+      let expectedTotalFee = batch.fee;
+      if (batch.feePeriod === "month") {
+        const joinMonths = Math.ceil(
+          (new Date().getTime() - new Date(student.joinDate).getTime()) / (1000 * 60 * 60 * 24 * 30)
+        );
+        expectedTotalFee = batch.fee * joinMonths;
+      }
+      
+      const remaining = expectedTotalFee - totalPaid;
+
+      if (paymentData.amount <= 0) {
+        return res.status(400).json({ error: "Payment amount must be greater than 0" });
+      }
+
+      if (paymentData.amount > remaining) {
+        return res.status(400).json({ 
+          error: `Payment amount (₹${paymentData.amount}) exceeds remaining balance (₹${remaining})` 
+        });
+      }
+
       const payment = await storage.createPayment(paymentData);
       res.json({ payment });
     } catch (error) {

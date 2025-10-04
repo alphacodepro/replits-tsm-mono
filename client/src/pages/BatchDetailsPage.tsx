@@ -286,6 +286,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           onOpenChange={setPaymentDialogOpen}
           studentId={selectedStudentId}
           batchFee={batch.fee}
+          feePeriod={batch.feePeriod}
         />
       )}
 
