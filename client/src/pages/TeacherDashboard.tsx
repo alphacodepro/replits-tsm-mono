@@ -198,8 +198,8 @@ export default function TeacherDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <StatCard title="Total Batches" value={stats.batchCount} icon={BookOpen} />
             <StatCard title="Total Students" value={stats.studentCount} icon={Users} />
-            <StatCard title="Fees Collected" value={`₹${stats.feesCollected.toLocaleString()}`} icon={IndianRupee} />
-            <StatCard title="Pending Payments" value={`₹${stats.pendingPayments.toLocaleString()}`} icon={Clock} />
+            <StatCard title="Fees Collected" value={`₹${stats.feesCollected.toLocaleString()}`} icon={IndianRupee} valueColor="text-chart-2" />
+            <StatCard title="Pending Payments" value={`₹${stats.pendingPayments.toLocaleString()}`} icon={Clock} valueColor="text-chart-3" />
           </div>
         )}
 
