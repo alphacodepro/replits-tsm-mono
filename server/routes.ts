@@ -1,7 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { pool } from "./db";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { rateLimit } from "express-rate-limit";
 import { insertUserSchema, insertBatchSchema, insertStudentSchema, insertPaymentSchema } from "@shared/schema";
 import { z } from "zod";
@@ -13,10 +15,17 @@ declare module "express-session" {
   }
 }
 
+const PgSession = connectPgSimple(session);
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session middleware
+  // Session middleware with PostgreSQL store
   app.use(
     session({
+      store: new PgSession({
+        pool: pool as any,
+        tableName: 'session',
+        createTableIfMissing: true,
+      }),
       secret: process.env.SESSION_SECRET || "tuition-management-secret-key",
       resave: false,
       saveUninitialized: false,
