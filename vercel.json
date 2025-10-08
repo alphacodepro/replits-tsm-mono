@@ -1,7 +1,7 @@
 {
-  "buildCommand": "npx vite build",
+  "installCommand": "npm install",
+  "buildCommand": "echo \"VITE_API_URL=$VITE_API_URL\" > client/.env && npx vite build",
   "outputDirectory": "dist/public",
-  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
