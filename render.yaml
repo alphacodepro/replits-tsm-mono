@@ -7,6 +7,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: SERVE_FRONTEND
+        value: false
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET

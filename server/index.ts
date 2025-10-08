@@ -75,7 +75,9 @@ app.use((req, res, next) => {
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
-  } else {
+  } else if (process.env.SERVE_FRONTEND !== "false") {
+    // Only serve static files if SERVE_FRONTEND is not explicitly set to "false"
+    // For separated deployments (Vercel + Render), set SERVE_FRONTEND=false
     serveStatic(app);
   }
 
