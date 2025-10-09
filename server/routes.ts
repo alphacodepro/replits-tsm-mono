@@ -14,18 +14,50 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // CORS middleware for cross-origin requests (Vercel frontend + Render backend)
+  app.use((req, res, next) => {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:5000',
+      process.env.FRONTEND_URL || '',
+    ].filter(Boolean);
+
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+
+    next();
+  });
+
   // Session middleware
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "tuition-management-secret-key",
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      },
-    })
-  );
+  const isProduction = process.env.NODE_ENV === "production";
+  const sessionConfig: any = {
+    secret: process.env.SESSION_SECRET || "tuition-management-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: isProduction,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      httpOnly: true,
+    },
+  };
+
+  // For cross-origin deployments (Vercel + Render), use sameSite: 'none'
+  if (isProduction && process.env.FRONTEND_URL) {
+    sessionConfig.cookie.sameSite = 'none';
+    sessionConfig.cookie.secure = true;
+  }
+
+  app.use(session(sessionConfig));
 
   // Auth middleware
   const requireAuth = (req: Request, res: Response, next: Function) => {
