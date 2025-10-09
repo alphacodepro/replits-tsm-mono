@@ -1,5 +1,7 @@
+const BASE_URL = import.meta.env.VITE_API_URL || "";
+
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(`${BASE_URL}${url}`, {
     ...options,
     credentials: "include",
     headers: {
@@ -39,6 +41,7 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   return await res.json();
 }
 
+// ---------- Interfaces ----------
 export interface User {
   id: string;
   username: string;
@@ -93,7 +96,7 @@ export interface SystemStats {
   studentCount: number;
 }
 
-// Auth API
+// ---------- Auth API ----------
 export const authApi = {
   login: (username: string, password: string) =>
     apiRequest<{ user: User }>("/api/auth/login", {
@@ -112,7 +115,7 @@ export const authApi = {
     }),
 };
 
-// Teacher API
+// ---------- Teacher API ----------
 export const teacherApi = {
   create: (data: {
     fullName: string;
@@ -149,7 +152,7 @@ export const teacherApi = {
     }),
 };
 
-// Batch API
+// ---------- Batch API ----------
 export const batchApi = {
   create: (data: { name: string; subject?: string; fee: number; feePeriod: string }) =>
     apiRequest<{ batch: Batch }>("/api/batches", {
@@ -167,7 +170,7 @@ export const batchApi = {
     }),
 };
 
-// Student API
+// ---------- Student API ----------
 export const studentApi = {
   create: (data: {
     batchId: string;
@@ -195,10 +198,11 @@ export const studentApi = {
       body: JSON.stringify(data),
     }),
 
-  getRegistrationInfo: (token: string) => apiRequest<{ batch: Batch; instituteName: string }>(`/api/register/${token}`),
+  getRegistrationInfo: (token: string) =>
+    apiRequest<{ batch: Batch; instituteName: string }>(`/api/register/${token}`),
 };
 
-// Payment API
+// ---------- Payment API ----------
 export const paymentApi = {
   create: (data: { studentId: string; amount: number }) =>
     apiRequest<{ payment: Payment }>("/api/payments", {
@@ -207,9 +211,8 @@ export const paymentApi = {
     }),
 };
 
-// Stats API
+// ---------- Stats API ----------
 export const statsApi = {
   teacher: () => apiRequest<TeacherStats>("/api/stats/teacher"),
-
   system: () => apiRequest<SystemStats>("/api/stats/system"),
 };
