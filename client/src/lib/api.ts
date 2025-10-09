@@ -5,7 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "https://tuition-management-sys
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {
     ...options,
-    credentials: "include", // important for sending cookies
+    credentials: "include", // important for sending cookies cross-domain
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
@@ -128,10 +128,11 @@ export const teacherApi = {
     instituteName?: string;
     email?: string;
     phone?: string;
-  }) => apiRequest<{ teacher: User }>("/api/teachers", {
-    method: "POST",
-    body: JSON.stringify(data),
-  }),
+  }) =>
+    apiRequest<{ teacher: User }>("/api/teachers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   list: () => apiRequest<{ teachers: (User & { batchCount: number; studentCount: number })[] }>("/api/teachers"),
 
