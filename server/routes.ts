@@ -14,20 +14,28 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // CORS middleware for cross-origin requests (Vercel frontend + Render backend)
+  // CORS middleware for cross-origin requests
   app.use((req, res, next) => {
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'http://localhost:5000',
-      process.env.FRONTEND_URL || '',
-    ].filter(Boolean);
-
     const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
+    
+    // Allow localhost development
+    const isLocalhost = origin?.includes('localhost') || origin?.includes('127.0.0.1');
+    
+    // Allow Replit domains
+    const isReplit = origin?.includes('.replit.dev') || origin?.includes('.repl.co');
+    
+    // Allow configured production frontend URL and its preview domains
+    const productionUrl = process.env.FRONTEND_URL;
+    const isProductionDomain = productionUrl && origin?.includes(new URL(productionUrl).hostname);
+    
+    // Allow Vercel preview deployments (matches *.vercel.app)
+    const isVercelPreview = origin?.endsWith('.vercel.app');
+
+    if (origin && (isLocalhost || isReplit || isProductionDomain || isVercelPreview)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
 
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -40,22 +48,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Session middleware
   const isProduction = process.env.NODE_ENV === "production";
+  
+  // Determine if we need cross-origin cookie settings
+  // This is true for: production with separate frontend, or development on Replit
+  const needsCrossOriginCookies = isProduction || process.env.REPL_ID !== undefined;
+  
   const sessionConfig: any = {
     secret: process.env.SESSION_SECRET || "tuition-management-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProduction,
+      secure: needsCrossOriginCookies,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
       httpOnly: true,
+      sameSite: needsCrossOriginCookies ? 'none' : 'lax',
     },
   };
-
-  // For cross-origin deployments (Vercel + Render), use sameSite: 'none'
-  if (isProduction && process.env.FRONTEND_URL) {
-    sessionConfig.cookie.sameSite = 'none';
-    sessionConfig.cookie.secure = true;
-  }
 
   app.use(session(sessionConfig));
 
