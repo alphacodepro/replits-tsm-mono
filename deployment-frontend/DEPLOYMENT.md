@@ -1,11 +1,12 @@
 # Frontend Deployment Guide
 
-## 🚀 Deploy to Vercel
+## 🚀 Deploy to Vercel (Connects to Existing Render Backend)
 
 ### Step 1: Create GitHub Repository
 1. Create a new repository on GitHub named: `tuition-frontend`
 2. Copy all files from this folder to the repo
-3. Push to GitHub:
+3. **IMPORTANT**: Delete the `.env` file before pushing (it's for local dev only)
+4. Push to GitHub:
 ```bash
 git init
 git add .
@@ -18,19 +19,20 @@ git push -u origin main
 1. Go to https://vercel.com
 2. Click **"Add New"** → **"Project"**
 3. Import your `tuition-frontend` repository
-4. Vercel will auto-detect it's a Vite project
-5. **IMPORTANT**: Before deploying, add environment variable:
+4. Vercel will auto-detect settings from `vercel.json`
+5. **CRITICAL**: Add environment variable:
    - Click **"Environment Variables"**
    - Name: `VITE_API_URL`
-   - Value: `https://your-backend.onrender.com` (your Render backend URL)
-   - Check all environments: Production, Preview, Development
+   - Value: `https://tuition-management-system-03bs.onrender.com`
+   - Check **ALL** boxes: ✅ Production ✅ Preview ✅ Development
 6. Click **"Deploy"**
 
 ### Step 3: Update Backend CORS (Important!)
-After deployment, update your backend's FRONTEND_URL:
+After deployment, update your existing backend's FRONTEND_URL:
 1. Go to Render Dashboard → Your Backend Service → Environment
-2. Update `FRONTEND_URL` to your Vercel URL: `https://your-app.vercel.app`
-3. Redeploy the backend
+2. Find `FRONTEND_URL` variable
+3. Update to your new Vercel URL: `https://your-app.vercel.app`
+4. Click **"Save Changes"** (backend auto-redeploys)
 
 ### ✅ Deployment Complete!
 Your frontend will be live at: `https://your-app.vercel.app`
