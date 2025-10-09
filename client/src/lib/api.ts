@@ -1,9 +1,11 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "";
+// ---------------- BASE URL ----------------
+const BASE_URL = import.meta.env.VITE_API_URL || "https://tuition-management-system-03bs.onrender.com";
 
+// ---------------- GENERIC API REQUEST ----------------
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {
     ...options,
-    credentials: "include",
+    credentials: "include", // important for sending cookies
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
@@ -13,7 +15,7 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const text = await res.text();
     let errorMessage = "An error occurred";
-    
+
     try {
       const errorData = JSON.parse(text);
       const rawError = errorData.error || errorData.message;
@@ -41,7 +43,7 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   return await res.json();
 }
 
-// ---------- Interfaces ----------
+// ---------------- INTERFACES ----------------
 export interface User {
   id: string;
   username: string;
@@ -96,7 +98,7 @@ export interface SystemStats {
   studentCount: number;
 }
 
-// ---------- Auth API ----------
+// ---------------- AUTH API ----------------
 export const authApi = {
   login: (username: string, password: string) =>
     apiRequest<{ user: User }>("/api/auth/login", {
@@ -104,9 +106,11 @@ export const authApi = {
       body: JSON.stringify({ username, password }),
     }),
 
-  logout: () => apiRequest<{ success: boolean }>("/api/auth/logout", { method: "POST" }),
+  logout: () =>
+    apiRequest<{ success: boolean }>("/api/auth/logout", { method: "POST" }),
 
-  me: () => apiRequest<{ user: User }>("/api/auth/me"),
+  me: () =>
+    apiRequest<{ user: User }>("/api/auth/me"),
 
   updateCredentials: (data: { username: string; password: string; currentPassword: string }) =>
     apiRequest<{ success: boolean; message: string }>("/api/profile/credentials", {
@@ -115,7 +119,7 @@ export const authApi = {
     }),
 };
 
-// ---------- Teacher API ----------
+// ---------------- TEACHER API ----------------
 export const teacherApi = {
   create: (data: {
     fullName: string;
@@ -124,11 +128,10 @@ export const teacherApi = {
     instituteName?: string;
     email?: string;
     phone?: string;
-  }) =>
-    apiRequest<{ teacher: User }>("/api/teachers", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  }) => apiRequest<{ teacher: User }>("/api/teachers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
 
   list: () => apiRequest<{ teachers: (User & { batchCount: number; studentCount: number })[] }>("/api/teachers"),
 
@@ -152,7 +155,7 @@ export const teacherApi = {
     }),
 };
 
-// ---------- Batch API ----------
+// ---------------- BATCH API ----------------
 export const batchApi = {
   create: (data: { name: string; subject?: string; fee: number; feePeriod: string }) =>
     apiRequest<{ batch: Batch }>("/api/batches", {
@@ -170,7 +173,7 @@ export const batchApi = {
     }),
 };
 
-// ---------- Student API ----------
+// ---------------- STUDENT API ----------------
 export const studentApi = {
   create: (data: {
     batchId: string;
@@ -202,7 +205,7 @@ export const studentApi = {
     apiRequest<{ batch: Batch; instituteName: string }>(`/api/register/${token}`),
 };
 
-// ---------- Payment API ----------
+// ---------------- PAYMENT API ----------------
 export const paymentApi = {
   create: (data: { studentId: string; amount: number }) =>
     apiRequest<{ payment: Payment }>("/api/payments", {
@@ -211,7 +214,7 @@ export const paymentApi = {
     }),
 };
 
-// ---------- Stats API ----------
+// ---------------- STATS API ----------------
 export const statsApi = {
   teacher: () => apiRequest<TeacherStats>("/api/stats/teacher"),
   system: () => apiRequest<SystemStats>("/api/stats/system"),
