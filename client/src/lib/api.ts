@@ -1,12 +1,21 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+// Token storage utilities
+export const tokenStorage = {
+  get: () => localStorage.getItem('auth_token'),
+  set: (token: string) => localStorage.setItem('auth_token', token),
+  remove: () => localStorage.removeItem('auth_token'),
+};
+
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const fullUrl = `${API_BASE_URL}${url}`;
+  const token = tokenStorage.get();
+  
   const res = await fetch(fullUrl, {
     ...options,
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
@@ -98,21 +107,34 @@ export interface SystemStats {
 
 // Auth API
 export const authApi = {
-  login: (username: string, password: string) =>
-    apiRequest<{ user: User }>("/api/auth/login", {
+  login: async (username: string, password: string) => {
+    const response = await apiRequest<{ user: User; token: string }>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
-    }),
+    });
+    // Store the JWT token
+    tokenStorage.set(response.token);
+    return response;
+  },
 
-  logout: () => apiRequest<{ success: boolean }>("/api/auth/logout", { method: "POST" }),
+  logout: async () => {
+    const response = await apiRequest<{ success: boolean }>("/api/auth/logout", { method: "POST" });
+    // Remove the JWT token
+    tokenStorage.remove();
+    return response;
+  },
 
   me: () => apiRequest<{ user: User }>("/api/auth/me"),
 
-  updateCredentials: (data: { username: string; password: string; currentPassword: string }) =>
-    apiRequest<{ success: boolean; message: string }>("/api/profile/credentials", {
+  updateCredentials: async (data: { username: string; password: string; currentPassword: string }) => {
+    const response = await apiRequest<{ success: boolean; message: string }>("/api/profile/credentials", {
       method: "PATCH",
       body: JSON.stringify(data),
-    }),
+    });
+    // Remove the JWT token since credentials changed - user needs to login again
+    tokenStorage.remove();
+    return response;
+  },
 };
 
 // Teacher API
