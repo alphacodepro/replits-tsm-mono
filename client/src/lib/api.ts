@@ -1,12 +1,10 @@
-// ---------------- BASE URL ----------------
-const BASE_URL =
-  import.meta.env.VITE_API_URL || "https://tuition-management-system-03bs.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-// ---------------- GENERIC API REQUEST ----------------
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, {
+  const fullUrl = `${API_BASE_URL}${url}`;
+  const res = await fetch(fullUrl, {
     ...options,
-    credentials: "include", // important for sending cookies cross-domain
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
@@ -16,7 +14,7 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const text = await res.text();
     let errorMessage = "An error occurred";
-
+    
     try {
       const errorData = JSON.parse(text);
       const rawError = errorData.error || errorData.message;
@@ -26,7 +24,6 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
     }
 
     const lowerErrorMessage = String(errorMessage).toLowerCase();
-
     if (res.status === 401 && lowerErrorMessage.includes("invalid")) {
       errorMessage = "Invalid username or password";
     } else if (res.status === 401) {
@@ -45,7 +42,6 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   return await res.json();
 }
 
-// ---------------- INTERFACES ----------------
 export interface User {
   id: string;
   username: string;
@@ -100,7 +96,7 @@ export interface SystemStats {
   studentCount: number;
 }
 
-// ---------------- AUTH API ----------------
+// Auth API
 export const authApi = {
   login: (username: string, password: string) =>
     apiRequest<{ user: User }>("/api/auth/login", {
@@ -108,25 +104,18 @@ export const authApi = {
       body: JSON.stringify({ username, password }),
     }),
 
-  logout: () =>
-    apiRequest<{ success: boolean }>("/api/auth/logout", {
-      method: "POST",
-    }),
+  logout: () => apiRequest<{ success: boolean }>("/api/auth/logout", { method: "POST" }),
 
   me: () => apiRequest<{ user: User }>("/api/auth/me"),
 
-  updateCredentials: (data: {
-    username: string;
-    password: string;
-    currentPassword: string;
-  }) =>
+  updateCredentials: (data: { username: string; password: string; currentPassword: string }) =>
     apiRequest<{ success: boolean; message: string }>("/api/profile/credentials", {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 };
 
-// ---------------- TEACHER API ----------------
+// Teacher API
 export const teacherApi = {
   create: (data: {
     fullName: string;
@@ -135,23 +124,21 @@ export const teacherApi = {
     instituteName?: string;
     email?: string;
     phone?: string;
-  }) => apiRequest<{ teacher: User }>("/api/teachers", { method: "POST", body: JSON.stringify(data) }),
+  }) =>
+    apiRequest<{ teacher: User }>("/api/teachers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
-  list: () =>
-    apiRequest<{ teachers: (User & { batchCount: number; studentCount: number })[] }>(
-      "/api/teachers"
-    ),
+  list: () => apiRequest<{ teachers: (User & { batchCount: number; studentCount: number })[] }>("/api/teachers"),
 
   get: (id: string) =>
-    apiRequest<{ teacher: User; batches: Batch[]; stats: { batchCount: number; studentCount: number } }>(
-      `/api/teachers/${id}`
-    ),
+    apiRequest<{ teacher: User; batches: Batch[]; stats: { batchCount: number; studentCount: number } }>(`/api/teachers/${id}`),
 
   resetPassword: (id: string) =>
-    apiRequest<{ success: boolean; newPassword: string; username: string }>(
-      `/api/teachers/${id}/reset-password`,
-      { method: "POST" }
-    ),
+    apiRequest<{ success: boolean; newPassword: string; username: string }>(`/api/teachers/${id}/reset-password`, {
+      method: "POST",
+    }),
 
   updateStatus: (id: string, isActive: boolean) =>
     apiRequest<{ success: boolean }>(`/api/teachers/${id}/status`, {
@@ -160,24 +147,30 @@ export const teacherApi = {
     }),
 
   delete: (id: string) =>
-    apiRequest<{ success: boolean }>(`/api/teachers/${id}`, { method: "DELETE" }),
+    apiRequest<{ success: boolean }>(`/api/teachers/${id}`, {
+      method: "DELETE",
+    }),
 };
 
-// ---------------- BATCH API ----------------
+// Batch API
 export const batchApi = {
   create: (data: { name: string; subject?: string; fee: number; feePeriod: string }) =>
-    apiRequest<{ batch: Batch }>("/api/batches", { method: "POST", body: JSON.stringify(data) }),
+    apiRequest<{ batch: Batch }>("/api/batches", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   list: () => apiRequest<{ batches: Batch[] }>("/api/batches"),
 
   get: (id: string) => apiRequest<{ batch: Batch; students: Student[] }>(`/api/batches/${id}`),
 
-  delete: (id: string) => apiRequest<{ success: boolean }>(`/api/batches/${id}`, {
-    method: "DELETE",
-  }),
+  delete: (id: string) =>
+    apiRequest<{ success: boolean }>(`/api/batches/${id}`, {
+      method: "DELETE",
+    }),
 };
 
-// ---------------- STUDENT API ----------------
+// Student API
 export const studentApi = {
   create: (data: {
     batchId: string;
@@ -185,15 +178,19 @@ export const studentApi = {
     phone: string;
     email?: string;
     standard: string;
-  }) => apiRequest<{ student: Student }>("/api/students", { method: "POST", body: JSON.stringify(data) }),
+  }) =>
+    apiRequest<{ student: Student }>("/api/students", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   get: (id: string) =>
-    apiRequest<{ student: Student; payments: Payment[]; totalPaid: number }>(
-      `/api/students/${id}`
-    ),
+    apiRequest<{ student: Student; payments: Payment[]; totalPaid: number }>(`/api/students/${id}`),
 
   delete: (id: string) =>
-    apiRequest<{ success: boolean }>(`/api/students/${id}`, { method: "DELETE" }),
+    apiRequest<{ success: boolean }>(`/api/students/${id}`, {
+      method: "DELETE",
+    }),
 
   register: (token: string, data: { fullName: string; phone: string; email?: string; standard: string }) =>
     apiRequest<{ student: Student; batchName: string }>(`/api/register/${token}`, {
@@ -201,18 +198,21 @@ export const studentApi = {
       body: JSON.stringify(data),
     }),
 
-  getRegistrationInfo: (token: string) =>
-    apiRequest<{ batch: Batch; instituteName: string }>(`/api/register/${token}`),
+  getRegistrationInfo: (token: string) => apiRequest<{ batch: Batch; instituteName: string }>(`/api/register/${token}`),
 };
 
-// ---------------- PAYMENT API ----------------
+// Payment API
 export const paymentApi = {
   create: (data: { studentId: string; amount: number }) =>
-    apiRequest<{ payment: Payment }>("/api/payments", { method: "POST", body: JSON.stringify(data) }),
+    apiRequest<{ payment: Payment }>("/api/payments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
-// ---------------- STATS API ----------------
+// Stats API
 export const statsApi = {
   teacher: () => apiRequest<TeacherStats>("/api/stats/teacher"),
+
   system: () => apiRequest<SystemStats>("/api/stats/system"),
 };
