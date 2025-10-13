@@ -1,4 +1,4 @@
-import BatchCard from '../BatchCard';
+
 
 export default function BatchCardExample() {
   return (
