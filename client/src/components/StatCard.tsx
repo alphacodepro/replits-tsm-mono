@@ -1,13 +1,29 @@
-import StatCard from '../StatCard';
-import { Users, BookOpen, IndianRupee, Clock } from 'lucide-react';
+import { Card } from "@/components/ui/card";
+import { LucideIcon } from "lucide-react";
 
-export default function StatCardExample() {
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  iconBgColor?: string;
+  valueColor?: string;
+}
+
+export default function StatCard({ title, value, icon: Icon, iconBgColor = "bg-primary/10", valueColor }: StatCardProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
-      <StatCard title="Total Batches" value={12} icon={BookOpen} />
-      <StatCard title="Total Students" value={145} icon={Users} />
-      <StatCard title="Fees Collected" value="₹45,000" icon={IndianRupee} />
-      <StatCard title="Pending Payments" value="₹12,000" icon={Clock} />
-    </div>
+    <Card className="p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-md hover:shadow-xl transition-all duration-300 hover-elevate">
+      <div className="flex items-start gap-4">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-lg blur-sm"></div>
+          <div className={`relative ${iconBgColor} p-3 rounded-lg`}>
+            <Icon className="w-6 h-6 text-primary" />
+          </div>
+        </div>
+        <div className="flex-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
+          <p className={`text-3xl font-bold mt-1 ${valueColor || 'text-gray-900 dark:text-white'}`} data-testid={`stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>{value}</p>
+        </div>
+      </div>
+    </Card>
   );
 }
