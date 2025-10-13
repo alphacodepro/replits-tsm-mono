@@ -1,4 +1,4 @@
-import StatCard from '../StatCard';
+
 import { Users, BookOpen, IndianRupee, Clock } from 'lucide-react';
 
 export default function StatCardExample() {
