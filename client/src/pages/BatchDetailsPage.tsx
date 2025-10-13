@@ -9,6 +9,7 @@ import StudentTable from "@/components/StudentTable";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import PaymentHistoryDialog from "@/components/PaymentHistoryDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
+import ImportStudentsDialog from "@/components/ImportStudentsDialog";
 import EmptyState from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
@@ -21,6 +22,7 @@ import {
   QrCode,
   Link as LinkIcon,
   Clock,
+  FileUp,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, studentApi, Student as ApiStudent } from "@/lib/api";
@@ -39,6 +41,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [addStudentOpen, setAddStudentOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -287,14 +290,25 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Students</h2>
-            <Button 
-              onClick={() => setAddStudentOpen(true)}
-              className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-              data-testid="button-add-student"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Student
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={() => setImportDialogOpen(true)}
+                variant="outline"
+                className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
+                data-testid="button-import-students"
+              >
+                <FileUp className="w-4 h-4 mr-2" />
+                Import Excel
+              </Button>
+              <Button 
+                onClick={() => setAddStudentOpen(true)}
+                className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
+                data-testid="button-add-student"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Student
+              </Button>
+            </div>
           </div>
           
           <div className="space-y-4">
@@ -390,6 +404,13 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
             ...data,
           });
         }}
+      />
+
+      <ImportStudentsDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        batchId={batch.id}
+        batchName={batch.name}
       />
 
       {selectedStudentId && (
