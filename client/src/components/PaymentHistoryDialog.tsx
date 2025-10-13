@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, IndianRupee, Clock, CheckCircle } from "lucide-react";
 import { studentApi, paymentApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -74,7 +74,6 @@ export default function PaymentHistoryDialog({
   const payments = studentData?.payments || [];
   const totalPaid = studentData?.totalPaid || 0;
   
-  // Calculate expected total fee based on period and join date
   let expectedTotalFee = batchFee;
   if (student && feePeriod === "month") {
     const joinMonths = Math.ceil(
@@ -115,9 +114,9 @@ export default function PaymentHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Payment History - {student?.fullName || "Loading..."}</DialogTitle>
+          <DialogTitle className="text-lg md:text-xl">Payment History - {student?.fullName || "Loading..."}</DialogTitle>
           <DialogDescription>
             View and manage payment records
           </DialogDescription>
@@ -125,66 +124,100 @@ export default function PaymentHistoryDialog({
         {isLoading ? (
           <div className="py-8 text-center text-muted-foreground">Loading payment history...</div>
         ) : (
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-md">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Fee</p>
-                <p className="text-2xl font-bold">₹{expectedTotalFee.toLocaleString()}</p>
+          <div className="space-y-4 md:space-y-6 py-2 md:py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-3 md:p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-lg blur-sm"></div>
+                    <div className="relative bg-primary/10 p-1.5 md:p-2 rounded-lg">
+                      <IndianRupee className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Total Fee</p>
+                    <p className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mt-0.5 truncate">₹{expectedTotalFee.toLocaleString()}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Paid</p>
-                <p className="text-2xl font-bold text-chart-2">₹{totalPaid.toLocaleString()}</p>
+              
+              <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 p-3 md:p-4 rounded-2xl border border-green-100 dark:border-green-800">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-emerald-500/20 rounded-lg blur-sm"></div>
+                    <div className="relative bg-chart-2/10 p-1.5 md:p-2 rounded-lg">
+                      <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-chart-2" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Total Paid</p>
+                    <p className="text-lg md:text-xl font-bold text-chart-2 mt-0.5 truncate">₹{totalPaid.toLocaleString()}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Remaining</p>
-                <p className="text-2xl font-bold text-chart-3">₹{remaining.toLocaleString()}</p>
+              
+              <div className="bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-900/20 dark:to-amber-900/20 p-3 md:p-4 rounded-2xl border border-orange-100 dark:border-orange-800">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-amber-500/20 rounded-lg blur-sm"></div>
+                    <div className="relative bg-chart-3/10 p-1.5 md:p-2 rounded-lg">
+                      <Clock className="w-4 h-4 md:w-5 md:h-5 text-chart-3" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Remaining</p>
+                    <p className="text-lg md:text-xl font-bold text-chart-3 mt-0.5 truncate">₹{remaining.toLocaleString()}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Amount Paid</TableHead>
-                    <TableHead className="text-right">Remaining</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.length === 0 ? (
+            <div className="border rounded-2xl overflow-hidden shadow-md">
+              <div className="max-h-64 md:max-h-80 overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-10">
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                        No payments recorded yet
-                      </TableCell>
+                      <TableHead className="font-semibold text-xs md:text-sm">Date</TableHead>
+                      <TableHead className="text-right font-semibold text-xs md:text-sm">Amount Paid</TableHead>
+                      <TableHead className="text-right font-semibold text-xs md:text-sm hidden sm:table-cell">Remaining</TableHead>
                     </TableRow>
-                  ) : (
-                    payments.map((payment, index) => {
-                      const paidSoFar = payments
-                        .slice(0, index + 1)
-                        .reduce((sum, p) => sum + p.amount, 0);
-                      const remainingAtTime = expectedTotalFee - paidSoFar;
+                  </TableHeader>
+                  <TableBody>
+                    {payments.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
+                          No payments recorded yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      payments.map((payment, index) => {
+                        const paidSoFar = payments
+                          .slice(0, index + 1)
+                          .reduce((sum, p) => sum + p.amount, 0);
+                        const remainingAtTime = expectedTotalFee - paidSoFar;
 
-                      return (
-                        <TableRow key={payment.id}>
-                          <TableCell>{new Date(payment.paidAt).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right font-mono">
-                            ₹{payment.amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            ₹{remainingAtTime.toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                        return (
+                          <TableRow key={payment.id} className="hover-elevate transition-all duration-200">
+                            <TableCell className="text-xs md:text-sm">{new Date(payment.paidAt).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-right font-mono text-chart-2 text-xs md:text-sm">
+                              ₹{payment.amount.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-chart-3 text-xs md:text-sm hidden sm:table-cell">
+                              ₹{remainingAtTime.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
             {showAddPayment ? (
-              <form onSubmit={handleAddPayment} className="space-y-4 p-4 border rounded-md">
+              <form onSubmit={handleAddPayment} className="space-y-3 md:space-y-4 p-3 md:p-4 border rounded-2xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-gray-800 dark:to-gray-900">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Payment Amount (₹)</Label>
+                  <Label htmlFor="amount" className="text-sm">Payment Amount (₹)</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -194,9 +227,10 @@ export default function PaymentHistoryDialog({
                     min="1"
                     max={remaining}
                     required
+                    className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
                     data-testid="input-payment-amount"
                   />
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     Maximum amount: ₹{remaining.toLocaleString()}
                   </p>
                 </div>
@@ -204,6 +238,7 @@ export default function PaymentHistoryDialog({
                   <Button 
                     type="submit" 
                     disabled={addPaymentMutation.isPending}
+                    className="hover:scale-105 transition-transform duration-200 text-sm md:text-base flex-1"
                     data-testid="button-submit-payment"
                   >
                     {addPaymentMutation.isPending ? "Adding..." : "Add Payment"}
@@ -215,6 +250,7 @@ export default function PaymentHistoryDialog({
                       setShowAddPayment(false);
                       setAmount("");
                     }}
+                    className="hover:scale-105 transition-transform duration-200 text-sm md:text-base"
                   >
                     Cancel
                   </Button>
@@ -223,7 +259,7 @@ export default function PaymentHistoryDialog({
             ) : (
               <Button
                 onClick={() => setShowAddPayment(true)}
-                className="w-full"
+                className="w-full hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg text-sm md:text-base"
                 disabled={remaining <= 0}
                 data-testid="button-add-payment"
               >

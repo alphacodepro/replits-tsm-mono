@@ -55,28 +55,29 @@ export default function AddStudentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Student</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg md:text-xl">Add Student</DialogTitle>
+          <DialogDescription className="text-sm">
             Add a new student to {batchName}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 md:space-y-4 py-2 md:py-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name *</Label>
+              <Label htmlFor="fullName" className="text-sm">Full Name *</Label>
               <Input
                 id="fullName"
                 placeholder="Rahul Sharma"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
+                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
                 data-testid="input-student-name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number *</Label>
+              <Label htmlFor="phone" className="text-sm">Phone Number *</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -84,50 +85,63 @@ export default function AddStudentDialog({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
+                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
                 data-testid="input-student-phone"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
                 data-testid="input-student-email"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               <div className="space-y-2">
-                <Label htmlFor="standard">Class/Standard *</Label>
+                <Label htmlFor="standard" className="text-sm">Class/Standard *</Label>
                 <Input
                   id="standard"
                   placeholder="Class 10"
                   value={standard}
                   onChange={(e) => setStandard(e.target.value)}
                   required
+                  className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
                   data-testid="input-student-standard"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="joinDate">Join Date *</Label>
+                <Label htmlFor="joinDate" className="text-sm">Join Date *</Label>
                 <Input
                   id="joinDate"
                   type="date"
                   value={joinDate}
                   onChange={(e) => setJoinDate(e.target.value)}
                   required
+                  className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
                   data-testid="input-student-joindate"
                 />
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button type="submit" data-testid="button-add-student">
+            <Button 
+              type="submit"
+              className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
+              data-testid="button-add-student"
+            >
               Add Student
             </Button>
           </DialogFooter>

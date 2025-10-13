@@ -20,6 +20,7 @@ import {
   IndianRupee,
   QrCode,
   Link as LinkIcon,
+  Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, studentApi, Student as ApiStudent } from "@/lib/api";
@@ -102,21 +103,18 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     totalDue: student.totalDue ?? 0,
   }));
 
-  // Apply search filter first
   const searchFilteredStudents = students.filter((student) =>
     student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.phone.includes(searchQuery) ||
     (student.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  // Then apply payment filter
   const filteredStudents = searchFilteredStudents.filter((student) => {
     if (paymentFilter === "all") return true;
     if (paymentFilter === "paid") return (student.totalDue ?? 0) === 0;
-    return (student.totalDue ?? 0) > 0; // pending
+    return (student.totalDue ?? 0) > 0;
   });
 
-  // Calculate counts from search-filtered results for consistency
   const paidCount = searchFilteredStudents.filter(s => (s.totalDue ?? 0) === 0).length;
   const pendingCount = searchFilteredStudents.filter(s => (s.totalDue ?? 0) > 0).length;
 
@@ -153,7 +151,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
 
   if (batchLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950">
         <div className="text-muted-foreground">Loading...</div>
       </div>
     );
@@ -161,85 +159,139 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
 
   if (!batch) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950">
         <div className="text-muted-foreground">Batch not found</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => setLocation("/")} data-testid="button-back">
+          <Button 
+            variant="ghost" 
+            onClick={() => setLocation("/")} 
+            className="hover:scale-105 transition-transform duration-200"
+            data-testid="button-back"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <Card className="p-6 mb-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
+        <div className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <div className="bg-primary/10 p-3 rounded-md">
-                  <BookOpen className="w-6 h-6 text-primary" />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-lg blur-sm"></div>
+                  <div className="relative bg-primary/10 p-3 rounded-lg">
+                    <BookOpen className="w-6 h-6 text-primary" />
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">{batch.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{batch.name}</h1>
                   {batch.subject && (
-                    <p className="text-muted-foreground">{batch.subject}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{batch.subject}</p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 mt-4">
-                <Badge variant="secondary" className="text-base px-4 py-1">
-                  <IndianRupee className="w-4 h-4 mr-1" />
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
+                <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700">
+                  <IndianRupee className="w-3 h-3 mr-1" />
                   ₹{batch.fee.toLocaleString()} / {batch.feePeriod}
                 </Badge>
-                <Badge variant="secondary" className="text-base px-4 py-1">
-                  <Users className="w-4 h-4 mr-1" />
+                <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700">
+                  <Users className="w-3 h-3 mr-1" />
                   {students.length} Students
                 </Badge>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleCopyLink} data-testid="button-share-link">
+              <Button 
+                variant="outline" 
+                onClick={handleCopyLink}
+                className="hover:scale-105 transition-transform duration-200"
+                data-testid="button-share-link"
+              >
                 <LinkIcon className="w-4 h-4 mr-2" />
                 Copy Link
               </Button>
-              <Button variant="outline" onClick={() => setQrDialogOpen(true)} data-testid="button-show-qr-code">
+              <Button 
+                variant="outline" 
+                onClick={() => setQrDialogOpen(true)}
+                className="hover:scale-105 transition-transform duration-200"
+                data-testid="button-show-qr-code"
+              >
                 <QrCode className="w-4 h-4 mr-2" />
                 Show QR
               </Button>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="p-6 hover-elevate">
-            <p className="text-sm text-muted-foreground mb-2">Total Students</p>
-            <p className="text-3xl font-bold">{students.length}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 shadow-md hover:shadow-xl transition-all duration-300 p-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-lg blur-sm"></div>
+                <div className="relative bg-primary/10 p-3 rounded-lg">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Students</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{students.length}</p>
+              </div>
+            </div>
           </Card>
-          <Card className="p-6 hover-elevate">
-            <p className="text-sm text-muted-foreground mb-2">Fees Collected</p>
-            <p className="text-3xl font-bold text-chart-2">
-              ₹{students.reduce((sum, s) => sum + (s.totalPaid || 0), 0).toLocaleString()}
-            </p>
+          
+          <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 shadow-md hover:shadow-xl transition-all duration-300 p-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-emerald-500/20 rounded-lg blur-sm"></div>
+                <div className="relative bg-chart-2/10 p-3 rounded-lg">
+                  <IndianRupee className="w-6 h-6 text-chart-2" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Fees Collected</p>
+                <p className="text-3xl font-bold text-chart-2 mt-1">
+                  ₹{students.reduce((sum, s) => sum + (s.totalPaid || 0), 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
           </Card>
-          <Card className="p-6 hover-elevate">
-            <p className="text-sm text-muted-foreground mb-2">Pending Payments</p>
-            <p className="text-3xl font-bold text-chart-3">
-              ₹{students.reduce((sum, s) => sum + (s.totalDue || 0), 0).toLocaleString()}
-            </p>
+          
+          <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 shadow-md hover:shadow-xl transition-all duration-300 p-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-amber-500/20 rounded-lg blur-sm"></div>
+                <div className="relative bg-chart-3/10 p-3 rounded-lg">
+                  <Clock className="w-6 h-6 text-chart-3" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Pending Payments</p>
+                <p className="text-3xl font-bold text-chart-3 mt-1">
+                  ₹{students.reduce((sum, s) => sum + (s.totalDue || 0), 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
           </Card>
         </div>
 
         <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">Students</h2>
-            <Button onClick={() => setAddStudentOpen(true)} data-testid="button-add-student">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Students</h2>
+            <Button 
+              onClick={() => setAddStudentOpen(true)}
+              className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
+              data-testid="button-add-student"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add Student
             </Button>
@@ -247,12 +299,12 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           
           <div className="space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
               <Input
                 placeholder="Search students..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
                 data-testid="input-search-students"
               />
             </div>
@@ -262,6 +314,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 variant={paymentFilter === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setPaymentFilter("all")}
+                className="rounded-full hover:scale-105 transition-transform duration-200 shadow-sm"
                 data-testid="button-filter-all"
               >
                 All ({searchFilteredStudents.length})
@@ -270,8 +323,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 variant={paymentFilter === "paid" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setPaymentFilter("paid")}
+                className={`rounded-full hover:scale-105 transition-transform duration-200 shadow-sm ${paymentFilter === "paid" ? "" : "text-chart-2 hover:text-chart-2"}`}
                 data-testid="button-filter-paid"
-                className={paymentFilter === "paid" ? "" : "text-chart-2 hover:text-chart-2"}
               >
                 Paid ({paidCount})
               </Button>
@@ -279,8 +332,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 variant={paymentFilter === "pending" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setPaymentFilter("pending")}
+                className={`rounded-full hover:scale-105 transition-transform duration-200 shadow-sm ${paymentFilter === "pending" ? "" : "text-chart-3 hover:text-chart-3"}`}
                 data-testid="button-filter-pending"
-                className={paymentFilter === "pending" ? "" : "text-chart-3 hover:text-chart-3"}
               >
                 Pending ({pendingCount})
               </Button>
@@ -318,6 +371,14 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           />
         )}
       </main>
+
+      <footer className="border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm mt-auto">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+            © 2025 Tuition Management System. All rights reserved.
+          </p>
+        </div>
+      </footer>
 
       <AddStudentDialog
         open={addStudentOpen}
