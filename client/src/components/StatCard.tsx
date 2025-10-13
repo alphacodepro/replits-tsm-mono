@@ -1,26 +1,13 @@
-import { Card } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+import StatCard from '../StatCard';
+import { Users, BookOpen, IndianRupee, Clock } from 'lucide-react';
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  icon: LucideIcon;
-  iconBgColor?: string;
-  valueColor?: string;
-}
-
-export default function StatCard({ title, value, icon: Icon, iconBgColor = "bg-primary/10", valueColor }: StatCardProps) {
+export default function StatCardExample() {
   return (
-    <Card className="p-6 hover-elevate">
-      <div className="flex items-start gap-4">
-        <div className={`${iconBgColor} p-3 rounded-md`}>
-          <Icon className="w-6 h-6 text-primary" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className={`text-3xl font-bold mt-1 ${valueColor || ''}`} data-testid={`stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>{value}</p>
-        </div>
-      </div>
-    </Card>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+      <StatCard title="Total Batches" value={12} icon={BookOpen} />
+      <StatCard title="Total Students" value={145} icon={Users} />
+      <StatCard title="Fees Collected" value="₹45,000" icon={IndianRupee} />
+      <StatCard title="Pending Payments" value="₹12,000" icon={Clock} />
+    </div>
   );
 }
