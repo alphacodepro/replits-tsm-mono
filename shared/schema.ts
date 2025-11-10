@@ -34,7 +34,6 @@ export const students = pgTable("students", {
   phone: text("phone").notNull(),
   email: text("email"),
   standard: text("standard").notNull(),
-  customFee: integer("custom_fee"),
   joinDate: timestamp("join_date").notNull().default(sql`now()`),
 });
 
