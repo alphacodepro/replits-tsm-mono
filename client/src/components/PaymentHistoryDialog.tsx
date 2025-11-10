@@ -50,16 +50,34 @@ export default function PaymentHistoryDialog({
 
   const addPaymentMutation = useMutation({
     mutationFn: paymentApi.create,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/students", studentId] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
       setAmount("");
       setShowAddPayment(false);
-      toast({
-        title: "Payment recorded!",
-        description: `₹${amount} payment has been recorded`,
-      });
+      
+      // Show different message based on email status
+      // emailSent can be: true (sent), false (attempted but failed), null (not attempted)
+      if (data.emailSent === true) {
+        toast({
+          title: "Payment recorded & confirmation email sent",
+          description: `₹${amount} payment has been recorded and confirmation email sent to student`,
+        });
+      } else if (data.emailSent === false) {
+        // Email was attempted but failed to send
+        toast({
+          title: "Payment recorded but email failed to send",
+          description: `₹${amount} payment has been recorded but the confirmation email could not be sent`,
+          variant: "destructive",
+        });
+      } else {
+        // Email was not attempted (student has no email or email system not configured)
+        toast({
+          title: "Payment recorded",
+          description: `₹${amount} payment has been recorded successfully`,
+        });
+      }
     },
     onError: (error: Error) => {
       toast({

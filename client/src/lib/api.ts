@@ -226,7 +226,7 @@ export const studentApi = {
 // Payment API
 export const paymentApi = {
   create: (data: { studentId: string; amount: number }) =>
-    apiRequest<{ payment: Payment }>("/api/payments", {
+    apiRequest<{ payment: Payment; emailSent: boolean | null }>("/api/payments", {
       method: "POST",
       body: JSON.stringify(data),
     }),
