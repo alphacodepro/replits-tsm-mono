@@ -8,11 +8,15 @@ import type {
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
+const DEFAULT_DURATION = 4000
+const ERROR_DURATION = 5000
+
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  duration?: number
 }
 
 const actionTypes = {
@@ -149,6 +153,8 @@ function toast({ ...props }: Toast) {
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
+  const duration = props.duration ?? (props.variant === "destructive" ? ERROR_DURATION : DEFAULT_DURATION)
+
   dispatch({
     type: "ADD_TOAST",
     toast: {
@@ -160,6 +166,10 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  setTimeout(() => {
+    dismiss()
+  }, duration)
 
   return {
     id: id,
