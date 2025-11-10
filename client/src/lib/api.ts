@@ -80,6 +80,7 @@ export interface Student {
   phone: string;
   email?: string;
   standard: string;
+  customFee?: number | null;
   joinDate: string;
   totalPaid?: number;
   totalDue?: number;
@@ -212,6 +213,12 @@ export const studentApi = {
   delete: (id: string) =>
     apiRequest<{ success: boolean }>(`/api/students/${id}`, {
       method: "DELETE",
+    }),
+
+  updateFee: (id: string, customFee: number | null) =>
+    apiRequest<{ student: Student }>(`/api/students/${id}/fee`, {
+      method: "PATCH",
+      body: JSON.stringify({ customFee }),
     }),
 
   register: (token: string, data: { fullName: string; phone: string; email?: string; standard: string }) =>
