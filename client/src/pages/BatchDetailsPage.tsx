@@ -203,13 +203,13 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4 flex-wrap">
-                <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700">
-                  <IndianRupee className="w-3 h-3 mr-1" />
-                  ₹{batch.fee.toLocaleString()} / {batch.feePeriod}
+                <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center">
+                  <IndianRupee className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{batch.fee.toLocaleString()}<span className="ml-1">/ {batch.feePeriod}</span></span>
                 </Badge>
-                <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700">
-                  <Users className="w-3 h-3 mr-1" />
-                  {students.length} Students
+                <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{students.length} Students</span>
                 </Badge>
               </div>
             </div>
