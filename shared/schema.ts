@@ -34,7 +34,9 @@ export const students = pgTable("students", {
   phone: text("phone").notNull(),
   email: text("email"),
   standard: text("standard").notNull(),
+  customFee: integer("custom_fee"),
   joinDate: timestamp("join_date").notNull().default(sql`now()`),
+  lastActivityDate: timestamp("last_activity_date").notNull().default(sql`now()`),
 });
 
 export const payments = pgTable("payments", {
@@ -58,6 +60,7 @@ export const insertBatchSchema = createInsertSchema(batches).omit({
 export const insertStudentSchema = createInsertSchema(students).omit({
   id: true,
   joinDate: true,
+  lastActivityDate: true,
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).omit({
