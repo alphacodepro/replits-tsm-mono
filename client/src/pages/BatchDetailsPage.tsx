@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -97,11 +98,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const batch = batchData?.batch;
   const students: StudentWithPaymentInfo[] = (batchData?.students || []).map(student => ({
     ...student,
-    joinDate: new Date(student.joinDate).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    }),
+    joinDate: format(new Date(student.joinDate), 'dd MMM yyyy'),
     totalPaid: student.totalPaid ?? 0,
     totalDue: student.totalDue ?? 0,
   }));
