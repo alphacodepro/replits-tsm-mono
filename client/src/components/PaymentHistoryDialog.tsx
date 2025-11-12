@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -332,7 +333,7 @@ export default function PaymentHistoryDialog({
 
                         return (
                           <TableRow key={payment.id} className="hover-elevate transition-all duration-200">
-                            <TableCell className="text-xs md:text-sm">{new Date(payment.paidAt).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-xs md:text-sm">{format(new Date(payment.paidAt), 'dd MMM yyyy')}</TableCell>
                             <TableCell className="text-right font-mono text-chart-2 text-xs md:text-sm">
                               ₹{payment.amount.toLocaleString()}
                             </TableCell>
