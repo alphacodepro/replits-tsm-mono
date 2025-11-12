@@ -42,7 +42,7 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {students.map((student) => (
-          <Card key={student.id} className="p-4" data-testid={`card-student-${student.id}`}>
+          <Card key={student.id} className="p-4 rounded-2xl hover-elevate" data-testid={`card-student-${student.id}`}>
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
@@ -55,11 +55,11 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                   </div>
                 </div>
                 {student.totalDue === 0 ? (
-                  <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20">
+                  <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20 rounded-full">
                     Paid
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-chart-3/10 text-chart-3 border-chart-3/20">
+                  <Badge variant="outline" className="bg-chart-3/10 text-chart-3 border-chart-3/20 rounded-full">
                     Pending
                   </Badge>
                 )}
@@ -97,7 +97,7 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                 <Button
                   onClick={() => onViewPayments(student.id)}
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 hover:scale-105 transition-transform duration-200"
                   data-testid={`button-view-payments-${student.id}`}
                 >
                   <Eye className="w-4 h-4 mr-2" />
@@ -107,6 +107,7 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                   onClick={() => onDeleteStudent(student.id)}
                   variant="outline"
                   size="icon"
+                  className="hover:scale-105 transition-transform duration-200"
                   data-testid={`button-delete-student-${student.id}`}
                 >
                   <Trash2 className="w-4 h-4 text-destructive" />
@@ -118,23 +119,23 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block border rounded-md">
+      <div className="hidden md:block border rounded-2xl overflow-hidden shadow-md">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800">
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Join Date</TableHead>
-              <TableHead className="text-right">Paid</TableHead>
-              <TableHead className="text-right">Due</TableHead>
-              <TableHead className="text-right">Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="font-semibold">Name</TableHead>
+              <TableHead className="font-semibold">Contact</TableHead>
+              <TableHead className="font-semibold">Class</TableHead>
+              <TableHead className="font-semibold">Join Date</TableHead>
+              <TableHead className="text-right font-semibold">Paid</TableHead>
+              <TableHead className="text-right font-semibold">Due</TableHead>
+              <TableHead className="text-right font-semibold">Status</TableHead>
+              <TableHead className="text-right font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {students.map((student) => (
-              <TableRow key={student.id} className="hover-elevate">
+              <TableRow key={student.id} className="hover-elevate transition-all duration-200">
                 <TableCell className="font-medium" data-testid={`text-student-name-${student.id}`}>
                   {student.fullName}
                 </TableCell>
@@ -154,15 +155,15 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                 </TableCell>
                 <TableCell>{student.standard}</TableCell>
                 <TableCell>{student.joinDate}</TableCell>
-                <TableCell className="text-right font-mono">₹{student.totalPaid.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-mono">₹{student.totalDue.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-chart-2">₹{student.totalPaid.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-chart-3">₹{student.totalDue.toLocaleString()}</TableCell>
                 <TableCell className="text-right">
                   {student.totalDue === 0 ? (
-                    <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20">
+                    <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20 rounded-full">
                       Paid
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="bg-chart-3/10 text-chart-3 border-chart-3/20">
+                    <Badge variant="outline" className="bg-chart-3/10 text-chart-3 border-chart-3/20 rounded-full">
                       Pending
                     </Badge>
                   )}
@@ -173,6 +174,7 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                       onClick={() => onViewPayments(student.id)}
                       variant="ghost"
                       size="sm"
+                      className="hover:scale-105 transition-transform duration-200"
                       data-testid={`button-view-payments-${student.id}`}
                     >
                       <Eye className="w-4 h-4 mr-1" />
@@ -182,6 +184,7 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                       onClick={() => onDeleteStudent(student.id)}
                       variant="ghost"
                       size="icon"
+                      className="hover:scale-105 transition-transform duration-200"
                       data-testid={`button-delete-student-${student.id}`}
                     >
                       <Trash2 className="w-4 h-4 text-destructive" />
