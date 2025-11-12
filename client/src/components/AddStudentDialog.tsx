@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "lucide-react";
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -20,7 +21,6 @@ interface AddStudentDialogProps {
     phone: string;
     email: string;
     standard: string;
-    joinDate: string;
   }) => void;
 }
 
@@ -34,22 +34,22 @@ export default function AddStudentDialog({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [standard, setStandard] = useState("");
-  const [joinDate, setJoinDate] = useState(new Date().toISOString().split('T')[0]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
     onSubmit({
       fullName,
       phone,
       email,
       standard,
-      joinDate,
     });
+    
     setFullName("");
     setPhone("");
     setEmail("");
     setStandard("");
-    setJoinDate(new Date().toISOString().split('T')[0]);
+    
     onOpenChange(false);
   };
 
@@ -101,31 +101,22 @@ export default function AddStudentDialog({
                 data-testid="input-student-email"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="standard" className="text-sm">Class/Standard *</Label>
-                <Input
-                  id="standard"
-                  placeholder="Class 10"
-                  value={standard}
-                  onChange={(e) => setStandard(e.target.value)}
-                  required
-                  className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                  data-testid="input-student-standard"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="joinDate" className="text-sm">Join Date *</Label>
-                <Input
-                  id="joinDate"
-                  type="date"
-                  value={joinDate}
-                  onChange={(e) => setJoinDate(e.target.value)}
-                  required
-                  className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                  data-testid="input-student-joindate"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="standard" className="text-sm">Class/Standard *</Label>
+              <Input
+                id="standard"
+                placeholder="Class 10"
+                value={standard}
+                onChange={(e) => setStandard(e.target.value)}
+                required
+                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
+                data-testid="input-student-standard"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-xl">
+              <Calendar className="w-4 h-4" />
+              <span>Join date: <strong className="text-foreground">Today</strong></span>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">

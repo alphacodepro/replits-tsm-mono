@@ -59,13 +59,22 @@ export const insertBatchSchema = createInsertSchema(batches).omit({
 
 export const insertStudentSchema = createInsertSchema(students).omit({
   id: true,
-  joinDate: true,
   lastActivityDate: true,
+  joinDate: true,
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).omit({
   id: true,
   paidAt: true,
+});
+
+export const updateStudentSchema = z.object({
+  fullName: z.string().min(1, "Name is required"),
+  phone: z.string().min(1, "Phone is required"),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  standard: z.string().min(1, "Standard is required"),
+  customFee: z.number().int().positive().nullable(),
+  joinDate: z.string().datetime(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -76,6 +85,7 @@ export type Batch = typeof batches.$inferSelect;
 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
+export type UpdateStudent = z.infer<typeof updateStudentSchema>;
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;

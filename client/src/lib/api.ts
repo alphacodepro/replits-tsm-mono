@@ -215,6 +215,19 @@ export const studentApi = {
       method: "DELETE",
     }),
 
+  update: (id: string, data: {
+    fullName: string;
+    phone: string;
+    email: string;
+    standard: string;
+    customFee: number | null;
+    joinDate: string;
+  }) =>
+    apiRequest<{ student: Student }>(`/api/students/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   updateFee: (id: string, customFee: number | null) =>
     apiRequest<{ student: Student }>(`/api/students/${id}/fee`, {
       method: "PATCH",

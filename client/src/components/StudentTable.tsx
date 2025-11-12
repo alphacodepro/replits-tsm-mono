@@ -9,7 +9,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Mail, Phone, Trash2, Calendar, GraduationCap } from "lucide-react";
+import { Eye, Mail, Phone, Trash2, Calendar, GraduationCap, Edit } from "lucide-react";
 
 interface Student {
   id: string;
@@ -25,10 +25,11 @@ interface Student {
 interface StudentTableProps {
   students: Student[];
   onViewPayments: (studentId: string) => void;
+  onEditStudent: (studentId: string) => void;
   onDeleteStudent: (studentId: string) => void;
 }
 
-export default function StudentTable({ students, onViewPayments, onDeleteStudent }: StudentTableProps) {
+export default function StudentTable({ students, onViewPayments, onEditStudent, onDeleteStudent }: StudentTableProps) {
   if (students.length === 0) {
     return (
       <div className="border rounded-md p-8 text-center text-muted-foreground">
@@ -102,6 +103,15 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   View Payments
+                </Button>
+                <Button
+                  onClick={() => onEditStudent(student.id)}
+                  variant="outline"
+                  size="icon"
+                  className="hover:scale-105 transition-transform duration-200"
+                  data-testid={`button-edit-student-${student.id}`}
+                >
+                  <Edit className="w-4 h-4" />
                 </Button>
                 <Button
                   onClick={() => onDeleteStudent(student.id)}
@@ -179,6 +189,15 @@ export default function StudentTable({ students, onViewPayments, onDeleteStudent
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Payments
+                    </Button>
+                    <Button
+                      onClick={() => onEditStudent(student.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="hover:scale-105 transition-transform duration-200"
+                      data-testid={`button-edit-student-${student.id}`}
+                    >
+                      <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       onClick={() => onDeleteStudent(student.id)}

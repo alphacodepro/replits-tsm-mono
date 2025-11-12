@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StudentTable from "@/components/StudentTable";
 import AddStudentDialog from "@/components/AddStudentDialog";
+import EditStudentDialog from "@/components/EditStudentDialog";
 import PaymentHistoryDialog from "@/components/PaymentHistoryDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import ImportStudentsDialog from "@/components/ImportStudentsDialog";
@@ -42,10 +43,12 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [addStudentOpen, setAddStudentOpen] = useState(false);
+  const [editStudentOpen, setEditStudentOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [studentToEdit, setStudentToEdit] = useState<StudentWithPaymentInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "pending">("all");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -70,6 +73,26 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     onError: (error: Error) => {
       toast({
         title: "Error adding student",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateStudentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => studentApi.update(id, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      setEditStudentOpen(false);
+      toast({
+        title: "Student updated!",
+        description: `${data.student.fullName}'s information has been updated`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating student",
         description: error.message,
         variant: "destructive",
       });
@@ -131,6 +154,14 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       title: "Link copied!",
       description: "Registration link copied to clipboard",
     });
+  };
+
+  const handleEditStudent = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      setStudentToEdit(student);
+      setEditStudentOpen(true);
+    }
   };
 
   const handleDeleteClick = (studentId: string) => {
@@ -378,6 +409,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           <StudentTable 
             students={filteredStudents} 
             onViewPayments={handleViewPayments}
+            onEditStudent={handleEditStudent}
             onDeleteStudent={handleDeleteClick}
           />
         )}
@@ -402,6 +434,20 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           });
         }}
       />
+
+      {studentToEdit && (
+        <EditStudentDialog
+          open={editStudentOpen}
+          onOpenChange={setEditStudentOpen}
+          student={studentToEdit}
+          onSubmit={(data) => {
+            updateStudentMutation.mutate({
+              id: studentToEdit.id,
+              data,
+            });
+          }}
+        />
+      )}
 
       <ImportStudentsDialog
         open={importDialogOpen}
