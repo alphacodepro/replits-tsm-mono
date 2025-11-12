@@ -39,7 +39,6 @@ interface EditStudentDialogProps {
     phone: string;
     email: string;
     standard: string;
-    customFee: number | null;
     joinDate: string;
   }) => void;
 }
@@ -54,9 +53,6 @@ export default function EditStudentDialog({
   const [phone, setPhone] = useState(student.phone);
   const [email, setEmail] = useState(student.email || "");
   const [standard, setStandard] = useState(student.standard);
-  const [customFee, setCustomFee] = useState(
-    student.customFee?.toString() || ""
-  );
   
   const parseJoinDate = (dateString: string): Date => {
     try {
@@ -75,15 +71,11 @@ export default function EditStudentDialog({
     // Convert join date to ISO string
     const joinDateISO = joinDate.toISOString();
 
-    // Parse custom fee
-    const customFeeValue = customFee.trim() === "" ? null : parseInt(customFee);
-
     onSubmit({
       fullName,
       phone,
       email,
       standard,
-      customFee: customFeeValue,
       joinDate: joinDateISO,
     });
 
@@ -156,20 +148,6 @@ export default function EditStudentDialog({
                 required
                 className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
                 data-testid="input-edit-standard"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customFee" className="text-sm">
-                Custom Fee (Optional)
-              </Label>
-              <Input
-                id="customFee"
-                type="number"
-                placeholder="Leave empty for batch default"
-                value={customFee}
-                onChange={(e) => setCustomFee(e.target.value)}
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-edit-customfee"
               />
             </div>
             <div className="space-y-2">
