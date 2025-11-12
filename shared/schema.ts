@@ -73,7 +73,7 @@ export const updateStudentSchema = z.object({
   phone: z.string().min(1, "Phone is required"),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   standard: z.string().min(1, "Standard is required"),
-  customFee: z.number().int().positive().nullable(),
+  customFee: z.number().int().positive().nullable().optional(),
   joinDate: z.string().datetime(),
 });
 
