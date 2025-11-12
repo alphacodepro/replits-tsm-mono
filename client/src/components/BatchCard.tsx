@@ -55,8 +55,8 @@ export default function BatchCard({
             )}
           </div>
           <Badge variant="outline" className="shrink-0 h-fit">
-            <Users className="w-3 h-3 mr-1" />
-            {studentCount || 0}
+            <Users className="w-3.5 h-3.5 mr-1" />
+            <span className="text-base font-semibold">{studentCount || 0}</span>
           </Badge>
         </div>
 
