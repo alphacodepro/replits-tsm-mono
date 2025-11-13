@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -37,7 +37,9 @@ export const students = pgTable("students", {
   customFee: integer("custom_fee"),
   joinDate: timestamp("join_date").notNull().default(sql`now()`),
   lastActivityDate: timestamp("last_activity_date").notNull().default(sql`now()`),
-});
+}, (table) => ({
+  batchPhoneUnique: uniqueIndex("students_batch_phone_unique").on(table.batchId, table.phone),
+}));
 
 export const payments = pgTable("payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

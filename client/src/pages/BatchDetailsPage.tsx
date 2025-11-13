@@ -71,8 +71,11 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       });
     },
     onError: (error: Error) => {
+      const errorMessage = error.message.toLowerCase();
+      const isDuplicatePhone = errorMessage.includes('phone number') && errorMessage.includes('already registered');
+      
       toast({
-        title: "Error adding student",
+        title: isDuplicatePhone ? "Phone Number Already Registered" : "Error Adding Student",
         description: error.message,
         variant: "destructive",
       });
@@ -91,8 +94,11 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       });
     },
     onError: (error: Error) => {
+      const errorMessage = error.message.toLowerCase();
+      const isDuplicatePhone = errorMessage.includes('phone number') && errorMessage.includes('already registered');
+      
       toast({
-        title: "Error updating student",
+        title: isDuplicatePhone ? "Phone Number Already Registered" : "Error updating student",
         description: error.message,
         variant: "destructive",
       });
@@ -121,6 +127,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const batch = batchData?.batch;
   const students: StudentWithPaymentInfo[] = (batchData?.students || []).map(student => ({
     ...student,
+    customFee: student.customFee ?? null,
     joinDate: format(new Date(student.joinDate), 'dd MMM yyyy'),
     totalPaid: student.totalPaid ?? 0,
     totalDue: student.totalDue ?? 0,
