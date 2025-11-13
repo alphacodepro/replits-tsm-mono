@@ -2,13 +2,33 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-// Get token from localStorage
-const getToken = () => localStorage.getItem('auth_token');
+// Get token from sessionStorage (session ends when window closes)
+const getToken = () => sessionStorage.getItem('auth_token');
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = res.statusText;
+    
+    try {
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const errorData = await res.json();
+        
+        if (Array.isArray(errorData.error)) {
+          errorMessage = errorData.error.map((e: any) => e.message).join(", ");
+        } else if (typeof errorData.error === "string") {
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } else {
+        errorMessage = await res.text() || res.statusText;
+      }
+    } catch (e) {
+      errorMessage = res.statusText;
+    }
+    
+    throw new Error(`${res.status}: ${errorMessage}`);
   }
 }
 

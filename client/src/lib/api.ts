@@ -1,10 +1,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-// Token storage utilities
+// Token storage utilities - using sessionStorage for temporary sessions
+// Session persists through refreshes but clears when window closes
 export const tokenStorage = {
-  get: () => localStorage.getItem('auth_token'),
-  set: (token: string) => localStorage.setItem('auth_token', token),
-  remove: () => localStorage.removeItem('auth_token'),
+  get: () => sessionStorage.getItem('auth_token'),
+  set: (token: string) => sessionStorage.setItem('auth_token', token),
+  remove: () => sessionStorage.removeItem('auth_token'),
 };
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
@@ -220,7 +221,6 @@ export const studentApi = {
     phone: string;
     email: string;
     standard: string;
-    customFee: number | null;
     joinDate: string;
   }) =>
     apiRequest<{ student: Student }>(`/api/students/${id}`, {
