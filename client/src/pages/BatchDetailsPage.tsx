@@ -72,11 +72,11 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     },
     onError: (error: Error) => {
       const errorMessage = error.message.toLowerCase();
-      const isDuplicatePhone = errorMessage.includes('phone number') && errorMessage.includes('already registered');
+      const isDuplicateStudent = errorMessage.includes('student already exists');
       
       toast({
-        title: isDuplicatePhone ? "Phone Number Already Registered" : "Error Adding Student",
-        description: error.message,
+        title: isDuplicateStudent ? "Student Already Exists in This Batch" : "Error Adding Student",
+        description: isDuplicateStudent ? "Phone number already registered" : error.message,
         variant: "destructive",
       });
     },
@@ -95,11 +95,11 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     },
     onError: (error: Error) => {
       const errorMessage = error.message.toLowerCase();
-      const isDuplicatePhone = errorMessage.includes('phone number') && errorMessage.includes('already registered');
+      const isDuplicateStudent = errorMessage.includes('student already exists');
       
       toast({
-        title: isDuplicatePhone ? "Phone Number Already Registered" : "Error updating student",
-        description: error.message,
+        title: isDuplicateStudent ? "Student Already Exists in This Batch" : "Error updating student",
+        description: isDuplicateStudent ? "Phone number already registered" : error.message,
         variant: "destructive",
       });
     },
