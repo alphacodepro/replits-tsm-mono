@@ -79,16 +79,13 @@ export default function StudentRegistrationPage() {
       email: string;
       standard: string;
     }) => studentApi.register(token, data),
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    retry: 0,
     onSuccess: (data) => {
       setRegisteredBatchName(data.batchName);
       setSubmitted(true);
     },
     onError: (error: Error) => {
       const msg = error.message.toLowerCase();
-      const isRetryable =
-        msg.includes("429") || msg.includes("503") || msg.includes("too many");
       const isDuplicateStudent = msg.includes("student already exists");
 
       toast({
@@ -97,9 +94,7 @@ export default function StudentRegistrationPage() {
           : "Registration Failed",
         description: isDuplicateStudent
           ? "Phone number already registered"
-          : isRetryable
-            ? "Server is busy. Please try again in a moment."
-            : error.message,
+          : error.message,
         variant: "destructive",
       });
     },
