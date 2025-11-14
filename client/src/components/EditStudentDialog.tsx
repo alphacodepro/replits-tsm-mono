@@ -53,7 +53,7 @@ export default function EditStudentDialog({
   const [phone, setPhone] = useState(student.phone);
   const [email, setEmail] = useState(student.email || "");
   const [standard, setStandard] = useState(student.standard);
-  
+
   const parseJoinDate = (dateString: string): Date => {
     try {
       const parsed = parse(dateString, "dd MMM yyyy", new Date());
@@ -62,13 +62,59 @@ export default function EditStudentDialog({
       return new Date(dateString);
     }
   };
-  
-  const [joinDate, setJoinDate] = useState<Date>(parseJoinDate(student.joinDate));
+
+  const [joinDate, setJoinDate] = useState<Date>(
+    parseJoinDate(student.joinDate),
+  );
+
+  const [openCalendar, setOpenCalendar] = useState(false);
+
+  // ---------------------------
+  // ❗ Validation State
+  // ---------------------------
+  const [errors, setErrors] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    standard: "",
+  });
+
+  const validate = () => {
+    let newErrors = { fullName: "", phone: "", email: "", standard: "" };
+    let isValid = true;
+
+    if (!fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+      isValid = false;
+    }
+
+    if (!/^\d{10}$/.test(phone)) {
+      newErrors.phone = "Phone number must be exactly 10 digits";
+      isValid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Invalid email format";
+      isValid = false;
+    }
+
+    if (!standard.trim()) {
+      newErrors.standard = "Standard is required";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Convert join date to ISO string
+    if (!validate()) return;
+
     const joinDateISO = joinDate.toISOString();
 
     onSubmit({
@@ -91,9 +137,11 @@ export default function EditStudentDialog({
             Update student information
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit}>
           <div className="space-y-3 md:space-y-4 py-2 md:py-4">
-            <div className="space-y-2">
+            {/* Full Name */}
+            <div className="space-y-1">
               <Label htmlFor="fullName" className="text-sm">
                 Full Name *
               </Label>
@@ -103,28 +151,36 @@ export default function EditStudentDialog({
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-edit-fullname"
+                className="rounded-xl"
               />
+              {errors.fullName && (
+                <p className="text-red-500 text-xs">{errors.fullName}</p>
+              )}
             </div>
-            <div className="space-y-2">
+
+            {/* Phone */}
+            <div className="space-y-1">
               <Label htmlFor="phone" className="text-sm">
                 Phone Number *
               </Label>
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+91 98765 43210"
+                placeholder="9876543210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-edit-phone"
+                className="rounded-xl"
               />
+              {errors.phone && (
+                <p className="text-red-500 text-xs">{errors.phone}</p>
+              )}
             </div>
-            <div className="space-y-2">
+
+            {/* Email */}
+            <div className="space-y-1">
               <Label htmlFor="email" className="text-sm">
-                Email
+                Email *
               </Label>
               <Input
                 id="email"
@@ -132,11 +188,16 @@ export default function EditStudentDialog({
                 placeholder="student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-edit-email"
+                required
+                className="rounded-xl"
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs">{errors.email}</p>
+              )}
             </div>
-            <div className="space-y-2">
+
+            {/* Standard */}
+            <div className="space-y-1">
               <Label htmlFor="standard" className="text-sm">
                 Class/Standard *
               </Label>
@@ -146,22 +207,26 @@ export default function EditStudentDialog({
                 value={standard}
                 onChange={(e) => setStandard(e.target.value)}
                 required
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-edit-standard"
+                className="rounded-xl"
               />
+              {errors.standard && (
+                <p className="text-red-500 text-xs">{errors.standard}</p>
+              )}
             </div>
+
+            {/* Join Date */}
             <div className="space-y-2">
               <Label className="text-sm">Join Date *</Label>
-              <Popover>
+
+              <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal rounded-xl",
-                      !joinDate && "text-muted-foreground"
+                      !joinDate && "text-muted-foreground",
                     )}
-                    data-testid="button-select-joindate"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {joinDate ? (
@@ -171,11 +236,17 @@ export default function EditStudentDialog({
                     )}
                   </Button>
                 </PopoverTrigger>
+
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={joinDate}
-                    onSelect={(date) => date && setJoinDate(date)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setJoinDate(date);
+                        setOpenCalendar(false);
+                      }
+                    }}
                     disabled={(date) => date > new Date()}
                     initialFocus
                   />
@@ -183,20 +254,18 @@ export default function EditStudentDialog({
               </Popover>
             </div>
           </div>
+
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
-              data-testid="button-save-student"
-            >
+
+            <Button type="submit" className="w-full sm:w-auto">
               Save Changes
             </Button>
           </DialogFooter>

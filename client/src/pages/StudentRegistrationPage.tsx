@@ -13,7 +13,7 @@ export default function StudentRegistrationPage() {
   const { toast } = useToast();
   const [, params] = useRoute("/register/:token");
   const token = params?.token || "";
-  
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -21,15 +21,64 @@ export default function StudentRegistrationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [registeredBatchName, setRegisteredBatchName] = useState("");
 
-  const { data: batchData, isLoading: batchLoading, error } = useQuery({
+  // -------------------------------
+  // ❗ Validation state
+  // -------------------------------
+  const [errors, setErrors] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    standard: "",
+  });
+
+  const validate = () => {
+    let newErrors = { fullName: "", phone: "", email: "", standard: "" };
+    let isValid = true;
+
+    if (!fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+      isValid = false;
+    }
+
+    if (!/^\d{10}$/.test(phone)) {
+      newErrors.phone = "Phone number must be exactly 10 digits";
+      isValid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Invalid email format";
+      isValid = false;
+    }
+
+    if (!standard.trim()) {
+      newErrors.standard = "Standard is required";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const {
+    data: batchData,
+    isLoading: batchLoading,
+    error,
+  } = useQuery({
     queryKey: ["/api/register", token],
     queryFn: () => studentApi.getRegistrationInfo(token),
     enabled: !!token,
   });
 
   const registerMutation = useMutation({
-    mutationFn: (data: { fullName: string; phone: string; email?: string; standard: string }) =>
-      studentApi.register(token, data),
+    mutationFn: (data: {
+      fullName: string;
+      phone: string;
+      email: string;
+      standard: string;
+    }) => studentApi.register(token, data),
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     onSuccess: (data) => {
@@ -37,17 +86,20 @@ export default function StudentRegistrationPage() {
       setSubmitted(true);
     },
     onError: (error: Error) => {
-      const errorMessage = error.message.toLowerCase();
-      const isRetryableError = errorMessage.includes('429') || errorMessage.includes('503') || errorMessage.includes('too many');
-      const isDuplicateStudent = errorMessage.includes('student already exists');
-      
+      const msg = error.message.toLowerCase();
+      const isRetryable =
+        msg.includes("429") || msg.includes("503") || msg.includes("too many");
+      const isDuplicateStudent = msg.includes("student already exists");
+
       toast({
-        title: isDuplicateStudent ? "Student Already Exists in This Batch" : "Registration Failed",
-        description: isDuplicateStudent 
+        title: isDuplicateStudent
+          ? "Student Already Exists"
+          : "Registration Failed",
+        description: isDuplicateStudent
           ? "Phone number already registered"
-          : isRetryableError 
-          ? "Server is busy. Please wait a moment and try again."
-          : error.message,
+          : isRetryable
+            ? "Server is busy. Please try again in a moment."
+            : error.message,
         variant: "destructive",
       });
     },
@@ -55,29 +107,34 @@ export default function StudentRegistrationPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validate()) return;
+
     registerMutation.mutate({
       fullName,
       phone,
-      email: email || undefined,
+      email,
       standard,
     });
   };
 
   if (batchLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 p-4">
-        <div className="text-muted-foreground">Loading batch information...</div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-muted-foreground">
+          Loading batch information...
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center rounded-2xl shadow-xl">
           <h1 className="text-2xl font-bold mb-2">Invalid Registration Link</h1>
           <p className="text-muted-foreground">
-            This registration link is invalid or has expired. Please contact your teacher for a valid link.
+            This registration link is invalid or expired.
           </p>
         </Card>
       </div>
@@ -86,7 +143,7 @@ export default function StudentRegistrationPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center rounded-2xl shadow-xl">
           <div className="flex justify-center mb-6">
             <div className="relative">
@@ -98,12 +155,9 @@ export default function StudentRegistrationPage() {
           </div>
           <h1 className="text-2xl font-bold mb-2">Registration Successful!</h1>
           <p className="text-muted-foreground mb-6">
-            You have been successfully registered for {registeredBatchName}. Your teacher will contact you soon with further details.
+            You have been registered for {registeredBatchName}.
           </p>
-          <Button 
-            onClick={() => window.close()} 
-            className="w-full hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-          >
+          <Button onClick={() => window.close()} className="w-full">
             Close
           </Button>
         </Card>
@@ -115,75 +169,91 @@ export default function StudentRegistrationPage() {
   const instituteName = batchData?.instituteName || "Tuition Center";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8 rounded-2xl shadow-xl">
         <div className="flex flex-col items-center mb-8">
-          <div className="relative mb-4">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-sm"></div>
-            <div className="relative bg-primary/10 p-4 rounded-full">
-              <BookOpen className="w-12 h-12 text-primary" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">{instituteName}</h1>
-          <p className="text-lg font-semibold mt-3 text-gray-900 dark:text-white">Student Registration</p>
-          <p className="text-sm text-muted-foreground mt-1 text-center">{batchName}</p>
+          <BookOpen className="w-12 h-12 text-primary mb-4" />
+
+          <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            {instituteName}
+          </h1>
+          <p className="text-lg font-semibold text-gray-900 mt-3">
+            Student Registration
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">{batchName}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
+          {/* Full Name */}
+          <div className="space-y-1">
             <Label htmlFor="fullName">Full Name *</Label>
             <Input
               id="fullName"
-              placeholder="Rahul Sharma"
               value={fullName}
+              placeholder="Rahul Sharma"
               onChange={(e) => setFullName(e.target.value)}
+              className="rounded-xl"
               required
-              className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
-              data-testid="input-registration-name"
             />
+            {errors.fullName && (
+              <p className="text-red-500 text-xs">{errors.fullName}</p>
+            )}
           </div>
-          <div className="space-y-2">
+
+          {/* Phone */}
+          <div className="space-y-1">
             <Label htmlFor="phone">Phone Number *</Label>
             <Input
               id="phone"
               type="tel"
-              placeholder="+91 98765 43210"
               value={phone}
+              placeholder="9876543210"
               onChange={(e) => setPhone(e.target.value)}
+              className="rounded-xl"
               required
-              className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
-              data-testid="input-registration-phone"
             />
+            {errors.phone && (
+              <p className="text-red-500 text-xs">{errors.phone}</p>
+            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+
+          {/* Email */}
+          <div className="space-y-1">
+            <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
               type="email"
-              placeholder="student@example.com"
               value={email}
+              placeholder="student@example.com"
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
-              data-testid="input-registration-email"
+              required
+              className="rounded-xl"
             />
+            {errors.email && (
+              <p className="text-red-500 text-xs">{errors.email}</p>
+            )}
           </div>
-          <div className="space-y-2">
+
+          {/* Standard */}
+          <div className="space-y-1">
             <Label htmlFor="standard">Class/Standard *</Label>
             <Input
               id="standard"
-              placeholder="Class 10"
               value={standard}
+              placeholder="Class 10"
               onChange={(e) => setStandard(e.target.value)}
+              className="rounded-xl"
               required
-              className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
-              data-testid="input-registration-standard"
             />
+            {errors.standard && (
+              <p className="text-red-500 text-xs">{errors.standard}</p>
+            )}
           </div>
-          <Button 
-            type="submit" 
-            className="w-full hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg" 
+
+          <Button
+            type="submit"
+            className="w-full"
             disabled={registerMutation.isPending}
-            data-testid="button-register"
           >
             {registerMutation.isPending ? "Registering..." : "Register"}
           </Button>

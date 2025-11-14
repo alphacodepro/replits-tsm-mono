@@ -35,21 +35,67 @@ export default function AddStudentDialog({
   const [email, setEmail] = useState("");
   const [standard, setStandard] = useState("");
 
+  const [errors, setErrors] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    standard: "",
+  });
+
+  const validate = () => {
+    let newErrors = { fullName: "", phone: "", email: "", standard: "" };
+    let isValid = true;
+
+    if (!fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+      isValid = false;
+    }
+
+    if (!/^\d{10}$/.test(phone)) {
+      newErrors.phone = "Phone number must be exactly 10 digits";
+      isValid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Invalid email format";
+      isValid = false;
+    }
+
+    if (!standard.trim()) {
+      newErrors.standard = "Standard is required";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!validate()) return;
+
     onSubmit({
       fullName,
       phone,
       email,
       standard,
     });
-    
+
     setFullName("");
     setPhone("");
     setEmail("");
     setStandard("");
-    
+    setErrors({
+      fullName: "",
+      phone: "",
+      email: "",
+      standard: "",
+    });
+
     onOpenChange(false);
   };
 
@@ -62,77 +108,102 @@ export default function AddStudentDialog({
             Add a new student to {batchName}
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit}>
           <div className="space-y-3 md:space-y-4 py-2 md:py-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-sm">Full Name *</Label>
+            {/* Full Name */}
+            <div className="space-y-1">
+              <Label htmlFor="fullName" className="text-sm">
+                Full Name *
+              </Label>
               <Input
                 id="fullName"
                 placeholder="Rahul Sharma"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-student-name"
+                className="rounded-xl text-sm md:text-base"
               />
+              {errors.fullName && (
+                <p className="text-red-500 text-xs">{errors.fullName}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm">Phone Number *</Label>
+
+            {/* Phone */}
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-sm">
+                Phone Number *
+              </Label>
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+91 98765 43210"
+                placeholder="9876543210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-student-phone"
+                className="rounded-xl text-sm md:text-base"
               />
+              {errors.phone && (
+                <p className="text-red-500 text-xs">{errors.phone}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm">Email</Label>
+
+            {/* Email */}
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-sm">
+                Email *
+              </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-student-email"
+                required
+                className="rounded-xl text-sm md:text-base"
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs">{errors.email}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="standard" className="text-sm">Class/Standard *</Label>
+
+            {/* Standard */}
+            <div className="space-y-1">
+              <Label htmlFor="standard" className="text-sm">
+                Class/Standard *
+              </Label>
               <Input
                 id="standard"
                 placeholder="Class 10"
                 value={standard}
                 onChange={(e) => setStandard(e.target.value)}
                 required
-                className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                data-testid="input-student-standard"
+                className="rounded-xl text-sm md:text-base"
               />
+              {errors.standard && (
+                <p className="text-red-500 text-xs">{errors.standard}</p>
+              )}
             </div>
-            
+
+            {/* Join Date */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-xl">
               <Calendar className="w-4 h-4" />
-              <span>Join date: <strong className="text-foreground">Today</strong></span>
+              <span>
+                Join date: <strong className="text-foreground">Today</strong>
+              </span>
             </div>
           </div>
+
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
-              className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button 
-              type="submit"
-              className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
-              data-testid="button-add-student"
-            >
+            <Button type="submit" className="w-full sm:w-auto">
               Add Student
             </Button>
           </DialogFooter>

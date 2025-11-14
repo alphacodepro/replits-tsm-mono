@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import {
   Dialog,
@@ -15,6 +15,7 @@ import { Download, Upload, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { batchApi } from "@/lib/api";
 
 interface ImportStudentsDialogProps {
   open: boolean;
@@ -36,6 +37,13 @@ interface ValidationError {
   errors: string[];
 }
 
+interface ImportFailure {
+  row: number;
+  name: string;
+  phone: string;
+  reason: string;
+}
+
 export default function ImportStudentsDialog({
   open,
   onOpenChange,
@@ -43,70 +51,45 @@ export default function ImportStudentsDialog({
   batchName,
 }: ImportStudentsDialogProps) {
   const [students, setStudents] = useState<StudentRow[]>([]);
-  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    [],
+  );
+  const [importFailures, setImportFailures] = useState<ImportFailure[]>([]);
   const [fileName, setFileName] = useState("");
+  const [existingPhones, setExistingPhones] = useState<string[]>([]);
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const importMutation = useMutation({
-    mutationFn: async (data: StudentRow[]) => {
-      const res = await apiRequest("POST", `/api/batches/${batchId}/students/bulk`, { students: data });
-      return await res.json();
-    },
-    onSuccess: (data: { count: number }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
-      toast({
-        title: "Success",
-        description: `${data.count} students imported successfully!`,
-      });
-      setStudents([]);
-      setValidationErrors([]);
-      setFileName("");
-      onOpenChange(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Import Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  // ----------------------------------------
+  // Fetch existing batch phones ONCE
+  // ----------------------------------------
+  useEffect(() => {
+    if (!open) return;
 
-  const downloadTemplate = () => {
-    const template = [
-      {
-        "Full Name": "Rahul Sharma",
-        "Phone": "+91 98765 43210",
-        "Email": "rahul@example.com",
-        "Class/Standard": "Class 10",
-        "Join Date": "2024-01-15",
-      },
-      {
-        "Full Name": "Priya Patel",
-        "Phone": "+91 98765 43211",
-        "Email": "priya@example.com",
-        "Class/Standard": "Class 10",
-        "Join Date": "2024-01-15",
-      },
-    ];
+    batchApi.get(batchId).then((data) => {
+      const phones = data.students.map((s: any) => s.phone);
+      setExistingPhones(phones);
+    });
+  }, [open, batchId]);
 
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Students");
-    
-    const colWidths = [
-      { wch: 20 },
-      { wch: 18 },
-      { wch: 25 },
-      { wch: 18 },
-      { wch: 12 },
-    ];
-    ws["!cols"] = colWidths;
-
-    XLSX.writeFile(wb, "student_import_template.xlsx");
+  // ----------------------------------------
+  // Utility: Normalize phone number
+  // ----------------------------------------
+  const normalizePhone = (phone: string): string => {
+    const digits = phone.replace(/\D/g, "");
+    return digits.length >= 10 ? digits.slice(-10) : digits;
   };
 
+  // ----------------------------------------
+  // Utility: Email validation
+  // ----------------------------------------
+  const isValidEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  // ----------------------------------------
+  // Excel file handling
+  // ----------------------------------------
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -122,128 +105,230 @@ export default function ImportStudentsDialog({
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
-        const parsedStudents: StudentRow[] = [];
+        const parsed: StudentRow[] = [];
         const errors: ValidationError[] = [];
+
+        const seenPhones = new Set<string>();
 
         jsonData.forEach((row, index) => {
           const rowErrors: string[] = [];
-          const rowNumber = index + 2;
+          const rowNum = index + 2; // excel row number (header is row 1)
 
-          const fullName = row["Full Name"]?.toString().trim() || "";
-          const phone = row["Phone"]?.toString().trim() || "";
-          const email = row["Email"]?.toString().trim() || "";
-          const standard = row["Class/Standard"]?.toString().trim() || "";
-          const joinDate = row["Join Date"]?.toString().trim() || "";
+          // Extract fields
+          const rawFullName = row["Full Name"]?.toString().trim() || "";
+          const rawPhone = row["Phone"]?.toString().trim() || "";
+          const rawEmail = row["Email"]?.toString().trim() || "";
+          const rawStandard = row["Class/Standard"]?.toString().trim() || "";
+          const rawJoinDate = row["Join Date"]?.toString().trim() || "";
 
-          if (!fullName) rowErrors.push("Full Name is required");
-          if (!phone) rowErrors.push("Phone is required");
-          if (!standard) rowErrors.push("Class/Standard is required");
-          if (!joinDate) rowErrors.push("Join Date is required");
+          // Normalize phone
+          const phone = normalizePhone(rawPhone);
 
-          if (joinDate && !isValidDate(joinDate)) {
-            rowErrors.push("Invalid date format (use YYYY-MM-DD or Excel date)");
+          // Required fields
+          if (!rawFullName) rowErrors.push("Full Name is required");
+          if (!rawPhone) rowErrors.push("Phone is required");
+          if (!rawEmail) rowErrors.push("Email is required");
+          if (!rawStandard) rowErrors.push("Standard is required");
+          if (!rawJoinDate) rowErrors.push("Join Date is required");
+
+          // Validate phone
+          if (rawPhone && phone.length !== 10) {
+            rowErrors.push("Invalid phone number (must be 10 digits)");
           }
 
+          if (phone && seenPhones.has(phone)) {
+            rowErrors.push("Duplicate phone number in Excel file");
+          }
+
+          if (phone && existingPhones.includes(phone)) {
+            rowErrors.push("Phone already exists in this batch");
+          }
+
+          // Validate email
+          if (rawEmail && !isValidEmail(rawEmail)) {
+            rowErrors.push("Invalid email format");
+          }
+
+          // Validate date
+          if (rawJoinDate && !isValidDate(rawJoinDate)) {
+            rowErrors.push("Invalid date format");
+          }
+
+          // Add student or error
           if (rowErrors.length > 0) {
-            errors.push({ row: rowNumber, errors: rowErrors });
+            errors.push({ row: rowNum, errors: rowErrors });
           } else {
-            parsedStudents.push({
-              fullName,
+            seenPhones.add(phone);
+
+            parsed.push({
+              fullName: rawFullName,
               phone,
-              email: email || "",
-              standard,
-              joinDate: formatDate(joinDate),
+              email: rawEmail,
+              standard: rawStandard,
+              joinDate: formatDate(rawJoinDate),
             });
           }
         });
 
-        setStudents(parsedStudents);
+        setStudents(parsed);
         setValidationErrors(errors);
+        setImportFailures([]);
 
         if (errors.length === 0) {
           toast({
-            title: "File validated",
-            description: `${parsedStudents.length} students ready to import`,
+            title: "File Validated",
+            description: `${parsed.length} student(s) ready to import`,
           });
         }
-      } catch (error) {
+      } catch {
         toast({
           title: "Error reading file",
-          description: "Please make sure you uploaded a valid Excel file",
+          description: "Make sure you uploaded a valid Excel file",
           variant: "destructive",
         });
       }
     };
 
     reader.readAsArrayBuffer(file);
-    event.target.value = "";
+    event.target.value = ""; // reset file input
   };
 
-  const isValidDate = (dateStr: string): boolean => {
-    if (!dateStr) return false;
-    
-    const excelDateNumber = Number(dateStr);
-    if (!isNaN(excelDateNumber) && excelDateNumber > 0) {
-      return true;
-    }
+  // ----------------------------------------
+  // Date validation
+  // ----------------------------------------
+  const isValidDate = (val: string): boolean => {
+    if (!val) return false;
 
-    const date = new Date(dateStr);
-    return !isNaN(date.getTime());
+    // Excel number date
+    const excelNum = Number(val);
+    if (!isNaN(excelNum) && excelNum > 0) return true;
+
+    const d = new Date(val);
+    return !isNaN(d.getTime());
   };
 
-  const formatDate = (dateStr: string): string => {
-    const excelDateNumber = Number(dateStr);
-    if (!isNaN(excelDateNumber) && excelDateNumber > 0) {
-      const date = XLSX.SSF.parse_date_code(excelDateNumber);
-      return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+  // ----------------------------------------
+  // Date formatter
+  // ----------------------------------------
+  const formatDate = (val: string): string => {
+    const excelNum = Number(val);
+    if (!isNaN(excelNum) && excelNum > 0) {
+      const d = XLSX.SSF.parse_date_code(excelNum);
+      return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
     }
 
-    const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split("T")[0];
-    }
-
-    return dateStr;
+    const date = new Date(val);
+    return date.toISOString().split("T")[0];
   };
+
+  // ----------------------------------------
+  // Import to backend
+  // ----------------------------------------
+  const importMutation = useMutation({
+    mutationFn: async (data: StudentRow[]) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/batches/${batchId}/students/bulk`,
+        {
+          students: data,
+        },
+      );
+      return await res.json();
+    },
+    onSuccess: (data: {
+      success: number;
+      failed: number;
+      failures?: ImportFailure[];
+    }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+
+      if (data.failed > 0 && data.failures) {
+        setImportFailures(data.failures);
+        toast({
+          title: "Import completed with warnings",
+          description: `${data.success} successful, ${data.failed} failed.`,
+        });
+      } else {
+        toast({
+          title: "Import Successful",
+          description: `${data.success} students imported successfully!`,
+        });
+
+        setStudents([]);
+        setValidationErrors([]);
+        setImportFailures([]);
+        setFileName("");
+
+        onOpenChange(false);
+      }
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Import Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleImport = () => {
     if (students.length === 0) return;
     importMutation.mutate(students);
   };
 
+  const downloadTemplate = () => {
+    const template = [
+      {
+        "Full Name": "Rahul Sharma",
+        Phone: "9876543210",
+        Email: "rahul@example.com",
+        "Class/Standard": "Class 10",
+        "Join Date": "2024-01-15",
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Students");
+    XLSX.writeFile(wb, "student_import_template.xlsx");
+  };
+
+  // ----------------------------------------
+  // UI Rendering
+  // ----------------------------------------
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg md:text-xl">Import Students</DialogTitle>
-          <DialogDescription className="text-sm">
-            Import multiple students to {batchName} using an Excel file
+          <DialogTitle>Import Students</DialogTitle>
+          <DialogDescription>
+            Import multiple students into <strong>{batchName}</strong> using
+            Excel
           </DialogDescription>
         </DialogHeader>
 
+        {/* Upload Buttons */}
         <div className="space-y-4 py-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
-              type="button"
               variant="outline"
+              className="flex-1"
               onClick={downloadTemplate}
-              className="flex-1 hover:scale-105 transition-transform duration-200 text-sm md:text-base"
-              data-testid="button-download-template"
             >
               <Download className="w-4 h-4 mr-2" />
               Download Template
             </Button>
+
             <label className="flex-1">
               <Button
-                type="button"
                 variant="outline"
-                className="w-full hover:scale-105 transition-transform duration-200 text-sm md:text-base"
+                className="w-full"
                 onClick={() => document.getElementById("excel-upload")?.click()}
-                data-testid="button-upload-excel"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Excel
               </Button>
+
               <Input
                 id="excel-upload"
                 type="file"
@@ -254,26 +339,28 @@ export default function ImportStudentsDialog({
             </label>
           </div>
 
+          {/* File name */}
           {fileName && (
-            <Alert className="bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <Alert className="bg-blue-50/50">
               <CheckCircle2 className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-sm">
-                File loaded: <span className="font-medium">{fileName}</span>
+              <AlertDescription>
+                File loaded: <strong>{fileName}</strong>
               </AlertDescription>
             </Alert>
           )}
 
+          {/* Validation errors */}
           {validationErrors.length > 0 && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
+              <AlertDescription>
                 <p className="font-semibold mb-2">
                   Found {validationErrors.length} error(s):
                 </p>
-                <ul className="list-disc list-inside space-y-1 max-h-32 overflow-y-auto">
-                  {validationErrors.map((error, index) => (
-                    <li key={index} className="text-xs">
-                      Row {error.row}: {error.errors.join(", ")}
+                <ul className="list-disc list-inside space-y-1 max-h-40 overflow-y-auto">
+                  {validationErrors.map((err, idx) => (
+                    <li key={idx} className="text-xs">
+                      Row {err.row}: {err.errors.join(", ")}
                     </li>
                   ))}
                 </ul>
@@ -281,53 +368,86 @@ export default function ImportStudentsDialog({
             </Alert>
           )}
 
-          {students.length > 0 && validationErrors.length === 0 && (
-            <Alert className="bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-sm">
+          {/* Ready to import */}
+          {students.length > 0 &&
+            validationErrors.length === 0 &&
+            importFailures.length === 0 && (
+              <Alert className="bg-green-50/50">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription>
+                  {students.length} valid student(s) found. Ready to import!
+                </AlertDescription>
+              </Alert>
+            )}
+
+          {/* Backend failures */}
+          {importFailures.length > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
                 <p className="font-semibold mb-2">
-                  {students.length} student(s) ready to import:
+                  {importFailures.length} student(s) failed:
                 </p>
-                <div className="max-h-40 overflow-y-auto space-y-1">
-                  {students.slice(0, 5).map((student, index) => (
-                    <p key={index} className="text-xs">
-                      • {student.fullName} - {student.standard} ({student.phone})
-                    </p>
-                  ))}
-                  {students.length > 5 && (
-                    <p className="text-xs text-muted-foreground">
-                      ... and {students.length - 5} more
-                    </p>
-                  )}
+
+                <div className="max-h-60 overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-red-50">
+                      <tr>
+                        <th className="p-2 text-left">Row</th>
+                        <th className="p-2 text-left">Name</th>
+                        <th className="p-2 text-left">Phone</th>
+                        <th className="p-2 text-left">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importFailures.map((fail, idx) => (
+                        <tr key={idx}>
+                          <td className="p-2">{fail.row}</td>
+                          <td className="p-2">{fail.name}</td>
+                          <td className="p-2">{fail.phone}</td>
+                          <td className="p-2">{fail.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+
+                <p className="text-xs mt-2">
+                  Fix these issues in Excel and try importing again.
+                </p>
               </AlertDescription>
             </Alert>
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        {/* Footer buttons */}
+        <DialogFooter>
           <Button
-            type="button"
             variant="outline"
             onClick={() => {
               setStudents([]);
               setValidationErrors([]);
+              setImportFailures([]);
               setFileName("");
               onOpenChange(false);
             }}
-            className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
           >
-            Cancel
+            {importFailures.length > 0 ? "Close" : "Cancel"}
           </Button>
+
           <Button
+            disabled={
+              students.length === 0 ||
+              validationErrors.length > 0 ||
+              importMutation.isPending
+            }
             onClick={handleImport}
-            disabled={students.length === 0 || validationErrors.length > 0 || importMutation.isPending}
-            className="hover:scale-105 transition-transform duration-200 text-sm md:text-base w-full sm:w-auto"
-            data-testid="button-import-students"
           >
             {importMutation.isPending
               ? "Importing..."
-              : `Import ${students.length} Student${students.length !== 1 ? "s" : ""}`}
+              : `Import ${students.length} Student${
+                  students.length === 1 ? "" : "s"
+                }`}
           </Button>
         </DialogFooter>
       </DialogContent>
