@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import StudentTable from "@/components/StudentTable";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import EditStudentDialog from "@/components/EditStudentDialog";
@@ -30,7 +32,8 @@ import { useToast } from "@/hooks/use-toast";
 import { batchApi, studentApi, Student as ApiStudent } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
-interface StudentWithPaymentInfo extends ApiStudent {
+interface StudentWithPaymentInfo extends Omit<ApiStudent, 'customFee'> {
+  customFee: number | null;
   totalPaid: number;
   totalDue: number;
 }
@@ -118,6 +121,26 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     onError: (error: Error) => {
       toast({
         title: "Error deleting student",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleRegistrationMutation = useMutation({
+    mutationFn: ({ enabled }: { enabled: boolean }) =>
+      batchApi.toggleRegistration(batchId, enabled),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      toast({
+        title: "Registration updated",
+        description: `Registration ${data.batch.registrationEnabled ? "opened" : "closed"} successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating registration",
         description: error.message,
         variant: "destructive",
       });
@@ -248,25 +271,46 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 </Badge>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={handleCopyLink}
-                className="hover:scale-105 transition-transform duration-200"
-                data-testid="button-share-link"
-              >
-                <LinkIcon className="w-4 h-4 mr-2" />
-                Copy Link
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setQrDialogOpen(true)}
-                className="hover:scale-105 transition-transform duration-200"
-                data-testid="button-show-qr-code"
-              >
-                <QrCode className="w-4 h-4 mr-2" />
-                Show QR
-              </Button>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleCopyLink}
+                  className="hover:scale-105 transition-transform duration-200"
+                  data-testid="button-share-link"
+                >
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Copy Link
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setQrDialogOpen(true)}
+                  className="hover:scale-105 transition-transform duration-200"
+                  data-testid="button-show-qr-code"
+                >
+                  <QrCode className="w-4 h-4 mr-2" />
+                  Show QR
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-end gap-3 px-3 py-2 rounded-lg bg-muted/40 border border-gray-200 dark:border-gray-700">
+                <Label htmlFor="registration-toggle" className="text-sm font-medium">
+                  Registration:
+                </Label>
+                <Badge
+                  variant={batch.registrationEnabled ? "default" : "secondary"}
+                  className="text-xs px-2 py-0.5"
+                  data-testid="badge-registration-status"
+                >
+                  {batch.registrationEnabled ? "Open" : "Closed"}
+                </Badge>
+                <Switch
+                  id="registration-toggle"
+                  checked={batch.registrationEnabled}
+                  onCheckedChange={(enabled) => toggleRegistrationMutation.mutate({ enabled })}
+                  data-testid="switch-registration"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -478,6 +522,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
         onOpenChange={setQrDialogOpen}
         batchName={batch.name}
         registrationUrl={`${window.location.origin}/register/${batch.registrationToken}`}
+        registrationEnabled={batch.registrationEnabled}
       />
 
       <ConfirmDialog

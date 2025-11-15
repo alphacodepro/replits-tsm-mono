@@ -71,6 +71,7 @@ export interface Batch {
   fee: number;
   feePeriod: string;
   registrationToken: string;
+  registrationEnabled: boolean;
   studentCount?: number;
 }
 
@@ -187,6 +188,12 @@ export const batchApi = {
   list: () => apiRequest<{ batches: Batch[] }>("/api/batches"),
 
   get: (id: string) => apiRequest<{ batch: Batch; students: Student[] }>(`/api/batches/${id}`),
+
+  toggleRegistration: (id: string, enabled: boolean) =>
+    apiRequest<{ batch: Batch }>(`/api/batches/${id}/toggle-registration`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
 
   delete: (id: string) =>
     apiRequest<{ success: boolean }>(`/api/batches/${id}`, {

@@ -297,6 +297,7 @@ export default function TeacherDashboard() {
           onOpenChange={setQrDialogOpen}
           batchName={selectedBatch.name}
           registrationUrl={`${window.location.origin}/register/${selectedBatch.registrationToken}`}
+          registrationEnabled={selectedBatch.registrationEnabled}
         />
       )}
 

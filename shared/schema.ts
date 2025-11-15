@@ -40,6 +40,7 @@ export const batches = pgTable("batches", {
   fee: integer("fee").notNull(),
   feePeriod: text("fee_period").notNull(),
   registrationToken: text("registration_token").notNull().unique(),
+  registrationEnabled: boolean("registration_enabled").notNull().default(true),
   createdAt: timestamp("created_at")
     .notNull()
     .default(sql`now()`),
