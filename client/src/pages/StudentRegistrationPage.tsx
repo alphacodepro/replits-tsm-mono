@@ -21,9 +21,7 @@ export default function StudentRegistrationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [registeredBatchName, setRegisteredBatchName] = useState("");
 
-  // -------------------------------
-  // ❗ Validation state
-  // -------------------------------
+  // Validation state
   const [errors, setErrors] = useState({
     fullName: "",
     phone: "",
@@ -80,20 +78,36 @@ export default function StudentRegistrationPage() {
       standard: string;
     }) => studentApi.register(token, data),
     retry: 0,
+
     onSuccess: (data) => {
       setRegisteredBatchName(data.batchName);
       setSubmitted(true);
     },
+
+    // ❤️ Updated friendly error handling
     onError: (error: Error) => {
       const msg = error.message.toLowerCase();
       const isDuplicateStudent = msg.includes("student already exists");
+      const isRegistrationClosed =
+        msg.includes("registration is currently closed") ||
+        msg.includes("access denied");
+
+      if (isRegistrationClosed) {
+        toast({
+          title: "Registration Closed",
+          description:
+            "This batch is not accepting new registrations at the moment. Please contact your teacher.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: isDuplicateStudent
           ? "Student Already Exists"
           : "Registration Failed",
         description: isDuplicateStudent
-          ? "Phone number already registered"
+          ? "Phone number already registered for this batch"
           : error.message,
         variant: "destructive",
       });
@@ -102,7 +116,6 @@ export default function StudentRegistrationPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
 
     registerMutation.mutate({
@@ -172,9 +185,11 @@ export default function StudentRegistrationPage() {
           <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             {instituteName}
           </h1>
+
           <p className="text-lg font-semibold text-gray-900 mt-3">
             Student Registration
           </p>
+
           <p className="text-sm text-muted-foreground mt-1">{batchName}</p>
         </div>
 
