@@ -130,20 +130,45 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const toggleRegistrationMutation = useMutation({
     mutationFn: ({ enabled }: { enabled: boolean }) =>
       batchApi.toggleRegistration(batchId, enabled),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      toast({
-        title: "Registration updated",
-        description: `Registration ${data.batch.registrationEnabled ? "opened" : "closed"} successfully`,
+
+    // 🔥 Optimistic UI update → toggle becomes instant
+    onMutate: async ({ enabled }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/batches", batchId] });
+
+      const prevData = queryClient.getQueryData<any>(["/api/batches", batchId]);
+
+      // Optimistically update UI
+      queryClient.setQueryData(["/api/batches", batchId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          batch: {
+            ...old.batch,
+            registrationEnabled: enabled,
+          },
+        };
       });
+
+      return { prevData };
     },
-    onError: (error: Error) => {
+
+    // ❌ If API fails → rollback instantly
+    onError: (error, _vars, context) => {
+      if (context?.prevData) {
+        queryClient.setQueryData(["/api/batches", batchId], context.prevData);
+      }
+
       toast({
-        title: "Error updating registration",
-        description: error.message,
+        title: "Failed to update registration",
+        description: "Please try again.",
         variant: "destructive",
       });
+    },
+
+    // ✔ After server returns → revalidate
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
     },
   });
 
