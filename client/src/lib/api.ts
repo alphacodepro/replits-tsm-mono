@@ -72,6 +72,7 @@ export interface Batch {
   feePeriod: string;
   registrationToken: string;
   registrationEnabled: boolean;
+  createdAt?: string;
   studentCount?: number;
 }
 

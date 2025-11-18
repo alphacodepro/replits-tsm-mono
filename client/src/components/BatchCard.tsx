@@ -10,8 +10,10 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Calendar,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 interface BatchCardProps {
   id: string;
@@ -21,6 +23,7 @@ interface BatchCardProps {
   feePeriod: string;
   studentCount?: number;
   registrationEnabled: boolean;
+  createdAt: string | Date;
   onViewDetails: () => void;
   onShowQR: () => void;
   onCopyLink: () => void;
@@ -34,6 +37,7 @@ export default function BatchCard({
   feePeriod,
   studentCount,
   registrationEnabled,
+  createdAt,
   onViewDetails,
   onShowQR,
   onCopyLink,
@@ -74,6 +78,12 @@ export default function BatchCard({
                     / {feePeriod}
                   </span>
                 </div>
+                {createdAt && (
+                  <div className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-3 h-3 mr-1.5" />
+                    Created: {format(new Date(createdAt), "dd MMM yyyy")}
+                  </div>
+                )}
               </div>
             )}
           </div>

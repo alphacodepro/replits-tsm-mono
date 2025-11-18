@@ -294,6 +294,12 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                   <Users className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>{students.length} Students</span>
                 </Badge>
+                {batch.createdAt && (
+                  <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Created: {format(new Date(batch.createdAt), "dd MMM yyyy")}</span>
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="flex flex-col gap-3">
