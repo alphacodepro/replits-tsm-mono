@@ -11,6 +11,7 @@ import {
   Mail,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 /* -----------------------------------------------------
    WEEKLY ORGANIC GROWTH
@@ -283,8 +284,21 @@ export default function LoginPage({ onLogin }: any) {
                 </Button>
               </form>
 
-              <div className="mt-8 pt-6 border-t text-center border-gray-200">
-                <p className="text-xs text-gray-500">
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+                  <Link href="/privacy-policy" className="text-xs text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-privacy-policy">
+                    Privacy Policy
+                  </Link>
+                  <span className="text-xs text-gray-400">•</span>
+                  <Link href="/terms-conditions" className="text-xs text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-terms-conditions">
+                    Terms & Conditions
+                  </Link>
+                  <span className="text-xs text-gray-400">•</span>
+                  <Link href="/refund-policy" className="text-xs text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-refund-policy">
+                    Refund Policy
+                  </Link>
+                </div>
+                <p className="text-xs text-gray-500 text-center">
                   © 2025 Tuition Management System. All rights reserved.
                 </p>
               </div>

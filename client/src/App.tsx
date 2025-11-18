@@ -9,6 +9,9 @@ import TeacherDashboard from "@/pages/TeacherDashboard";
 import BatchDetailsPage from "@/pages/BatchDetailsPage";
 import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
 import StudentRegistrationPage from "@/pages/StudentRegistrationPage";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsConditions from "@/pages/TermsConditions";
+import RefundPolicy from "@/pages/RefundPolicy";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -42,6 +45,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/register/:token" component={StudentRegistrationPage} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-conditions" component={TermsConditions} />
+      <Route path="/refund-policy" component={RefundPolicy} />
       <Route path="/batch/:id">
         {(params) => {
           if (!user) return <LoginPage onLogin={handleLogin} />;
