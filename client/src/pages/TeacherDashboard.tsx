@@ -11,7 +11,19 @@ import CreateBatchDialog from "@/components/CreateBatchDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import ChangeCredentialsDialog from "@/components/ChangeCredentialsDialog";
-import { Plus, Search, BookOpen, Users, IndianRupee, Clock, LogOut, Eye, EyeOff, Settings, User } from "lucide-react";
+import {
+  Plus,
+  Search,
+  BookOpen,
+  Users,
+  IndianRupee,
+  Clock,
+  LogOut,
+  Eye,
+  EyeOff,
+  Settings,
+  User,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, statsApi, authApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -99,11 +111,17 @@ export default function TeacherDashboard() {
   });
 
   const batches = batchesData?.batches || [];
-  const stats = statsData || { batchCount: 0, studentCount: 0, feesCollected: 0, pendingPayments: 0 };
+  const stats = statsData || {
+    batchCount: 0,
+    studentCount: 0,
+    feesCollected: 0,
+    pendingPayments: 0,
+  };
 
-  const filteredBatches = batches.filter((batch) =>
-    batch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (batch.subject?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+  const filteredBatches = batches.filter(
+    (batch) =>
+      batch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (batch.subject?.toLowerCase() || "").includes(searchQuery.toLowerCase()),
   );
 
   const handleShowQR = (batch: any) => {
@@ -139,9 +157,9 @@ export default function TeacherDashboard() {
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -162,17 +180,25 @@ export default function TeacherDashboard() {
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12 border-2 border-primary/20">
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
-                  {userData?.user?.fullName ? getInitials(userData.user.fullName) : <User className="h-6 w-6" />}
+                  {userData?.user?.fullName ? (
+                    getInitials(userData.user.fullName)
+                  ) : (
+                    <User className="h-6 w-6" />
+                  )}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">{userData?.user?.instituteName || "Teacher Dashboard"}</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Welcome back, {userData?.user?.fullName || "Teacher"}</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {userData?.user?.instituteName || "Teacher Dashboard"}
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Welcome back, {userData?.user?.fullName || "Teacher"}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="icon"
                 onClick={() => setCredentialsDialogOpen(true)}
                 className="hover:scale-105 transition-transform duration-200"
@@ -180,8 +206,8 @@ export default function TeacherDashboard() {
               >
                 <Settings className="w-4 h-4" />
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
                 className="hover:scale-105 transition-transform duration-200"
@@ -198,34 +224,61 @@ export default function TeacherDashboard() {
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Dashboard Overview</h2>
-            <Button 
-              onClick={() => setShowStats(!showStats)} 
-              variant="outline" 
+            {/* UPDATED → made font-bold */}
+            <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
+              Dashboard Overview
+            </h2>
+            <Button
+              onClick={() => setShowStats(!showStats)}
+              variant="outline"
               size="icon"
               className="hover:scale-105 transition-transform duration-200"
               data-testid="button-toggle-stats"
             >
-              {showStats ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showStats ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </Button>
           </div>
           <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
         </div>
-        
+
         {showStats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard title="Total Batches" value={stats.batchCount} icon={BookOpen} />
-            <StatCard title="Total Students" value={stats.studentCount} icon={Users} />
-            <StatCard title="Fees Collected" value={`₹${stats.feesCollected.toLocaleString()}`} icon={IndianRupee} valueColor="text-chart-2" />
-            <StatCard title="Pending Payments" value={`₹${stats.pendingPayments.toLocaleString()}`} icon={Clock} valueColor="text-chart-3" />
+            <StatCard
+              title="Total Batches"
+              value={stats.batchCount}
+              icon={BookOpen}
+            />
+            <StatCard
+              title="Total Students"
+              value={stats.studentCount}
+              icon={Users}
+            />
+            <StatCard
+              title="Fees Collected"
+              value={`₹${stats.feesCollected.toLocaleString()}`}
+              icon={IndianRupee}
+              valueColor="text-chart-2"
+            />
+            <StatCard
+              title="Pending Payments"
+              value={`₹${stats.pendingPayments.toLocaleString()}`}
+              icon={Clock}
+              valueColor="text-chart-3"
+            />
           </div>
         )}
 
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Batches</h2>
-            <Button 
-              onClick={() => setCreateBatchOpen(true)} 
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              My Batches
+            </h2>
+            <Button
+              onClick={() => setCreateBatchOpen(true)}
               className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
               data-testid="button-create-batch"
             >
