@@ -23,6 +23,9 @@ export const users = pgTable("users", {
   email: text("email"),
   phone: text("phone"),
   isActive: boolean("is_active").notNull().default(true),
+  hasAcceptedTerms: boolean("has_accepted_terms").notNull().default(false),
+  acceptedAt: timestamp("accepted_at"),
+  acceptedVersion: text("accepted_version"),
   createdAt: timestamp("created_at")
     .notNull()
     .default(sql`now()`),

@@ -61,6 +61,9 @@ export interface User {
   email?: string;
   phone?: string;
   isActive: boolean;
+  hasAcceptedTerms: boolean;
+  acceptedAt?: string | null;
+  acceptedVersion?: string | null;
 }
 
 export interface Batch {
@@ -129,6 +132,14 @@ export const authApi = {
   },
 
   me: () => apiRequest<{ user: User }>("/api/auth/me"),
+
+  acceptTerms: async (version: string) => {
+    const response = await apiRequest<{ user: User }>("/api/auth/accept-terms", {
+      method: "POST",
+      body: JSON.stringify({ version }),
+    });
+    return response;
+  },
 
   updateCredentials: async (data: { username: string; password: string; currentPassword: string }) => {
     const response = await apiRequest<{ success: boolean; message: string }>("/api/profile/credentials", {
