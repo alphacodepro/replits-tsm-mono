@@ -17,7 +17,6 @@ export default function StudentRegistrationPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [standard, setStandard] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [registeredBatchName, setRegisteredBatchName] = useState("");
 
@@ -26,11 +25,10 @@ export default function StudentRegistrationPage() {
     fullName: "",
     phone: "",
     email: "",
-    standard: "",
   });
 
   const validate = () => {
-    let newErrors = { fullName: "", phone: "", email: "", standard: "" };
+    let newErrors = { fullName: "", phone: "", email: "" };
     let isValid = true;
 
     if (!fullName.trim()) {
@@ -48,11 +46,6 @@ export default function StudentRegistrationPage() {
       isValid = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email format";
-      isValid = false;
-    }
-
-    if (!standard.trim()) {
-      newErrors.standard = "Standard is required";
       isValid = false;
     }
 
@@ -122,7 +115,7 @@ export default function StudentRegistrationPage() {
       fullName,
       phone,
       email,
-      standard,
+      standard: batchData?.batch.standard || "",
     });
   };
 
@@ -241,22 +234,6 @@ export default function StudentRegistrationPage() {
             />
             {errors.email && (
               <p className="text-red-500 text-xs">{errors.email}</p>
-            )}
-          </div>
-
-          {/* Standard */}
-          <div className="space-y-1">
-            <Label htmlFor="standard">Class/Standard *</Label>
-            <Input
-              id="standard"
-              value={standard}
-              placeholder="Class 10"
-              onChange={(e) => setStandard(e.target.value)}
-              className="rounded-xl"
-              required
-            />
-            {errors.standard && (
-              <p className="text-red-500 text-xs">{errors.standard}</p>
             )}
           </div>
 

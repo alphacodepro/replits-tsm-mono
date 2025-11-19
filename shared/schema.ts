@@ -40,6 +40,7 @@ export const batches = pgTable("batches", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   subject: text("subject"),
+  standard: text("standard").notNull(),
   fee: integer("fee").notNull(),
   feePeriod: text("fee_period").notNull(),
   registrationToken: text("registration_token").notNull().unique(),

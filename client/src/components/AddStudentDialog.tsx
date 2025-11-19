@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ interface AddStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   batchName: string;
+  batchStandard?: string;
   onSubmit: (data: {
     fullName: string;
     phone: string;
@@ -28,12 +29,19 @@ export default function AddStudentDialog({
   open,
   onOpenChange,
   batchName,
+  batchStandard,
   onSubmit,
 }: AddStudentDialogProps) {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [standard, setStandard] = useState("");
+
+  useEffect(() => {
+    if (open && batchStandard) {
+      setStandard(batchStandard);
+    }
+  }, [open, batchStandard]);
 
   const [errors, setErrors] = useState({
     fullName: "",

@@ -24,6 +24,7 @@ interface CreateBatchDialogProps {
   onSubmit: (data: {
     name: string;
     subject: string;
+    standard: string;
     fee: number;
     feePeriod: string;
   }) => void;
@@ -36,21 +37,28 @@ export default function CreateBatchDialog({
 }: CreateBatchDialogProps) {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
+  const [standard, setStandard] = useState("");
   const [fee, setFee] = useState("");
   const [feePeriod, setFeePeriod] = useState("month");
 
   // ❗ Validation errors
   const [errors, setErrors] = useState({
     name: "",
+    standard: "",
     fee: "",
   });
 
   const validate = () => {
-    let newErrors = { name: "", fee: "" };
+    let newErrors = { name: "", standard: "", fee: "" };
     let isValid = true;
 
     if (!name.trim()) {
       newErrors.name = "Batch name is required";
+      isValid = false;
+    }
+
+    if (!standard.trim()) {
+      newErrors.standard = "Class/Standard is required";
       isValid = false;
     }
 
@@ -72,12 +80,14 @@ export default function CreateBatchDialog({
     onSubmit({
       name,
       subject,
+      standard,
       fee: Number(fee),
       feePeriod,
     });
 
     setName("");
     setSubject("");
+    setStandard("");
     setFee("");
     setFeePeriod("month");
     onOpenChange(false);
@@ -122,6 +132,22 @@ export default function CreateBatchDialog({
                 onChange={(e) => setSubject(e.target.value)}
                 data-testid="input-batch-subject"
               />
+            </div>
+
+            {/* Class/Standard */}
+            <div className="space-y-1">
+              <Label htmlFor="standard">Class/Standard *</Label>
+              <Input
+                id="standard"
+                placeholder="e.g., Class 10, Grade 12"
+                value={standard}
+                onChange={(e) => setStandard(e.target.value)}
+                required
+                data-testid="input-batch-standard"
+              />
+              {errors.standard && (
+                <p className="text-red-500 text-xs">{errors.standard}</p>
+              )}
             </div>
 
             {/* Fee + Period */}

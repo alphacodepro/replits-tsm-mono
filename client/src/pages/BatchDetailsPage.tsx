@@ -509,6 +509,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
         open={addStudentOpen}
         onOpenChange={setAddStudentOpen}
         batchName={batch.name}
+        batchStandard={batch.standard}
         onSubmit={(data) => {
           addStudentMutation.mutate({
             batchId: batch.id,
