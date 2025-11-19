@@ -39,6 +39,7 @@ export default function TeacherDashboard() {
   const [batchToDelete, setBatchToDelete] = useState<any>(null);
   const [showStats, setShowStats] = useState(true);
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+  const [showBatchDetails, setShowBatchDetails] = useState(true);
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -277,14 +278,29 @@ export default function TeacherDashboard() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               My Batches
             </h2>
-            <Button
-              onClick={() => setCreateBatchOpen(true)}
-              className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-              data-testid="button-create-batch"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Batch
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowBatchDetails(!showBatchDetails)}
+                variant="outline"
+                size="icon"
+                className="hover:scale-105 transition-transform duration-200"
+                data-testid="button-toggle-batch-details"
+              >
+                {showBatchDetails ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </Button>
+              <Button
+                onClick={() => setCreateBatchOpen(true)}
+                className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
+                data-testid="button-create-batch"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Batch
+              </Button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
@@ -320,6 +336,7 @@ export default function TeacherDashboard() {
               <BatchCard
                 key={batch.id}
                 {...batch}
+                showDetails={showBatchDetails}
                 onViewDetails={() => handleViewDetails(batch.id)}
                 onShowQR={() => handleShowQR(batch)}
                 onCopyLink={() => handleCopyLink(batch)}
