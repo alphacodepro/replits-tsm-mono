@@ -1,4 +1,3 @@
-// <same imports as before>
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -50,18 +49,19 @@ export default function PaymentHistoryDialog({
 }: PaymentHistoryDialogProps) {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
+  const [amountError, setAmountError] = useState("");
+
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [editingFee, setEditingFee] = useState(false);
   const [customFeeInput, setCustomFeeInput] = useState("");
+  const [customFeeError, setCustomFeeError] = useState("");
+
   const dialogContentRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to top when dialog opens (fresh start)
+  // Scroll to top when dialog opens
   useEffect(() => {
     if (open && dialogContentRef.current) {
-      // immediate fail-safe: reset sync
       dialogContentRef.current.scrollTop = 0;
-
-      // ensure we run after paint / portal mount
       requestAnimationFrame(() => {
         dialogContentRef.current?.scrollTo({
           top: 0,
@@ -71,13 +71,15 @@ export default function PaymentHistoryDialog({
     }
   }, [open]);
 
-  // Reset state when dialog closes
+  // Reset states when closing
   useEffect(() => {
     if (!open) {
       setShowAddPayment(false);
       setAmount("");
+      setAmountError("");
+      setCustomFeeInput("");
+      setCustomFeeError("");
 
-      // also clear scroll when closing so next open starts clean
       if (dialogContentRef.current) {
         dialogContentRef.current.scrollTop = 0;
       }
@@ -108,25 +110,23 @@ export default function PaymentHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/students", studentId] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+
       setAmount("");
+      setAmountError("");
       setShowAddPayment(false);
 
-      // Show different message based on email status
-      // emailSent can be: true (sent), false (attempted but failed), null (not attempted)
       if (data.emailSent === true) {
         toast({
           title: "Payment recorded & confirmation email sent",
           description: `₹${amount} payment has been recorded and confirmation email sent to student`,
         });
       } else if (data.emailSent === false) {
-        // Email was attempted but failed to send
         toast({
           title: "Payment recorded but email failed to send",
           description: `₹${amount} payment has been recorded but the confirmation email could not be sent`,
           variant: "destructive",
         });
       } else {
-        // Email was not attempted (student has no email or email system not configured)
         toast({
           title: "Payment recorded",
           description: `₹${amount} payment has been recorded successfully`,
@@ -154,7 +154,10 @@ export default function PaymentHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/students", studentId] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+
       setEditingFee(false);
+      setCustomFeeError("");
+
       toast({
         title: "Custom fee updated",
         description: "Student's custom fee has been updated successfully",
@@ -173,39 +176,50 @@ export default function PaymentHistoryDialog({
   const payments = studentData?.payments || [];
   const totalPaid = studentData?.totalPaid || 0;
 
-  // Use customFee if set, otherwise calculate from batch fee
-  let expectedTotalFee = student?.customFee || batchFee;
-  if (student && !student.customFee && feePeriod === "month") {
+  // Calculate expected total fee (use custom fee if exists, otherwise batch fee)
+  const baseFee = student?.customFee ?? batchFee;
+  let expectedTotalFee = baseFee;
+  
+  // For monthly batches, multiply by join months
+  if (student && feePeriod === "month") {
     const joinMonths = Math.ceil(
       (new Date().getTime() - new Date(student.joinDate).getTime()) /
         (1000 * 60 * 60 * 24 * 30),
     );
-    expectedTotalFee = batchFee * joinMonths;
+    expectedTotalFee = baseFee * joinMonths;
   }
 
   const remaining = expectedTotalFee - totalPaid;
 
+  // ----------------------------
+  // ADD PAYMENT VALIDATION
+  // ----------------------------
   const handleAddPayment = (e: React.FormEvent) => {
     e.preventDefault();
+
     const paymentAmount = Number(amount);
 
+    if (!amount.trim()) {
+      setAmountError("Amount is required");
+      return;
+    }
+
+    if (isNaN(paymentAmount)) {
+      setAmountError("Amount must be a number");
+      return;
+    }
+
     if (paymentAmount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Payment amount must be greater than 0",
-        variant: "destructive",
-      });
+      setAmountError("Amount must be greater than 0");
       return;
     }
 
     if (paymentAmount > remaining) {
-      toast({
-        title: "Amount exceeds remaining balance",
-        description: `Maximum payment allowed is ₹${remaining.toLocaleString()}`,
-        variant: "destructive",
-      });
+      setAmountError(`Maximum allowed is ₹${remaining}`);
       return;
     }
+
+    setAmountError("");
 
     addPaymentMutation.mutate({
       studentId,
@@ -213,6 +227,9 @@ export default function PaymentHistoryDialog({
     });
   };
 
+  // ----------------------------
+  // CUSTOM FEE VALIDATION
+  // ----------------------------
   const handleEditFee = () => {
     setCustomFeeInput(
       student?.customFee?.toString() || expectedTotalFee.toString(),
@@ -221,28 +238,36 @@ export default function PaymentHistoryDialog({
   };
 
   const handleSaveFee = () => {
+    if (!customFeeInput.trim()) {
+      setCustomFeeError("Fee is required");
+      return;
+    }
+
     const newFee = Number(customFeeInput);
-    if (isNaN(newFee) || newFee <= 0) {
-      toast({
-        title: "Invalid fee",
-        description: "Please enter a valid positive number",
-        variant: "destructive",
-      });
+
+    if (isNaN(newFee)) {
+      setCustomFeeError("Fee must be a number");
       return;
     }
+
+    if (newFee <= 0) {
+      setCustomFeeError("Fee must be greater than 0");
+      return;
+    }
+
     if (newFee > batchFee) {
-      toast({
-        title: "Fee exceeds maximum",
-        description: `Custom fee cannot exceed batch fee of ₹${batchFee.toLocaleString()}`,
-        variant: "destructive",
-      });
+      setCustomFeeError(`Cannot exceed batch fee of ₹${batchFee}`);
       return;
     }
+
+    setCustomFeeError("");
+
     updateFeeMutation.mutate({ studentId, customFee: newFee });
   };
 
   const handleCancelEdit = () => {
     setEditingFee(false);
+    setCustomFeeError("");
     setCustomFeeInput("");
   };
 
@@ -262,12 +287,14 @@ export default function PaymentHistoryDialog({
           </DialogTitle>
           <DialogDescription>View and manage payment records</DialogDescription>
         </DialogHeader>
+
         {isLoading ? (
           <div className="py-8 text-center text-muted-foreground">
             Loading payment history...
           </div>
         ) : (
           <div className="space-y-4 md:space-y-6 py-2 md:py-4">
+            {/* TOTAL FEE BOX */}
             <div className="flex flex-col gap-3 md:gap-4">
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-3 md:p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2 md:gap-3">
@@ -277,23 +304,28 @@ export default function PaymentHistoryDialog({
                       <IndianRupee className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                     </div>
                   </div>
+
                   <div className="flex-1 min-w-0">
+                    {/* Total Fee Header */}
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs text-gray-600 dark:text-gray-400">
                         Total Fee
                       </p>
-                      {!editingFee && (
+
+                      {!editingFee && remaining > 0 && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
                           onClick={handleEditFee}
-                          data-testid="button-edit-fee"
+                          data-testid="button-edit-custom-fee"
                         >
                           <Pencil className="w-3 h-3" />
                         </Button>
                       )}
                     </div>
+
+                    {/* Editing Custom Fee */}
                     {editingFee ? (
                       <div className="space-y-1.5 mt-1">
                         <div className="flex items-center gap-2">
@@ -301,46 +333,45 @@ export default function PaymentHistoryDialog({
                             type="number"
                             value={customFeeInput}
                             onChange={(e) => setCustomFeeInput(e.target.value)}
-                            className="flex-1 min-w-[10rem] pr-2 appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-ms-clear]:hidden"
+                            className="flex-1 min-w-[10rem]"
                             placeholder="Enter fee"
-                            data-testid="input-custom-fee"
                           />
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={handleSaveFee}
                             disabled={updateFeeMutation.isPending}
-                            data-testid="button-save-fee"
                           >
-                            <Check className="w-4 h-4 text-green-600 dark:text-green-500" />
+                            <Check className="w-4 h-4 text-green-600" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={handleCancelEdit}
                             disabled={updateFeeMutation.isPending}
-                            data-testid="button-cancel-edit-fee"
                           >
-                            <X className="w-4 h-4 text-red-600 dark:text-red-500" />
+                            <X className="w-4 h-4 text-red-600" />
                           </Button>
                         </div>
+
+                        {customFeeError && (
+                          <p className="text-red-500 text-xs">
+                            {customFeeError}
+                          </p>
+                        )}
+
                         <p className="text-xs text-muted-foreground">
                           Maximum: ₹{batchFee.toLocaleString()}
                         </p>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <p
-                          className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mt-0.5 truncate"
-                          data-testid="text-total-fee"
-                        >
+                        <p className="text-lg md:text-xl font-bold">
                           ₹{expectedTotalFee.toLocaleString()}
                         </p>
+
                         {student?.customFee && (
-                          <span
-                            className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                            data-testid="badge-custom-fee"
-                          >
+                          <span className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                             Custom
                           </span>
                         )}
@@ -350,6 +381,7 @@ export default function PaymentHistoryDialog({
                 </div>
               </div>
 
+              {/* Total Paid */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 p-3 md:p-4 rounded-2xl border border-green-100 dark:border-green-800">
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="relative flex-shrink-0">
@@ -362,13 +394,14 @@ export default function PaymentHistoryDialog({
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                       Total Paid
                     </p>
-                    <p className="text-lg md:text-xl font-bold text-chart-2 mt-0.5 truncate">
+                    <p className="text-lg md:text-xl font-bold text-chart-2">
                       ₹{totalPaid.toLocaleString()}
                     </p>
                   </div>
                 </div>
               </div>
 
+              {/* Remaining */}
               <div className="bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-900/20 dark:to-amber-900/20 p-3 md:p-4 rounded-2xl border border-orange-100 dark:border-orange-800">
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="relative flex-shrink-0">
@@ -381,7 +414,7 @@ export default function PaymentHistoryDialog({
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                       Remaining
                     </p>
-                    <p className="text-lg md:text-xl font-bold text-chart-3 mt-0.5 truncate">
+                    <p className="text-lg md:text-xl font-bold text-chart-3">
                       ₹{remaining.toLocaleString()}
                     </p>
                   </div>
@@ -389,6 +422,7 @@ export default function PaymentHistoryDialog({
               </div>
             </div>
 
+            {/* Payments Table */}
             <div className="border rounded-2xl overflow-hidden shadow-md">
               <div className="max-h-64 md:max-h-80 overflow-y-auto">
                 <Table>
@@ -405,6 +439,7 @@ export default function PaymentHistoryDialog({
                       </TableHead>
                     </TableRow>
                   </TableHeader>
+
                   <TableBody>
                     {payments.length === 0 ? (
                       <TableRow>
@@ -423,17 +458,14 @@ export default function PaymentHistoryDialog({
                         const remainingAtTime = expectedTotalFee - paidSoFar;
 
                         return (
-                          <TableRow
-                            key={payment.id}
-                            className="hover-elevate transition-all duration-200"
-                          >
+                          <TableRow key={payment.id}>
                             <TableCell className="text-xs md:text-sm">
                               {format(new Date(payment.paidAt), "dd MMM yyyy")}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-chart-2 text-xs md:text-sm">
+                            <TableCell className="text-right text-chart-2 font-mono">
                               ₹{payment.amount.toLocaleString()}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-chart-3 text-xs md:text-sm hidden sm:table-cell">
+                            <TableCell className="text-right text-chart-3 font-mono hidden sm:table-cell">
                               ₹{remainingAtTime.toLocaleString()}
                             </TableCell>
                           </TableRow>
@@ -445,12 +477,13 @@ export default function PaymentHistoryDialog({
               </div>
             </div>
 
+            {/* Add Payment Form */}
             {showAddPayment ? (
               <form
                 onSubmit={handleAddPayment}
                 className="space-y-3 md:space-y-4 p-3 md:p-4 border rounded-2xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-gray-800 dark:to-gray-900"
               >
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="amount" className="text-sm">
                     Payment Amount (₹)
                   </Label>
@@ -461,21 +494,21 @@ export default function PaymentHistoryDialog({
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     min="1"
-                    max={remaining}
-                    required
-                    className="rounded-xl focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200 text-sm md:text-base"
-                    data-testid="input-payment-amount"
+                    className="rounded-xl"
                   />
-                  <p className="text-xs md:text-sm text-muted-foreground">
+                  {amountError && (
+                    <p className="text-red-500 text-xs">{amountError}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
                     Maximum amount: ₹{remaining.toLocaleString()}
                   </p>
                 </div>
+
                 <div className="flex gap-2">
                   <Button
                     type="submit"
                     disabled={addPaymentMutation.isPending}
-                    className="hover:scale-105 transition-transform duration-200 text-sm md:text-base flex-1"
-                    data-testid="button-submit-payment"
+                    className="flex-1"
                   >
                     {addPaymentMutation.isPending ? "Adding..." : "Add Payment"}
                   </Button>
@@ -485,8 +518,8 @@ export default function PaymentHistoryDialog({
                     onClick={() => {
                       setShowAddPayment(false);
                       setAmount("");
+                      setAmountError("");
                     }}
-                    className="hover:scale-105 transition-transform duration-200 text-sm md:text-base"
                   >
                     Cancel
                   </Button>
@@ -495,9 +528,8 @@ export default function PaymentHistoryDialog({
             ) : (
               <Button
                 onClick={() => setShowAddPayment(true)}
-                className="w-full hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg text-sm md:text-base"
+                className="w-full"
                 disabled={remaining <= 0}
-                data-testid="button-add-payment"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 {remaining <= 0 ? "Fully Paid" : "Add Payment"}

@@ -11,6 +11,7 @@ import {
   Eye,
   EyeOff,
   Calendar,
+  CheckCircle2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -23,7 +24,8 @@ interface BatchCardProps {
   feePeriod: string;
   studentCount?: number;
   registrationEnabled: boolean;
-  createdAt: string | Date;
+  allStudentsFullyPaid?: boolean;
+  createdAt?: string | Date;
   onViewDetails: () => void;
   onShowQR: () => void;
   onCopyLink: () => void;
@@ -37,6 +39,7 @@ export default function BatchCard({
   feePeriod,
   studentCount,
   registrationEnabled,
+  allStudentsFullyPaid,
   createdAt,
   onViewDetails,
   onShowQR,
@@ -96,13 +99,25 @@ export default function BatchCard({
               </span>
             </Badge>
             {showDetails && (
-              <Badge
-                variant={registrationEnabled ? "default" : "secondary"}
-                className="h-fit text-xs"
-                data-testid="badge-registration-status"
-              >
-                {registrationEnabled ? "Open" : "Closed"}
-              </Badge>
+              <>
+                <Badge
+                  variant={registrationEnabled ? "default" : "secondary"}
+                  className="h-fit text-xs"
+                  data-testid="badge-registration-status"
+                >
+                  {registrationEnabled ? "Open" : "Closed"}
+                </Badge>
+                {allStudentsFullyPaid && studentCount && studentCount > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="h-fit text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+                    data-testid="badge-fully-paid"
+                  >
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Fully Paid
+                  </Badge>
+                )}
+              </>
             )}
           </div>
         </div>
