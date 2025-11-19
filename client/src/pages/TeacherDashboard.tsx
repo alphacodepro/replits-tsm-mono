@@ -1,379 +1,178 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import StatCard from "@/components/StatCard";
-import BatchCard from "@/components/BatchCard";
-import EmptyState from "@/components/EmptyState";
-import CreateBatchDialog from "@/components/CreateBatchDialog";
-import QRCodeDialog from "@/components/QRCodeDialog";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import ChangeCredentialsDialog from "@/components/ChangeCredentialsDialog";
 import {
-  Plus,
-  Search,
   BookOpen,
   Users,
   IndianRupee,
-  Clock,
-  LogOut,
-  Eye,
-  EyeOff,
-  Settings,
-  User,
+  QrCode,
+  Link as LinkIcon,
+  Trash2,
+  Calendar,
+  CheckCircle2,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { batchApi, statsApi, authApi } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
-export default function TeacherDashboard() {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const [createBatchOpen, setCreateBatchOpen] = useState(false);
-  const [qrDialogOpen, setQrDialogOpen] = useState(false);
-  const [selectedBatch, setSelectedBatch] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [batchToDelete, setBatchToDelete] = useState<any>(null);
-  const [showStats, setShowStats] = useState(true);
-  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+interface BatchCardProps {
+  id: string;
+  name: string;
+  subject?: string;
+  fee: number;
+  feePeriod: string;
+  studentCount?: number;
+  registrationEnabled: boolean;
+  allStudentsFullyPaid?: boolean;
+  createdAt?: string | Date;
+  onViewDetails: () => void;
+  onShowQR: () => void;
+  onCopyLink: () => void;
+  onDelete: () => void;
 
-  const { data: userData } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: () => authApi.me(),
-  });
+  // NEW: controlled by TeacherDashboard
+  showDetails: boolean;
+}
 
-  const { data: batchesData, isLoading: batchesLoading } = useQuery({
-    queryKey: ["/api/batches"],
-    queryFn: () => batchApi.list(),
-  });
-
-  const { data: statsData } = useQuery({
-    queryKey: ["/api/stats/teacher"],
-    queryFn: () => statsApi.teacher(),
-  });
-
-  const createBatchMutation = useMutation({
-    mutationFn: batchApi.create,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
-      setCreateBatchOpen(false);
-      toast({
-        title: "Batch created!",
-        description: `${data.batch.name} has been created successfully`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error creating batch",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteBatchMutation = useMutation({
-    mutationFn: batchApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
-      toast({
-        title: "Batch deleted",
-        description: "The batch has been removed successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error deleting batch",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const logoutMutation = useMutation({
-    mutationFn: authApi.logout,
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/me"], null);
-      queryClient.clear();
-      setLocation("/");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error logging out",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const batches = batchesData?.batches || [];
-  const stats = statsData || {
-    batchCount: 0,
-    studentCount: 0,
-    feesCollected: 0,
-    pendingPayments: 0,
-  };
-
-  const filteredBatches = batches.filter(
-    (batch) =>
-      batch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (batch.subject?.toLowerCase() || "").includes(searchQuery.toLowerCase()),
-  );
-
-  const handleShowQR = (batch: any) => {
-    setSelectedBatch(batch);
-    setQrDialogOpen(true);
-  };
-
-  const handleCopyLink = (batch: any) => {
-    const url = `${window.location.origin}/register/${batch.registrationToken}`;
-    navigator.clipboard.writeText(url);
-    toast({
-      title: "Link copied!",
-      description: "Registration link copied to clipboard",
-    });
-  };
-
-  const handleViewDetails = (batchId: string) => {
-    setLocation(`/batch/${batchId}`);
-  };
-
-  const handleDeleteClick = (batch: any) => {
-    setBatchToDelete(batch);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (batchToDelete) {
-      deleteBatchMutation.mutate(batchToDelete.id);
-      setDeleteConfirmOpen(false);
-      setBatchToDelete(null);
-    }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  if (batchesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
+export default function BatchCard({
+  name,
+  subject,
+  fee,
+  feePeriod,
+  studentCount,
+  registrationEnabled,
+  allStudentsFullyPaid,
+  createdAt,
+  onViewDetails,
+  onShowQR,
+  onCopyLink,
+  onDelete,
+  showDetails,
+}: BatchCardProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
-      <header className="border-b bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-12 w-12 border-2 border-primary/20">
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
-                  {userData?.user?.fullName ? (
-                    getInitials(userData.user.fullName)
-                  ) : (
-                    <User className="h-6 w-6" />
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {userData?.user?.instituteName || "Teacher Dashboard"}
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Welcome back, {userData?.user?.fullName || "Teacher"}
-                </p>
-              </div>
-            </div>
+    <Card className="p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+      <div className="space-y-4">
+        {/* TOP SECTION */}
+        <div className="flex justify-between gap-4">
+          {/* LEFT SIDE */}
+          <div className="flex flex-col gap-2 flex-1">
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setCredentialsDialogOpen(true)}
-                className="hover:scale-105 transition-transform duration-200"
-                data-testid="button-settings"
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <BookOpen className="w-5 h-5 text-primary" />
+              </div>
+
+              <h3
+                className="text-lg font-semibold text-gray-900 dark:text-white"
+                data-testid="text-batch-name"
               >
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => logoutMutation.mutate()}
-                disabled={logoutMutation.isPending}
-                className="hover:scale-105 transition-transform duration-200"
-                data-testid="button-logout"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+                {name}
+              </h3>
             </div>
-          </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            {/* UPDATED → made font-bold */}
-            <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
-              Dashboard Overview
-            </h2>
-            <Button
-              onClick={() => setShowStats(!showStats)}
-              variant="outline"
-              size="icon"
-              className="hover:scale-105 transition-transform duration-200"
-              data-testid="button-toggle-stats"
-            >
-              {showStats ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
-        </div>
+            {/* DETAILS (controlled globally) */}
+            {showDetails && (
+              <div className="flex flex-col gap-2">
+                {subject && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {subject}
+                  </p>
+                )}
 
-        {showStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard
-              title="Total Batches"
-              value={stats.batchCount}
-              icon={BookOpen}
-            />
-            <StatCard
-              title="Total Students"
-              value={stats.studentCount}
-              icon={Users}
-            />
-            <StatCard
-              title="Fees Collected"
-              value={`₹${stats.feesCollected.toLocaleString()}`}
-              icon={IndianRupee}
-              valueColor="text-chart-2"
-            />
-            <StatCard
-              title="Pending Payments"
-              value={`₹${stats.pendingPayments.toLocaleString()}`}
-              icon={Clock}
-              valueColor="text-chart-3"
-            />
-          </div>
-        )}
+                <div className="inline-flex items-center text-sm">
+                  <IndianRupee className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {fee.toLocaleString()}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400 ml-1">
+                    / {feePeriod}
+                  </span>
+                </div>
 
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              My Batches
-            </h2>
-            <Button
-              onClick={() => setCreateBatchOpen(true)}
-              className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-              data-testid="button-create-batch"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Batch
-            </Button>
+                {createdAt && (
+                  <div className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-3 h-3 mr-1.5" />
+                    Created: {format(new Date(createdAt), "dd MMM yyyy")}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <Input
-              placeholder="Search batches..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
-              data-testid="input-search-batches"
-            />
+
+          {/* RIGHT SIDE */}
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <Badge variant="outline" className="h-fit">
+              <Users className="w-3.5 h-3.5 mr-1" />
+              <span className="text-base font-semibold">
+                {studentCount || 0}
+              </span>
+            </Badge>
+
+            {showDetails && (
+              <>
+                <Badge
+                  variant={registrationEnabled ? "default" : "secondary"}
+                  className="h-fit text-xs"
+                  data-testid="badge-registration-status"
+                >
+                  {registrationEnabled ? "Open" : "Closed"}
+                </Badge>
+
+                {allStudentsFullyPaid && studentCount && studentCount > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="h-fit text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+                    data-testid="badge-fully-paid"
+                  >
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Fully Paid
+                  </Badge>
+                )}
+              </>
+            )}
           </div>
         </div>
 
-        {filteredBatches.length === 0 ? (
-          searchQuery ? (
-            <EmptyState
-              icon={Search}
-              title="No batches found"
-              description={`No batches match "${searchQuery}"`}
-            />
-          ) : (
-            <EmptyState
-              icon={BookOpen}
-              title="No batches yet"
-              description="Get started by creating your first batch to organize your students and manage their fees"
-              actionLabel="Create First Batch"
-              onAction={() => setCreateBatchOpen(true)}
-            />
-          )
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBatches.map((batch) => (
-              <BatchCard
-                key={batch.id}
-                {...batch}
-                onViewDetails={() => handleViewDetails(batch.id)}
-                onShowQR={() => handleShowQR(batch)}
-                onCopyLink={() => handleCopyLink(batch)}
-                onDelete={() => handleDeleteClick(batch)}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+        {/* ACTION BUTTONS */}
+        <div className="flex items-center gap-2 pt-2">
+          <Button
+            onClick={onViewDetails}
+            className="flex-1 hover:scale-105 transition-transform"
+            data-testid="button-view-batch"
+          >
+            View Details
+          </Button>
 
-      <footer className="border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm mt-auto">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            © 2025 Tuition Management System. All rights reserved.
-          </p>
+          {/* 🔥 REMOVED INDIVIDUAL EYE BUTTON */}
+
+          <Button
+            onClick={onShowQR}
+            variant="outline"
+            size="icon"
+            className="hover:scale-105 transition-transform"
+            data-testid="button-show-qr"
+          >
+            <QrCode className="w-4 h-4" />
+          </Button>
+
+          <Button
+            onClick={onCopyLink}
+            variant="outline"
+            size="icon"
+            className="hover:scale-105 transition-transform"
+            data-testid="button-copy-link"
+          >
+            <LinkIcon className="w-4 h-4" />
+          </Button>
+
+          <Button
+            onClick={onDelete}
+            variant="outline"
+            size="icon"
+            className="hover:scale-105 transition-transform"
+            data-testid="button-delete-batch"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
-      </footer>
-
-      <CreateBatchDialog
-        open={createBatchOpen}
-        onOpenChange={setCreateBatchOpen}
-        onSubmit={(data) => createBatchMutation.mutate(data)}
-      />
-
-      {selectedBatch && (
-        <QRCodeDialog
-          open={qrDialogOpen}
-          onOpenChange={setQrDialogOpen}
-          batchName={selectedBatch.name}
-          registrationUrl={`${window.location.origin}/register/${selectedBatch.registrationToken}`}
-          registrationEnabled={selectedBatch.registrationEnabled}
-        />
-      )}
-
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        title="Delete Batch"
-        description={`Are you sure you want to delete "${batchToDelete?.name}"? This will permanently delete all students and payment records in this batch. This action cannot be undone.`}
-        onConfirm={handleConfirmDelete}
-        confirmText="Delete Batch"
-        destructive
-      />
-
-      <ChangeCredentialsDialog
-        open={credentialsDialogOpen}
-        onOpenChange={setCredentialsDialogOpen}
-        currentUsername={userData?.user?.username || ""}
-        onSuccess={() => {
-          queryClient.setQueryData(["/api/auth/me"], null);
-          queryClient.clear();
-          setLocation("/");
-        }}
-      />
-    </div>
+      </div>
+    </Card>
   );
 }

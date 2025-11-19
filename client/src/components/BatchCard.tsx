@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,8 +7,6 @@ import {
   QrCode,
   Link as LinkIcon,
   Trash2,
-  Eye,
-  EyeOff,
   Calendar,
   CheckCircle2,
 } from "lucide-react";
@@ -30,6 +27,9 @@ interface BatchCardProps {
   onShowQR: () => void;
   onCopyLink: () => void;
   onDelete: () => void;
+
+  // NEW PROP (Global control from dashboard)
+  showDetails: boolean;
 }
 
 export default function BatchCard({
@@ -45,9 +45,8 @@ export default function BatchCard({
   onShowQR,
   onCopyLink,
   onDelete,
+  showDetails,
 }: BatchCardProps) {
-  const [showDetails, setShowDetails] = useState(true);
-
   return (
     <Card className="p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
       <div className="space-y-4">
@@ -94,10 +93,9 @@ export default function BatchCard({
           <div className="flex flex-col items-end gap-2 shrink-0">
             <Badge variant="outline" className="h-fit">
               <Users className="w-3.5 h-3.5 mr-1" />
-              <span className="text-base font-semibold">
-                {studentCount || 0}
-              </span>
+              <span className="text-base font-semibold">{studentCount || 0}</span>
             </Badge>
+
             {showDetails && (
               <>
                 <Badge
@@ -107,6 +105,7 @@ export default function BatchCard({
                 >
                   {registrationEnabled ? "Open" : "Closed"}
                 </Badge>
+
                 {allStudentsFullyPaid && studentCount && studentCount > 0 && (
                   <Badge
                     variant="outline"
@@ -132,19 +131,7 @@ export default function BatchCard({
             View Details
           </Button>
 
-          <Button
-            onClick={() => setShowDetails(!showDetails)}
-            variant="outline"
-            size="icon"
-            className="hover:scale-105 transition-transform"
-            data-testid="button-toggle-details"
-          >
-            {showDetails ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
-            )}
-          </Button>
+          {/* Removed individual eye toggle button */}
 
           <Button
             onClick={onShowQR}
