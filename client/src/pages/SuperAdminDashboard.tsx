@@ -33,26 +33,6 @@ export default function SuperAdminDashboard() {
     queryFn: () => statsApi.system(),
   });
 
-  const createTeacherMutation = useMutation({
-    mutationFn: teacherApi.create,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/system"] });
-      setCreateTeacherOpen(false);
-      toast({
-        title: "Teacher created!",
-        description: `${data.teacher.fullName} has been added to the system`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error creating teacher",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const toggleStatusMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       teacherApi.updateStatus(id, isActive),
@@ -231,7 +211,6 @@ export default function SuperAdminDashboard() {
       <CreateTeacherDialog
         open={createTeacherOpen}
         onOpenChange={setCreateTeacherOpen}
-        onSubmit={(data) => createTeacherMutation.mutate(data)}
       />
 
       <TeacherDetailsDialog
