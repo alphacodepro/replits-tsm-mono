@@ -34,27 +34,64 @@ export default function ChangeCredentialsDialog({
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({
+    currentPassword: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+    general: "",
+  });
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const resetErrors = () => {
+    setErrors({
+      currentPassword: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+      general: "",
+    });
+  };
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("New passwords do not match");
-      return;
-    }
+  const validate = () => {
+    let newErrors = {
+      currentPassword: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+      general: "",
+    };
+    let isValid = true;
 
-    if (formData.password.length < 4) {
-      setError("Password must be at least 4 characters");
-      return;
+    if (!formData.currentPassword.trim()) {
+      newErrors.currentPassword = "Current password is required";
+      isValid = false;
     }
 
     if (!formData.username.trim()) {
-      setError("Username is required");
-      return;
+      newErrors.username = "Username is required";
+      isValid = false;
     }
+
+    if (formData.password.length < 4) {
+      newErrors.password = "Password must be at least 4 characters";
+      isValid = false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetErrors();
+
+    if (!validate()) return;
 
     setIsLoading(true);
 
@@ -73,12 +110,26 @@ export default function ChangeCredentialsDialog({
       onSuccess();
     } catch (err: any) {
       const errorMessage = err.message || "Failed to update credentials";
-      setError(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      
+      let newErrors = {
+        currentPassword: "",
+        username: "",
+        password: "",
+        confirmPassword: "",
+        general: "",
+      };
+
+      if (errorMessage.toLowerCase().includes("username")) {
+        newErrors.username = errorMessage;
+      } else if (errorMessage.toLowerCase().includes("current password")) {
+        newErrors.currentPassword = errorMessage;
+      } else if (errorMessage.toLowerCase().includes("password")) {
+        newErrors.password = errorMessage;
+      } else {
+        newErrors.general = errorMessage;
+      }
+      
+      setErrors(newErrors);
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +143,7 @@ export default function ChangeCredentialsDialog({
         password: "",
         confirmPassword: "",
       });
-      setError("");
+      resetErrors();
       onOpenChange(false);
     }
   };
@@ -109,62 +160,70 @@ export default function ChangeCredentialsDialog({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {error && (
+            {errors.general && (
               <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive">{errors.general}</p>
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="currentPassword">Current Password</Label>
               <Input
                 id="currentPassword"
                 type="password"
                 value={formData.currentPassword}
                 onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                required
                 disabled={isLoading}
                 data-testid="input-current-password"
               />
+              {errors.currentPassword && (
+                <p className="text-red-500 text-xs">{errors.currentPassword}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="username">New Username</Label>
               <Input
                 id="username"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
                 disabled={isLoading}
                 data-testid="input-new-username"
               />
+              {errors.username && (
+                <p className="text-red-500 text-xs">{errors.username}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="password">New Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
                 disabled={isLoading}
                 data-testid="input-new-password"
               />
+              {errors.password && (
+                <p className="text-red-500 text-xs">{errors.password}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="confirmPassword">Confirm New Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                required
                 disabled={isLoading}
                 data-testid="input-confirm-password"
               />
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-xs">{errors.confirmPassword}</p>
+              )}
             </div>
           </div>
 
