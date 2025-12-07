@@ -299,6 +299,13 @@ export interface PaginatedResponse<T> {
 
 export interface PaginatedStudentsResponse extends PaginatedResponse<Student> {
   batch: Batch;
+  batchTotals: {
+    studentCount: number;
+    totalCollected: number;
+    totalPending: number;
+    paidCount: number;
+    pendingCount: number;
+  };
 }
 
 export const dashboardApi = {

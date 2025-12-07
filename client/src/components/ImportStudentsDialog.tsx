@@ -241,6 +241,7 @@ export default function ImportStudentsDialog({
       failures?: ImportFailure[];
     }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
 
       if (data.failed > 0 && data.failures) {

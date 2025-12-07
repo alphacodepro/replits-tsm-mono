@@ -69,6 +69,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     mutationFn: studentApi.create,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       setAddStudentOpen(false);
       toast({
@@ -92,6 +93,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     mutationFn: ({ id, data }: { id: string; data: any }) => studentApi.update(id, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       setEditStudentOpen(false);
       toast({
@@ -115,6 +117,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     mutationFn: studentApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       toast({
         title: "Student deleted",
@@ -173,6 +176,13 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
 
   const batch = paginatedData?.batch;
   const pagination = paginatedData?.pagination;
+  const batchTotals = paginatedData?.batchTotals || { 
+    studentCount: 0, 
+    totalCollected: 0, 
+    totalPending: 0,
+    paidCount: 0,
+    pendingCount: 0,
+  };
   const students: StudentWithPaymentInfo[] = (paginatedData?.data || []).map((student: ApiStudent) => ({
     ...student,
     customFee: student.customFee ?? null,
@@ -192,9 +202,6 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     if (paymentFilter === "paid") return (student.totalDue ?? 0) === 0;
     return (student.totalDue ?? 0) > 0;
   });
-
-  const paidCount = searchFilteredStudents.filter(s => (s.totalDue ?? 0) === 0).length;
-  const pendingCount = searchFilteredStudents.filter(s => (s.totalDue ?? 0) > 0).length;
 
   const handleViewPayments = (studentId: string) => {
     setSelectedStudentId(studentId);
@@ -292,7 +299,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 </Badge>
                 <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{students.length} Students</span>
+                  <span>{batchTotals.studentCount} Students</span>
                 </Badge>
                 {batch.createdAt && (
                   <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5">
@@ -357,7 +364,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Students</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{students.length}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{batchTotals.studentCount}</p>
               </div>
             </div>
           </Card>
@@ -373,7 +380,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Fees Collected</p>
                 <p className="text-3xl font-bold text-chart-2 mt-1">
-                  ₹{students.reduce((sum, s) => sum + (s.totalPaid || 0), 0).toLocaleString()}
+                  ₹{batchTotals.totalCollected.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -390,7 +397,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Pending Payments</p>
                 <p className="text-3xl font-bold text-chart-3 mt-1">
-                  ₹{students.reduce((sum, s) => sum + (s.totalDue || 0), 0).toLocaleString()}
+                  ₹{batchTotals.totalPending.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -441,7 +448,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 className="rounded-full hover:scale-105 transition-transform duration-200 shadow-sm"
                 data-testid="button-filter-all"
               >
-                All ({searchFilteredStudents.length})
+                All ({batchTotals.studentCount})
               </Button>
               <Button
                 variant={paymentFilter === "paid" ? "default" : "outline"}
@@ -450,7 +457,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 className={`rounded-full hover:scale-105 transition-transform duration-200 shadow-sm ${paymentFilter === "paid" ? "" : "text-chart-2 hover:text-chart-2"}`}
                 data-testid="button-filter-paid"
               >
-                Paid ({paidCount})
+                Paid ({batchTotals.paidCount})
               </Button>
               <Button
                 variant={paymentFilter === "pending" ? "default" : "outline"}
@@ -459,7 +466,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 className={`rounded-full hover:scale-105 transition-transform duration-200 shadow-sm ${paymentFilter === "pending" ? "" : "text-chart-3 hover:text-chart-3"}`}
                 data-testid="button-filter-pending"
               >
-                Pending ({pendingCount})
+                Pending ({batchTotals.pendingCount})
               </Button>
             </div>
           </div>
