@@ -196,3 +196,24 @@ export type UpdateStudent = z.infer<typeof updateStudentSchema>;
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
+
+/* -------------------------------------------
+   PAGINATION TYPES
+------------------------------------------- */
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface DashboardSummary {
+  batchCount: number;
+  studentCount: number;
+  totalCollected: number;
+  totalPending: number;
+}

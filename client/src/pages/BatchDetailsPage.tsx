@@ -29,7 +29,7 @@ import {
   FileUp,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { batchApi, studentApi, Student as ApiStudent } from "@/lib/api";
+import { batchApi, studentApi, dashboardApi, Student as ApiStudent } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
 interface StudentWithPaymentInfo extends Omit<ApiStudent, 'customFee'> {
@@ -56,21 +56,24 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "pending">("all");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<StudentWithPaymentInfo | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
 
-  const { data: batchData, isLoading: batchLoading } = useQuery({
-    queryKey: ["/api/batches", batchId],
-    queryFn: () => batchApi.get(batchId),
+  const { data: paginatedData, isLoading: batchLoading } = useQuery({
+    queryKey: ["/api/batches", batchId, "students", currentPage],
+    queryFn: () => dashboardApi.studentsPaginated(batchId, currentPage, pageSize),
+    placeholderData: (previousData) => previousData,
   });
 
   const addStudentMutation = useMutation({
     mutationFn: studentApi.create,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       setAddStudentOpen(false);
       toast({
         title: "Student added!",
-        description: `${data.student.fullName} has been added to ${batchData?.batch.name}`,
+        description: `${data.student.fullName} has been added to ${paginatedData?.batch.name}`,
       });
     },
     onError: (error: Error) => {
@@ -88,8 +91,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const updateStudentMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => studentApi.update(id, data),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       setEditStudentOpen(false);
       toast({
         title: "Student updated!",
@@ -111,8 +114,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const deleteStudentMutation = useMutation({
     mutationFn: studentApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       toast({
         title: "Student deleted",
         description: "The student has been removed successfully",
@@ -131,14 +134,12 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     mutationFn: ({ enabled }: { enabled: boolean }) =>
       batchApi.toggleRegistration(batchId, enabled),
 
-    // 🔥 Optimistic UI update → toggle becomes instant
     onMutate: async ({ enabled }) => {
-      await queryClient.cancelQueries({ queryKey: ["/api/batches", batchId] });
+      await queryClient.cancelQueries({ queryKey: ["/api/batches", batchId, "students"] });
 
-      const prevData = queryClient.getQueryData<any>(["/api/batches", batchId]);
+      const prevData = queryClient.getQueryData<any>(["/api/batches", batchId, "students", currentPage]);
 
-      // Optimistically update UI
-      queryClient.setQueryData(["/api/batches", batchId], (old: any) => {
+      queryClient.setQueryData(["/api/batches", batchId, "students", currentPage], (old: any) => {
         if (!old) return old;
         return {
           ...old,
@@ -152,10 +153,9 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       return { prevData };
     },
 
-    // ❌ If API fails → rollback instantly
-    onError: (error, _vars, context) => {
+    onError: (_error, _vars, context) => {
       if (context?.prevData) {
-        queryClient.setQueryData(["/api/batches", batchId], context.prevData);
+        queryClient.setQueryData(["/api/batches", batchId, "students", currentPage], context.prevData);
       }
 
       toast({
@@ -165,15 +165,15 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       });
     },
 
-    // ✔ After server returns → revalidate
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
     },
   });
 
-  const batch = batchData?.batch;
-  const students: StudentWithPaymentInfo[] = (batchData?.students || []).map(student => ({
+  const batch = paginatedData?.batch;
+  const pagination = paginatedData?.pagination;
+  const students: StudentWithPaymentInfo[] = (paginatedData?.data || []).map((student: ApiStudent) => ({
     ...student,
     customFee: student.customFee ?? null,
     joinDate: format(new Date(student.joinDate), 'dd MMM yyyy'),
@@ -488,12 +488,45 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
             />
           )
         ) : (
-          <StudentTable 
-            students={filteredStudents} 
-            onViewPayments={handleViewPayments}
-            onEditStudent={handleEditStudent}
-            onDeleteStudent={handleDeleteClick}
-          />
+          <>
+            <StudentTable 
+              students={filteredStudents} 
+              onViewPayments={handleViewPayments}
+              onEditStudent={handleEditStudent}
+              onDeleteStudent={handleDeleteClick}
+            />
+            
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6 px-2">
+                <p className="text-sm text-muted-foreground">
+                  Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, pagination.total)} of {pagination.total} students
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm px-3">
+                    Page {currentPage} of {pagination.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                    disabled={currentPage === pagination.totalPages}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 

@@ -71,6 +71,7 @@ export interface Batch {
   teacherId: string;
   name: string;
   subject?: string;
+  standard: string;
   fee: number;
   feePeriod: string;
   registrationToken: string;
@@ -276,4 +277,35 @@ export const statsApi = {
   teacher: () => apiRequest<TeacherStats>("/api/stats/teacher"),
 
   system: () => apiRequest<SystemStats>("/api/stats/system"),
+};
+
+// Dashboard API (optimized)
+export interface DashboardSummary {
+  batchCount: number;
+  studentCount: number;
+  totalCollected: number;
+  totalPending: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface PaginatedStudentsResponse extends PaginatedResponse<Student> {
+  batch: Batch;
+}
+
+export const dashboardApi = {
+  summary: () => apiRequest<DashboardSummary>("/api/dashboard/summary"),
+
+  studentsPaginated: (batchId: string, page: number = 1, limit: number = 25) =>
+    apiRequest<PaginatedStudentsResponse>(
+      `/api/batches/${batchId}/students/paginated?page=${page}&limit=${limit}`
+    ),
 };

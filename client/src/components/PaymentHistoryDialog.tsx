@@ -110,6 +110,7 @@ export default function PaymentHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/students", studentId] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
 
       setAmount("");
       setAmountError("");
@@ -154,6 +155,7 @@ export default function PaymentHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/students", studentId] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
 
       setEditingFee(false);
       setCustomFeeError("");

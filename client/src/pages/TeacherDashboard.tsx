@@ -25,7 +25,7 @@ import {
   User,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { batchApi, statsApi, authApi } from "@/lib/api";
+import { batchApi, dashboardApi, authApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
 export default function TeacherDashboard() {
@@ -49,18 +49,20 @@ export default function TeacherDashboard() {
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
     queryKey: ["/api/batches"],
     queryFn: () => batchApi.list(),
+    placeholderData: (previousData) => previousData,
   });
 
-  const { data: statsData } = useQuery({
-    queryKey: ["/api/stats/teacher"],
-    queryFn: () => statsApi.teacher(),
+  const { data: summaryData } = useQuery({
+    queryKey: ["/api/dashboard/summary"],
+    queryFn: () => dashboardApi.summary(),
+    placeholderData: (previousData) => previousData,
   });
 
   const createBatchMutation = useMutation({
     mutationFn: batchApi.create,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       setCreateBatchOpen(false);
       toast({
         title: "Batch created!",
@@ -80,7 +82,7 @@ export default function TeacherDashboard() {
     mutationFn: batchApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       toast({
         title: "Batch deleted",
         description: "The batch has been removed successfully",
@@ -112,11 +114,11 @@ export default function TeacherDashboard() {
   });
 
   const batches = batchesData?.batches || [];
-  const stats = statsData || {
+  const stats = summaryData || {
     batchCount: 0,
     studentCount: 0,
-    feesCollected: 0,
-    pendingPayments: 0,
+    totalCollected: 0,
+    totalPending: 0,
   };
 
   const filteredBatches = batches.filter(
@@ -260,13 +262,13 @@ export default function TeacherDashboard() {
             />
             <StatCard
               title="Fees Collected"
-              value={`₹${stats.feesCollected.toLocaleString()}`}
+              value={`₹${stats.totalCollected.toLocaleString()}`}
               icon={IndianRupee}
               valueColor="text-chart-2"
             />
             <StatCard
               title="Pending Payments"
-              value={`₹${stats.pendingPayments.toLocaleString()}`}
+              value={`₹${stats.totalPending.toLocaleString()}`}
               icon={Clock}
               valueColor="text-chart-3"
             />
