@@ -97,6 +97,7 @@ export interface Payment {
   id: string;
   studentId: string;
   amount: number;
+  paymentMethod: string | null;
   paidAt: string;
 }
 
@@ -265,7 +266,12 @@ export const studentApi = {
 
 // Payment API
 export const paymentApi = {
-  create: (data: { studentId: string; amount: number }) =>
+  create: (data: { 
+    studentId: string; 
+    amount: number; 
+    paymentMethod?: string | null;
+    paidAt?: string;
+  }) =>
     apiRequest<{ payment: Payment; emailSent: boolean | null }>("/api/payments", {
       method: "POST",
       body: JSON.stringify(data),

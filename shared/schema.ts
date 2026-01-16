@@ -87,6 +87,7 @@ export const payments = pgTable("payments", {
     .notNull()
     .references(() => students.id, { onDelete: "cascade" }),
   amount: integer("amount").notNull(),
+  paymentMethod: text("payment_method"),
   paidAt: timestamp("paid_at")
     .notNull()
     .default(sql`now()`),
@@ -160,6 +161,15 @@ export const insertStudentSchema = createInsertSchema(students)
 
 // ------------------- PAYMENTS -------------------
 
+export const paymentMethodEnum = z.enum([
+  "Cash",
+  "UPI",
+  "Bank Transfer",
+  "Cheque",
+  "Online",
+  "Other",
+]);
+
 export const insertPaymentSchema = createInsertSchema(payments)
   .omit({
     id: true,
@@ -167,6 +177,8 @@ export const insertPaymentSchema = createInsertSchema(payments)
   })
   .extend({
     amount: positiveAmount,
+    paymentMethod: paymentMethodEnum.optional().nullable(),
+    paidAt: z.string().datetime().optional(),
   });
 
 // ------------------- UPDATE STUDENTS -------------------

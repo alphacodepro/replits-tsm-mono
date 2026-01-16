@@ -24,12 +24,19 @@ interface ImportStudentsDialogProps {
   batchName: string;
 }
 
+interface InstallmentData {
+  amount: number;
+  date: string;
+  method: string | null;
+}
+
 interface StudentRow {
   fullName: string;
   phone: string;
   email: string;
   standard: string;
   joinDate: string;
+  installments: InstallmentData[];
 }
 
 interface ValidationError {
@@ -101,7 +108,11 @@ export default function ImportStudentsDialog({
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
+        
+        // Prefer "Students" sheet, fallback to first sheet for backwards compatibility
+        const sheetName = workbook.SheetNames.includes("Students") 
+          ? "Students" 
+          : workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
@@ -114,12 +125,51 @@ export default function ImportStudentsDialog({
           const rowErrors: string[] = [];
           const rowNum = index + 2; // excel row number (header is row 1)
 
-          // Extract fields
+          // Extract basic fields
           const rawFullName = row["Full Name"]?.toString().trim() || "";
+          
+          // Skip instruction rows (rows that start with "NOTE:" or similar instructions)
+          if (rawFullName.toUpperCase().startsWith("NOTE:") || 
+              rawFullName.toUpperCase().startsWith("INSTRUCTION")) {
+            return; // Skip this row
+          }
           const rawPhone = row["Phone"]?.toString().trim() || "";
           const rawEmail = row["Email"]?.toString().trim() || "";
           const rawStandard = row["Class/Standard"]?.toString().trim() || "";
           const rawJoinDate = row["Join Date"]?.toString().trim() || "";
+          
+          // Extract payment fields (up to 10 payments)
+          // Supports new format: "Payment 1 Amount" and legacy format: "Inst1_Amount"
+          const installments: InstallmentData[] = [];
+          for (let i = 1; i <= 10; i++) {
+            // Try new format first, fallback to legacy format
+            const amountKey = row[`Payment ${i} Amount`] !== undefined ? `Payment ${i} Amount` : `Inst${i}_Amount`;
+            const dateKey = row[`Payment ${i} Date`] !== undefined ? `Payment ${i} Date` : `Inst${i}_Date`;
+            const methodKey = row[`Payment ${i} Method`] !== undefined ? `Payment ${i} Method` : `Inst${i}_Method`;
+            
+            const rawAmount = row[amountKey]?.toString().trim();
+            const rawDate = row[dateKey]?.toString().trim();
+            const rawMethod = row[methodKey]?.toString().trim() || null;
+            
+            // Only add if there's an amount
+            if (rawAmount) {
+              const amount = Number(rawAmount);
+              if (!isNaN(amount) && amount > 0) {
+                // Use join date as fallback if no date provided
+                const instDate = rawDate && isValidDate(rawDate) 
+                  ? formatDate(rawDate) 
+                  : (rawJoinDate && isValidDate(rawJoinDate) ? formatDate(rawJoinDate) : "");
+                
+                if (instDate) {
+                  installments.push({
+                    amount,
+                    date: instDate,
+                    method: rawMethod,
+                  });
+                }
+              }
+            }
+          }
 
           // Normalize phone
           const phone = normalizePhone(rawPhone);
@@ -166,6 +216,7 @@ export default function ImportStudentsDialog({
               email: rawEmail,
               standard: rawStandard,
               joinDate: formatDate(rawJoinDate),
+              installments,
             });
           }
         });
@@ -279,19 +330,69 @@ export default function ImportStudentsDialog({
   };
 
   const downloadTemplate = () => {
-    const template = [
-      {
-        "Full Name": "Rahul Sharma",
-        Phone: "9876543210",
-        Email: "rahul@example.com",
-        "Class/Standard": "Class 10",
-        "Join Date": "2024-01-15",
-      },
-    ];
-
-    const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Students");
+    
+    // ========== INSTRUCTIONS SHEET ==========
+    const instructionsData = [
+      ["STUDENT IMPORT TEMPLATE - INSTRUCTIONS"],
+      [""],
+      ["This template allows you to import students with their payment history."],
+      [""],
+      ["COLUMN DESCRIPTIONS:"],
+      ["Full Name", "Required. Student's full name"],
+      ["Phone", "Required. 10-digit mobile number (must be unique within batch)"],
+      ["Email", "Optional. Student's email address"],
+      ["Class/Standard", "Required. e.g., Class 10, Grade 5, etc."],
+      ["Join Date", "Optional. Format: YYYY-MM-DD (defaults to today if empty)"],
+      [""],
+      ["PAYMENT COLUMNS:"],
+      ["You can record up to 10 past payments per student."],
+      ["Payment X Amount", "Payment amount in rupees (numbers only)"],
+      ["Payment X Date", "Payment date. Format: YYYY-MM-DD"],
+      ["Payment X Method", "One of: Cash, UPI, Bank Transfer, Cheque, Online, Other"],
+      [""],
+      ["VALID PAYMENT METHODS:"],
+      ["Cash", "UPI", "Bank Transfer", "Cheque", "Online", "Other"],
+      [""],
+      ["EXAMPLE ROW:"],
+      ["Full Name", "Phone", "Email", "Class/Standard", "Join Date", "", "Payment 1 Amount", "Payment 1 Date", "Payment 1 Method"],
+      ["Rahul Sharma", "9876543210", "rahul@example.com", "Class 10", "2024-01-15", "", "5000", "2024-02-01", "UPI"],
+      [""],
+      ["TIPS:"],
+      ["- Delete these instructions before importing (use the Students sheet only)"],
+      ["- Leave unused payment columns blank"],
+      ["- Phone numbers must be unique within the batch"],
+      ["- Dates should be in YYYY-MM-DD format for best results"],
+    ];
+    const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsData);
+    XLSX.utils.book_append_sheet(wb, wsInstructions, "Instructions");
+    
+    // ========== STUDENTS SHEET ==========
+    // Build headers: Basic info + separator + payments
+    const headers: string[] = [
+      "Full Name", "Phone", "Email", "Class/Standard", "Join Date",
+      "--- PAYMENTS ---"
+    ];
+    for (let i = 1; i <= 10; i++) {
+      headers.push(`Payment ${i} Amount`, `Payment ${i} Date`, `Payment ${i} Method`);
+    }
+    
+    // Example row with 2 payments filled
+    const exampleRow: (string | number)[] = [
+      "Rahul Sharma", "9876543210", "rahul@example.com", "Class 10", "2024-01-15",
+      "", // separator column (leave empty)
+      5000, "2024-02-01", "UPI",
+      5000, "2024-03-01", "Cash",
+    ];
+    // Fill remaining payment columns with empty strings
+    while (exampleRow.length < headers.length) {
+      exampleRow.push("");
+    }
+    
+    const studentsData = [headers, exampleRow];
+    const wsStudents = XLSX.utils.aoa_to_sheet(studentsData);
+    XLSX.utils.book_append_sheet(wb, wsStudents, "Students");
+    
     XLSX.writeFile(wb, "student_import_template.xlsx");
   };
 

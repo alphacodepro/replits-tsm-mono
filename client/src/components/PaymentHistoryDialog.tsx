@@ -20,6 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Plus,
   IndianRupee,
   Clock,
@@ -31,6 +38,8 @@ import {
 import { studentApi, paymentApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+const PAYMENT_METHODS = ["Cash", "UPI", "Bank Transfer", "Cheque", "Online", "Other"] as const;
 
 interface PaymentHistoryDialogProps {
   open: boolean;
@@ -50,6 +59,7 @@ export default function PaymentHistoryDialog({
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
 
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [editingFee, setEditingFee] = useState(false);
@@ -77,6 +87,7 @@ export default function PaymentHistoryDialog({
       setShowAddPayment(false);
       setAmount("");
       setAmountError("");
+      setPaymentMethod("");
       setCustomFeeInput("");
       setCustomFeeError("");
 
@@ -114,6 +125,7 @@ export default function PaymentHistoryDialog({
 
       setAmount("");
       setAmountError("");
+      setPaymentMethod("");
       setShowAddPayment(false);
 
       if (data.emailSent === true) {
@@ -226,6 +238,7 @@ export default function PaymentHistoryDialog({
     addPaymentMutation.mutate({
       studentId,
       amount: paymentAmount,
+      paymentMethod: paymentMethod || null,
     });
   };
 
@@ -436,6 +449,9 @@ export default function PaymentHistoryDialog({
                       <TableHead className="text-right font-semibold text-xs md:text-sm">
                         Amount Paid
                       </TableHead>
+                      <TableHead className="font-semibold text-xs md:text-sm hidden sm:table-cell">
+                        Method
+                      </TableHead>
                       <TableHead className="text-right font-semibold text-xs md:text-sm hidden sm:table-cell">
                         Remaining
                       </TableHead>
@@ -446,7 +462,7 @@ export default function PaymentHistoryDialog({
                     {payments.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={3}
+                          colSpan={4}
                           className="text-center py-8 text-muted-foreground text-sm"
                         >
                           No payments recorded yet
@@ -467,6 +483,9 @@ export default function PaymentHistoryDialog({
                             <TableCell className="text-right text-chart-2 font-mono">
                               ₹{payment.amount.toLocaleString()}
                             </TableCell>
+                            <TableCell className="text-xs md:text-sm text-muted-foreground hidden sm:table-cell">
+                              {payment.paymentMethod || "—"}
+                            </TableCell>
                             <TableCell className="text-right text-chart-3 font-mono hidden sm:table-cell">
                               ₹{remainingAtTime.toLocaleString()}
                             </TableCell>
@@ -485,25 +504,52 @@ export default function PaymentHistoryDialog({
                 onSubmit={handleAddPayment}
                 className="space-y-3 md:space-y-4 p-3 md:p-4 border rounded-2xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-gray-800 dark:to-gray-900"
               >
-                <div className="space-y-1">
-                  <Label htmlFor="amount" className="text-sm">
-                    Payment Amount (₹)
-                  </Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    placeholder="5000"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    min="1"
-                    className="rounded-xl"
-                  />
-                  {amountError && (
-                    <p className="text-red-500 text-xs">{amountError}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Maximum amount: ₹{remaining.toLocaleString()}
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="amount" className="text-sm">
+                      Payment Amount (₹)
+                    </Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      placeholder="5000"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      min="1"
+                      className="rounded-xl"
+                      data-testid="input-payment-amount"
+                    />
+                    {amountError && (
+                      <p className="text-red-500 text-xs">{amountError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Maximum amount: ₹{remaining.toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="paymentMethod" className="text-sm">
+                      Payment Method
+                    </Label>
+                    <Select
+                      value={paymentMethod}
+                      onValueChange={setPaymentMethod}
+                    >
+                      <SelectTrigger className="rounded-xl" data-testid="select-payment-method">
+                        <SelectValue placeholder="Select method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_METHODS.map((method) => (
+                          <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Optional - how was payment received?
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -521,6 +567,7 @@ export default function PaymentHistoryDialog({
                       setShowAddPayment(false);
                       setAmount("");
                       setAmountError("");
+                      setPaymentMethod("");
                     }}
                   >
                     Cancel
