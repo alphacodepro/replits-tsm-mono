@@ -161,14 +161,21 @@ export const insertStudentSchema = createInsertSchema(students)
 
 // ------------------- PAYMENTS -------------------
 
-export const paymentMethodEnum = z.enum([
+// Predefined payment methods for dropdown suggestions
+export const PREDEFINED_PAYMENT_METHODS = [
   "Cash",
   "UPI",
   "Bank Transfer",
   "Cheque",
   "Online",
-  "Other",
-]);
+] as const;
+
+// Payment method can be any string up to 40 chars (predefined or custom)
+export const paymentMethodSchema = z.string()
+  .max(40, "Payment method must be 40 characters or less")
+  .transform(val => val.trim())
+  .optional()
+  .nullable();
 
 export const insertPaymentSchema = createInsertSchema(payments)
   .omit({
@@ -177,7 +184,7 @@ export const insertPaymentSchema = createInsertSchema(payments)
   })
   .extend({
     amount: positiveAmount,
-    paymentMethod: paymentMethodEnum.optional().nullable(),
+    paymentMethod: paymentMethodSchema,
     paidAt: z.string().datetime().optional(),
   });
 
