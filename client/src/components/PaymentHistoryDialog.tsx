@@ -40,6 +40,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const PAYMENT_METHODS = ["Cash", "UPI", "Bank Transfer", "Cheque", "Online", "Other"] as const;
+const MAX_CUSTOM_METHOD_LENGTH = 40;
 
 interface PaymentHistoryDialogProps {
   open: boolean;
@@ -60,6 +61,8 @@ export default function PaymentHistoryDialog({
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [customMethod, setCustomMethod] = useState("");
+  const [customMethodError, setCustomMethodError] = useState("");
 
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [editingFee, setEditingFee] = useState(false);
@@ -88,6 +91,8 @@ export default function PaymentHistoryDialog({
       setAmount("");
       setAmountError("");
       setPaymentMethod("");
+      setCustomMethod("");
+      setCustomMethodError("");
       setCustomFeeInput("");
       setCustomFeeError("");
 
@@ -126,6 +131,8 @@ export default function PaymentHistoryDialog({
       setAmount("");
       setAmountError("");
       setPaymentMethod("");
+      setCustomMethod("");
+      setCustomMethodError("");
       setShowAddPayment(false);
 
       if (data.emailSent === true) {
@@ -233,12 +240,31 @@ export default function PaymentHistoryDialog({
       return;
     }
 
+    // Validate custom method if "Other" is selected
+    if (paymentMethod === "Other") {
+      const trimmedCustom = customMethod.trim();
+      if (!trimmedCustom) {
+        setCustomMethodError("Please specify the payment method");
+        return;
+      }
+      if (trimmedCustom.length > MAX_CUSTOM_METHOD_LENGTH) {
+        setCustomMethodError(`Maximum ${MAX_CUSTOM_METHOD_LENGTH} characters allowed`);
+        return;
+      }
+    }
+
     setAmountError("");
+    setCustomMethodError("");
+
+    // If "Other" is selected, use the custom method text instead
+    const finalMethod = paymentMethod === "Other" 
+      ? customMethod.trim() 
+      : (paymentMethod || null);
 
     addPaymentMutation.mutate({
       studentId,
       amount: paymentAmount,
-      paymentMethod: paymentMethod || null,
+      paymentMethod: finalMethod,
     });
   };
 
@@ -533,7 +559,13 @@ export default function PaymentHistoryDialog({
                     </Label>
                     <Select
                       value={paymentMethod}
-                      onValueChange={setPaymentMethod}
+                      onValueChange={(val) => {
+                        setPaymentMethod(val);
+                        if (val !== "Other") {
+                          setCustomMethod("");
+                          setCustomMethodError("");
+                        }
+                      }}
                     >
                       <SelectTrigger className="rounded-xl" data-testid="select-payment-method">
                         <SelectValue placeholder="Select method" />
@@ -550,6 +582,33 @@ export default function PaymentHistoryDialog({
                       Optional - how was payment received?
                     </p>
                   </div>
+                  
+                  {paymentMethod === "Other" && (
+                    <div className="space-y-1 md:col-span-2">
+                      <Label htmlFor="customMethod" className="text-sm">
+                        Specify Payment Method
+                      </Label>
+                      <Input
+                        id="customMethod"
+                        type="text"
+                        placeholder="e.g., PhonePe, Google Pay, Parent Transfer"
+                        value={customMethod}
+                        onChange={(e) => {
+                          setCustomMethod(e.target.value);
+                          setCustomMethodError("");
+                        }}
+                        maxLength={MAX_CUSTOM_METHOD_LENGTH}
+                        className="rounded-xl"
+                        data-testid="input-custom-payment-method"
+                      />
+                      {customMethodError && (
+                        <p className="text-red-500 text-xs">{customMethodError}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {customMethod.length}/{MAX_CUSTOM_METHOD_LENGTH} characters
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -568,6 +627,8 @@ export default function PaymentHistoryDialog({
                       setAmount("");
                       setAmountError("");
                       setPaymentMethod("");
+                      setCustomMethod("");
+                      setCustomMethodError("");
                     }}
                   >
                     Cancel
