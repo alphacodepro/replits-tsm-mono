@@ -352,7 +352,7 @@ export default function TeacherDashboard() {
       <footer className="border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm mt-auto">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            © 2025 Tuition Management System. All rights reserved.
+            © 2026 Tuition Management System. All rights reserved.
           </p>
         </div>
       </footer>
