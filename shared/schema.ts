@@ -91,6 +91,7 @@ export const payments = pgTable("payments", {
   paidAt: timestamp("paid_at")
     .notNull()
     .default(sql`now()`),
+  modifiedAt: timestamp("modified_at"),
 });
 
 /* -------------------------------------------
@@ -181,12 +182,19 @@ export const insertPaymentSchema = createInsertSchema(payments)
   .omit({
     id: true,
     paidAt: true,
+    modifiedAt: true,
   })
   .extend({
     amount: positiveAmount,
     paymentMethod: paymentMethodSchema,
     paidAt: z.string().datetime().optional(),
   });
+
+// Schema for updating payment (amount and method only)
+export const updatePaymentSchema = z.object({
+  amount: positiveAmount,
+  paymentMethod: paymentMethodSchema,
+});
 
 // ------------------- UPDATE STUDENTS -------------------
 
@@ -214,6 +222,7 @@ export type Student = typeof students.$inferSelect;
 export type UpdateStudent = z.infer<typeof updateStudentSchema>;
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type UpdatePayment = z.infer<typeof updatePaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
 
 /* -------------------------------------------

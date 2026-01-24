@@ -69,6 +69,14 @@ export default function PaymentHistoryDialog({
   const [customFeeInput, setCustomFeeInput] = useState("");
   const [customFeeError, setCustomFeeError] = useState("");
 
+  // Edit payment state
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editAmountError, setEditAmountError] = useState("");
+  const [editMethod, setEditMethod] = useState<string>("");
+  const [editCustomMethod, setEditCustomMethod] = useState("");
+  const [editCustomMethodError, setEditCustomMethodError] = useState("");
+
   const dialogContentRef = useRef<HTMLDivElement>(null);
 
   // Scroll to top when dialog opens
@@ -95,6 +103,13 @@ export default function PaymentHistoryDialog({
       setCustomMethodError("");
       setCustomFeeInput("");
       setCustomFeeError("");
+      // Reset edit payment states
+      setEditingPaymentId(null);
+      setEditAmount("");
+      setEditAmountError("");
+      setEditMethod("");
+      setEditCustomMethod("");
+      setEditCustomMethodError("");
 
       if (dialogContentRef.current) {
         dialogContentRef.current.scrollTop = 0;
@@ -187,6 +202,37 @@ export default function PaymentHistoryDialog({
     onError: (error: Error) => {
       toast({
         title: "Error updating fee",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update payment mutation
+  const updatePaymentMutation = useMutation({
+    mutationFn: ({ paymentId, data }: { paymentId: string; data: { amount: number; paymentMethod?: string | null } }) =>
+      paymentApi.update(paymentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/students", studentId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
+
+      setEditingPaymentId(null);
+      setEditAmount("");
+      setEditAmountError("");
+      setEditMethod("");
+      setEditCustomMethod("");
+      setEditCustomMethodError("");
+
+      toast({
+        title: "Payment updated",
+        description: "Payment record has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating payment",
         description: error.message,
         variant: "destructive",
       });
@@ -314,6 +360,97 @@ export default function PaymentHistoryDialog({
 
   const handleResetFee = () => {
     updateFeeMutation.mutate({ studentId, customFee: null });
+  };
+
+  // ----------------------------
+  // EDIT PAYMENT HANDLERS
+  // ----------------------------
+  const handleStartEditPayment = (payment: { id: string; amount: number; paymentMethod: string | null }) => {
+    setEditingPaymentId(payment.id);
+    setEditAmount(payment.amount.toString());
+    setEditAmountError("");
+    
+    // Determine if the existing method is a predefined one or custom
+    const isPredefined = payment.paymentMethod && PAYMENT_METHODS.includes(payment.paymentMethod as typeof PAYMENT_METHODS[number]);
+    if (isPredefined) {
+      setEditMethod(payment.paymentMethod || "");
+      setEditCustomMethod("");
+    } else if (payment.paymentMethod) {
+      setEditMethod("Other");
+      setEditCustomMethod(payment.paymentMethod);
+    } else {
+      setEditMethod("");
+      setEditCustomMethod("");
+    }
+    setEditCustomMethodError("");
+  };
+
+  const handleCancelEditPayment = () => {
+    setEditingPaymentId(null);
+    setEditAmount("");
+    setEditAmountError("");
+    setEditMethod("");
+    setEditCustomMethod("");
+    setEditCustomMethodError("");
+  };
+
+  const handleSaveEditPayment = () => {
+    const paymentAmount = Number(editAmount);
+
+    if (!editAmount.trim()) {
+      setEditAmountError("Amount is required");
+      return;
+    }
+
+    if (isNaN(paymentAmount)) {
+      setEditAmountError("Amount must be a number");
+      return;
+    }
+
+    if (paymentAmount <= 0) {
+      setEditAmountError("Amount must be greater than 0");
+      return;
+    }
+
+    // Calculate max allowed: total expected - sum of other payments
+    const otherPaymentsTotal = payments
+      .filter(p => p.id !== editingPaymentId)
+      .reduce((sum, p) => sum + p.amount, 0);
+    const maxAllowed = expectedTotalFee - otherPaymentsTotal;
+
+    if (paymentAmount > maxAllowed) {
+      setEditAmountError(`Maximum allowed is ₹${maxAllowed.toLocaleString()}`);
+      return;
+    }
+
+    // Validate custom method if "Other" is selected
+    if (editMethod === "Other") {
+      const trimmedCustom = editCustomMethod.trim();
+      if (!trimmedCustom) {
+        setEditCustomMethodError("Please specify the payment method");
+        return;
+      }
+      if (trimmedCustom.length > MAX_CUSTOM_METHOD_LENGTH) {
+        setEditCustomMethodError(`Maximum ${MAX_CUSTOM_METHOD_LENGTH} characters allowed`);
+        return;
+      }
+    }
+
+    setEditAmountError("");
+    setEditCustomMethodError("");
+
+    // If "Other" is selected, use the custom method text instead
+    const finalMethod = editMethod === "Other" 
+      ? editCustomMethod.trim() 
+      : (editMethod || null);
+
+    updatePaymentMutation.mutate({
+      paymentId: editingPaymentId!,
+      data: {
+        amount: paymentAmount,
+        paymentMethod: finalMethod,
+      },
+    });
   };
 
   return (
@@ -481,6 +618,9 @@ export default function PaymentHistoryDialog({
                       <TableHead className="text-right font-semibold text-xs md:text-sm hidden sm:table-cell">
                         Remaining
                       </TableHead>
+                      <TableHead className="w-16 text-center font-semibold text-xs md:text-sm">
+                        
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
 
@@ -488,7 +628,7 @@ export default function PaymentHistoryDialog({
                     {payments.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={4}
+                          colSpan={5}
                           className="text-center py-8 text-muted-foreground text-sm"
                         >
                           No payments recorded yet
@@ -500,21 +640,135 @@ export default function PaymentHistoryDialog({
                           .slice(0, index + 1)
                           .reduce((sum, p) => sum + p.amount, 0);
                         const remainingAtTime = expectedTotalFee - paidSoFar;
+                        const isEditing = editingPaymentId === payment.id;
 
                         return (
                           <TableRow key={payment.id}>
-                            <TableCell className="text-xs md:text-sm">
-                              {format(new Date(payment.paidAt), "dd MMM yyyy")}
-                            </TableCell>
-                            <TableCell className="text-right text-chart-2 font-mono">
-                              ₹{payment.amount.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-xs md:text-sm text-muted-foreground hidden sm:table-cell">
-                              {payment.paymentMethod || "—"}
-                            </TableCell>
-                            <TableCell className="text-right text-chart-3 font-mono hidden sm:table-cell">
-                              ₹{remainingAtTime.toLocaleString()}
-                            </TableCell>
+                            {isEditing ? (
+                              <>
+                                {/* Edit Mode */}
+                                <TableCell className="text-xs md:text-sm">
+                                  {format(new Date(payment.paidAt), "dd MMM yyyy")}
+                                </TableCell>
+                                <TableCell className="p-1">
+                                  <div className="space-y-1">
+                                    <Input
+                                      type="number"
+                                      value={editAmount}
+                                      onChange={(e) => setEditAmount(e.target.value)}
+                                      className="h-8 w-24 text-right text-sm"
+                                      min="1"
+                                      data-testid="input-edit-amount"
+                                    />
+                                    {editAmountError && (
+                                      <p className="text-red-500 text-xs">{editAmountError}</p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="p-1 hidden sm:table-cell">
+                                  <div className="space-y-1">
+                                    <Select
+                                      value={editMethod}
+                                      onValueChange={(val) => {
+                                        setEditMethod(val);
+                                        if (val !== "Other") {
+                                          setEditCustomMethod("");
+                                          setEditCustomMethodError("");
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-8 w-28 text-xs" data-testid="select-edit-method">
+                                        <SelectValue placeholder="Method" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {PAYMENT_METHODS.map((method) => (
+                                          <SelectItem key={method} value={method}>
+                                            {method}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {editMethod === "Other" && (
+                                      <div className="space-y-1">
+                                        <Input
+                                          type="text"
+                                          value={editCustomMethod}
+                                          onChange={(e) => setEditCustomMethod(e.target.value)}
+                                          placeholder="Enter method"
+                                          className="h-8 w-28 text-xs"
+                                          maxLength={MAX_CUSTOM_METHOD_LENGTH}
+                                          data-testid="input-edit-custom-method"
+                                        />
+                                        {editCustomMethodError && (
+                                          <p className="text-red-500 text-xs">{editCustomMethodError}</p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right text-chart-3 font-mono hidden sm:table-cell">
+                                  —
+                                </TableCell>
+                                <TableCell className="p-1">
+                                  <div className="flex items-center gap-1 justify-center">
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="default"
+                                      onClick={handleSaveEditPayment}
+                                      disabled={updatePaymentMutation.isPending}
+                                      data-testid="button-save-edit"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="outline"
+                                      onClick={handleCancelEditPayment}
+                                      disabled={updatePaymentMutation.isPending}
+                                      data-testid="button-cancel-edit"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : (
+                              <>
+                                {/* View Mode */}
+                                <TableCell className="text-xs md:text-sm">
+                                  <div className="flex items-center gap-1">
+                                    {format(new Date(payment.paidAt), "dd MMM yyyy")}
+                                    {payment.modifiedAt && (
+                                      <span className="text-[10px] text-muted-foreground italic">(edited)</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right text-chart-2 font-mono">
+                                  ₹{payment.amount.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-xs md:text-sm text-muted-foreground hidden sm:table-cell">
+                                  {payment.paymentMethod || "—"}
+                                </TableCell>
+                                <TableCell className="text-right text-chart-3 font-mono hidden sm:table-cell">
+                                  ₹{remainingAtTime.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="p-1">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    onClick={() => handleStartEditPayment(payment)}
+                                    disabled={editingPaymentId !== null}
+                                    data-testid={`button-edit-payment-${payment.id}`}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TableCell>
+                              </>
+                            )}
                           </TableRow>
                         );
                       })

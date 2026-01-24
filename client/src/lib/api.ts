@@ -99,6 +99,7 @@ export interface Payment {
   amount: number;
   paymentMethod: string | null;
   paidAt: string;
+  modifiedAt: string | null;
 }
 
 export interface TeacherStats {
@@ -274,6 +275,12 @@ export const paymentApi = {
   }) =>
     apiRequest<{ payment: Payment; emailSent: boolean | null }>("/api/payments", {
       method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (paymentId: string, data: { amount: number; paymentMethod?: string | null }) =>
+    apiRequest<{ payment: Payment }>(`/api/payments/${paymentId}`, {
+      method: "PATCH",
       body: JSON.stringify(data),
     }),
 };
