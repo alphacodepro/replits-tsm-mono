@@ -70,6 +70,13 @@ export const students = pgTable(
     lastActivityDate: timestamp("last_activity_date")
       .notNull()
       .default(sql`now()`),
+    // Additional student details
+    guardianName: text("guardian_name"),
+    guardianPhone: text("guardian_phone"),
+    schoolName: text("school_name"),
+    city: text("city"),
+    dateOfBirth: timestamp("date_of_birth"),
+    notes: text("notes"),
   },
   (table) => ({
     batchPhoneUnique: uniqueIndex("students_batch_phone_unique").on(
@@ -158,6 +165,13 @@ export const insertStudentSchema = createInsertSchema(students)
     phone: phoneSchema,
     email: emailRequiredSchema,
     customFee: positiveAmount.optional().nullable(),
+    // Additional optional fields with string validation
+    guardianName: z.string().max(100).optional().nullable(),
+    guardianPhone: z.string().regex(/^(\d{10})?$/, "Guardian phone must be 10 digits or empty").optional().nullable(),
+    schoolName: z.string().max(150).optional().nullable(),
+    city: z.string().max(100).optional().nullable(),
+    dateOfBirth: z.string().datetime().optional().nullable(),
+    notes: z.string().max(1000).optional().nullable(),
   });
 
 // ------------------- PAYMENTS -------------------
@@ -198,6 +212,14 @@ export const updatePaymentSchema = z.object({
 
 // ------------------- UPDATE STUDENTS -------------------
 
+// Guardian phone allows empty or valid 10-digit
+const guardianPhoneSchema = z
+  .string()
+  .regex(/^(\d{10})?$/, "Guardian phone must be 10 digits or empty")
+  .optional()
+  .nullable()
+  .or(z.literal(""));
+
 export const updateStudentSchema = z.object({
   fullName: z.string().min(1, "Name is required"),
   phone: phoneSchema,
@@ -205,6 +227,13 @@ export const updateStudentSchema = z.object({
   standard: z.string().min(1, "Standard is required"),
   customFee: positiveAmount.optional().nullable(),
   joinDate: z.string().datetime(),
+  // Additional details
+  guardianName: z.string().max(100).optional().nullable().or(z.literal("")),
+  guardianPhone: guardianPhoneSchema,
+  schoolName: z.string().max(150).optional().nullable().or(z.literal("")),
+  city: z.string().max(100).optional().nullable().or(z.literal("")),
+  dateOfBirth: z.string().datetime().optional().nullable(),
+  notes: z.string().max(1000).optional().nullable().or(z.literal("")),
 });
 
 /* -------------------------------------------

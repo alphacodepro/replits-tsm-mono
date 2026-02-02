@@ -224,6 +224,12 @@ export const studentApi = {
     phone: string;
     email?: string;
     standard: string;
+    guardianName?: string | null;
+    guardianPhone?: string | null;
+    schoolName?: string | null;
+    city?: string | null;
+    dateOfBirth?: string | null;
+    notes?: string | null;
   }) =>
     apiRequest<{ student: Student }>("/api/students", {
       method: "POST",
@@ -244,6 +250,12 @@ export const studentApi = {
     email: string;
     standard: string;
     joinDate: string;
+    guardianName?: string | null;
+    guardianPhone?: string | null;
+    schoolName?: string | null;
+    city?: string | null;
+    dateOfBirth?: string | null;
+    notes?: string | null;
   }) =>
     apiRequest<{ student: Student }>(`/api/students/${id}`, {
       method: "PATCH",
@@ -256,7 +268,17 @@ export const studentApi = {
       body: JSON.stringify({ customFee }),
     }),
 
-  register: (token: string, data: { fullName: string; phone: string; email?: string; standard: string }) =>
+  register: (token: string, data: {
+    fullName: string;
+    phone: string;
+    email?: string;
+    standard: string;
+    guardianName?: string | null;
+    guardianPhone?: string | null;
+    schoolName?: string | null;
+    city?: string | null;
+    dateOfBirth?: string | null;
+  }) =>
     apiRequest<{ student: Student; batchName: string }>(`/api/register/${token}`, {
       method: "POST",
       body: JSON.stringify(data),

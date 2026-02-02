@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, CheckCircle } from "lucide-react";
+import { BookOpen, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { studentApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,21 +14,45 @@ export default function StudentRegistrationPage() {
   const [, params] = useRoute("/register/:token");
   const token = params?.token || "";
 
+  // Basic fields
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [registeredBatchName, setRegisteredBatchName] = useState("");
 
+  // Additional optional fields
+  const [guardianName, setGuardianName] = useState("");
+  const [guardianPhone, setGuardianPhone] = useState("");
+  const [schoolName, setSchoolName] = useState("");
+  const [city, setCity] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+
+  // Toggle for additional fields
+  const [showAdditional, setShowAdditional] = useState(false);
+
   // Validation state
   const [errors, setErrors] = useState({
     fullName: "",
     phone: "",
     email: "",
+    guardianPhone: "",
+    dateOfBirth: "",
   });
 
+  // Parse DD-MM-YYYY to ISO string
+  const parseDobToISO = (dob: string): string | null => {
+    if (!dob.trim()) return null;
+    const match = dob.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (!match) return null;
+    const [, dd, mm, yyyy] = match;
+    const date = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+    if (isNaN(date.getTime())) return null;
+    return date.toISOString();
+  };
+
   const validate = () => {
-    let newErrors = { fullName: "", phone: "", email: "" };
+    let newErrors = { fullName: "", phone: "", email: "", guardianPhone: "", dateOfBirth: "" };
     let isValid = true;
 
     if (!fullName.trim()) {
@@ -47,6 +71,27 @@ export default function StudentRegistrationPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email format";
       isValid = false;
+    }
+
+    // Guardian phone is optional but must be valid if provided
+    if (guardianPhone.trim() && !/^\d{10}$/.test(guardianPhone)) {
+      newErrors.guardianPhone = "Guardian phone must be 10 digits";
+      isValid = false;
+    }
+
+    // DOB format validation (optional)
+    if (dateOfBirth.trim()) {
+      const dobISO = parseDobToISO(dateOfBirth);
+      if (!dobISO) {
+        newErrors.dateOfBirth = "Use DD-MM-YYYY format";
+        isValid = false;
+      } else {
+        const dobDate = new Date(dobISO);
+        if (dobDate > new Date()) {
+          newErrors.dateOfBirth = "Date of birth cannot be in future";
+          isValid = false;
+        }
+      }
     }
 
     setErrors(newErrors);
@@ -69,6 +114,11 @@ export default function StudentRegistrationPage() {
       phone: string;
       email: string;
       standard: string;
+      guardianName?: string | null;
+      guardianPhone?: string | null;
+      schoolName?: string | null;
+      city?: string | null;
+      dateOfBirth?: string | null;
     }) => studentApi.register(token, data),
     retry: 0,
 
@@ -77,7 +127,6 @@ export default function StudentRegistrationPage() {
       setSubmitted(true);
     },
 
-    // ❤️ Updated friendly error handling
     onError: (error: Error) => {
       const msg = error.message.toLowerCase();
       const isDuplicateStudent = msg.includes("student already exists");
@@ -111,11 +160,18 @@ export default function StudentRegistrationPage() {
     e.preventDefault();
     if (!validate()) return;
 
+    const dobISO = parseDobToISO(dateOfBirth);
+
     registerMutation.mutate({
       fullName,
       phone,
       email,
       standard: batchData?.batch.standard || "",
+      guardianName: guardianName.trim() || null,
+      guardianPhone: guardianPhone.trim() || null,
+      schoolName: schoolName.trim() || null,
+      city: city.trim() || null,
+      dateOfBirth: dobISO,
     });
   };
 
@@ -192,6 +248,7 @@ export default function StudentRegistrationPage() {
             <Label htmlFor="fullName">Full Name *</Label>
             <Input
               id="fullName"
+              data-testid="input-fullName"
               value={fullName}
               placeholder="Rahul Sharma"
               onChange={(e) => setFullName(e.target.value)}
@@ -208,6 +265,7 @@ export default function StudentRegistrationPage() {
             <Label htmlFor="phone">Phone Number *</Label>
             <Input
               id="phone"
+              data-testid="input-phone"
               type="tel"
               value={phone}
               placeholder="9876543210"
@@ -225,6 +283,7 @@ export default function StudentRegistrationPage() {
             <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
+              data-testid="input-email"
               type="email"
               value={email}
               placeholder="student@example.com"
@@ -237,10 +296,105 @@ export default function StudentRegistrationPage() {
             )}
           </div>
 
+          {/* Toggle for Additional Fields */}
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-between text-sm text-muted-foreground"
+            onClick={() => setShowAdditional(!showAdditional)}
+            data-testid="button-toggle-additional"
+          >
+            <span>Additional Details (Optional)</span>
+            {showAdditional ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+
+          {/* Additional Fields */}
+          {showAdditional && (
+            <div className="space-y-4 pt-2 border-t">
+              {/* Guardian Name */}
+              <div className="space-y-1">
+                <Label htmlFor="guardianName">Guardian Name</Label>
+                <Input
+                  id="guardianName"
+                  data-testid="input-guardianName"
+                  placeholder="Parent/Guardian name"
+                  value={guardianName}
+                  onChange={(e) => setGuardianName(e.target.value)}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* Guardian Phone */}
+              <div className="space-y-1">
+                <Label htmlFor="guardianPhone">Guardian Phone</Label>
+                <Input
+                  id="guardianPhone"
+                  data-testid="input-guardianPhone"
+                  type="tel"
+                  placeholder="9876543210"
+                  value={guardianPhone}
+                  onChange={(e) => setGuardianPhone(e.target.value)}
+                  className="rounded-xl"
+                />
+                {errors.guardianPhone && (
+                  <p className="text-red-500 text-xs">{errors.guardianPhone}</p>
+                )}
+              </div>
+
+              {/* School Name */}
+              <div className="space-y-1">
+                <Label htmlFor="schoolName">School Name</Label>
+                <Input
+                  id="schoolName"
+                  data-testid="input-schoolName"
+                  placeholder="School name"
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* City */}
+              <div className="space-y-1">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  data-testid="input-city"
+                  placeholder="City"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* Date of Birth */}
+              <div className="space-y-1">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  data-testid="input-dateOfBirth"
+                  placeholder="DD-MM-YYYY"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="rounded-xl"
+                  maxLength={10}
+                />
+                {errors.dateOfBirth && (
+                  <p className="text-red-500 text-xs">{errors.dateOfBirth}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <Button
             type="submit"
             className="w-full"
             disabled={registerMutation.isPending}
+            data-testid="button-register"
           >
             {registerMutation.isPending ? "Registering..." : "Register"}
           </Button>
