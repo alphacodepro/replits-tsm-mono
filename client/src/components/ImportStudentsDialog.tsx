@@ -23,6 +23,8 @@ interface ImportStudentsDialogProps {
   onOpenChange: (open: boolean) => void;
   batchId: string;
   batchName: string;
+  batchFee?: number;
+  feePeriod?: string;
 }
 
 interface InstallmentData {
@@ -64,6 +66,8 @@ export default function ImportStudentsDialog({
   onOpenChange,
   batchId,
   batchName,
+  batchFee,
+  feePeriod,
 }: ImportStudentsDialogProps) {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
@@ -420,6 +424,11 @@ export default function ImportStudentsDialog({
       ["   - Class/Standard: Example - Class 10, Grade 5, 12th Science"],
       ["   - Join Date: When did the student join? (Example: 15-01-2024)"],
       [""],
+      ["BATCH FEE INFO (Gray column - DO NOT EDIT):"],
+      ["   - This column shows the batch fee for your reference only"],
+      ["   - It is automatically filled and will be ignored during import"],
+      ["   - Any changes you make to this column will not be saved"],
+      [""],
       ["OPTIONAL - Payment (Green columns):"],
       ["   - Payment Amount: Amount paid in rupees (just the number, like 5000)"],
       ["   - Payment Date: When was the payment made? (Example: 01-02-2024)"],
@@ -453,7 +462,8 @@ export default function ImportStudentsDialog({
       }
       // Style section headers
       if (row[0]?.startsWith("REQUIRED") || row[0]?.startsWith("OPTIONAL") || 
-          row[0]?.startsWith("TIPS:") || row[0]?.startsWith("READY") || row[0]?.startsWith("WHAT YOU")) {
+          row[0]?.startsWith("TIPS:") || row[0]?.startsWith("READY") || row[0]?.startsWith("WHAT YOU") ||
+          row[0]?.startsWith("BATCH FEE")) {
         excelRow.font = { bold: true, size: 12 };
       }
     });
@@ -461,16 +471,20 @@ export default function ImportStudentsDialog({
     // ========== STUDENTS SHEET ==========
     const studentsSheet = workbook.addWorksheet('Students');
     
-    // Define column widths
-    const columnWidths = [22, 14, 28, 16, 14, 16, 14, 16, 20, 14, 22, 14, 14, 30];
+    // Format batch fee for display
+    const formattedBatchFee = batchFee 
+      ? `₹${batchFee.toLocaleString('en-IN')}${feePeriod ? `/${feePeriod}` : ''}`
+      : '₹0';
     
-    // Set columns
+    // Set columns (with Batch Fee Info column after Join Date)
+    // Column order: 1-5 Student Info (Blue), 6 Batch Fee Info (Gray), 7-9 Payment (Green), 10-15 Additional (Yellow)
     studentsSheet.columns = [
       { header: 'Full Name', key: 'fullName', width: 22 },
       { header: 'Phone', key: 'phone', width: 14 },
       { header: 'Email', key: 'email', width: 28 },
       { header: 'Class/Standard', key: 'standard', width: 16 },
       { header: 'Join Date', key: 'joinDate', width: 14 },
+      { header: 'Batch Fee (Info)\n(for reference)', key: 'batchFeeInfo', width: 18 },
       { header: 'Payment Amount', key: 'paymentAmount', width: 16 },
       { header: 'Payment Date', key: 'paymentDate', width: 14 },
       { header: 'Payment Method', key: 'paymentMethod', width: 16 },
@@ -485,7 +499,7 @@ export default function ImportStudentsDialog({
     // Style header row with colors
     const headerRow = studentsSheet.getRow(1);
     headerRow.font = { bold: true, color: { argb: 'FF000000' } };
-    headerRow.height = 25;
+    headerRow.height = 35;
     
     // Color coding for header groups
     // Student Info (Required) - Light Blue: columns 1-5
@@ -497,50 +511,72 @@ export default function ImportStudentsDialog({
         top: { style: 'thin' },
         left: { style: col === 1 ? 'medium' : 'thin' },
         bottom: { style: 'medium' },
-        right: { style: col === 5 ? 'medium' : 'thin' },
+        right: { style: 'medium' },
       };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     }
     
-    // Payment Info (Optional) - Light Green: columns 6-8
+    // Batch Fee Info (Read-only) - Light Gray: column 6
+    const lightGray = 'FFE5E7EB';
+    const batchFeeCell = headerRow.getCell(6);
+    batchFeeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lightGray } };
+    batchFeeCell.font = { bold: true, italic: true, color: { argb: 'FF6B7280' } };
+    batchFeeCell.border = {
+      top: { style: 'thin' },
+      left: { style: 'medium' },
+      bottom: { style: 'medium' },
+      right: { style: 'medium' },
+    };
+    batchFeeCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    
+    // Payment Info (Optional) - Light Green: columns 7-9
     const lightGreen = 'FFD1FAE5';
-    for (let col = 6; col <= 8; col++) {
+    for (let col = 7; col <= 9; col++) {
       const cell = headerRow.getCell(col);
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lightGreen } };
       cell.border = {
         top: { style: 'thin' },
-        left: { style: col === 6 ? 'medium' : 'thin' },
+        left: { style: col === 7 ? 'medium' : 'thin' },
         bottom: { style: 'medium' },
-        right: { style: col === 8 ? 'medium' : 'thin' },
+        right: { style: col === 9 ? 'medium' : 'thin' },
       };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     }
     
-    // Additional Details (Optional) - Light Yellow: columns 9-14
+    // Additional Details (Optional) - Light Yellow: columns 10-15
     const lightYellow = 'FFFEF3C7';
-    for (let col = 9; col <= 14; col++) {
+    for (let col = 10; col <= 15; col++) {
       const cell = headerRow.getCell(col);
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lightYellow } };
       cell.border = {
         top: { style: 'thin' },
-        left: { style: col === 9 ? 'medium' : 'thin' },
+        left: { style: col === 10 ? 'medium' : 'thin' },
         bottom: { style: 'medium' },
-        right: { style: col === 14 ? 'medium' : 'thin' },
+        right: { style: col === 15 ? 'medium' : 'thin' },
       };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     }
     
-    // Add example row
+    // Add example row with batch fee info auto-filled
     const exampleRow = studentsSheet.addRow([
       'Priya Sharma', '9876543210', 'priya.sharma@email.com', 'Class 10', '15-01-2024',
+      formattedBatchFee,
       5000, '01-02-2024', 'UPI',
       'Ramesh Sharma', '9876543211', 'Delhi Public School', 'Mumbai', '25-03-2010', 'Good at Mathematics'
     ]);
     
-    // Style example row with light gray background
-    exampleRow.eachCell((cell) => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
-      cell.font = { italic: true, color: { argb: 'FF6B7280' } };
+    // Style example row
+    exampleRow.eachCell((cell, colNumber) => {
+      if (colNumber === 6) {
+        // Batch Fee Info column - gray, italic, read-only appearance
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE5E7EB' } };
+        cell.font = { italic: true, color: { argb: 'FF6B7280' } };
+        cell.alignment = { horizontal: 'center' };
+      } else {
+        // Regular columns - light gray example styling
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
+        cell.font = { italic: true, color: { argb: 'FF6B7280' } };
+      }
     });
     
     // Freeze header row

@@ -577,6 +577,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
         onOpenChange={setImportDialogOpen}
         batchId={batch.id}
         batchName={batch.name}
+        batchFee={batch.fee}
+        feePeriod={batch.feePeriod}
       />
 
       {selectedStudentId && (
