@@ -51,6 +51,7 @@ interface StudentRow {
 
 interface ValidationError {
   row: number;
+  name?: string;
   errors: string[];
 }
 
@@ -268,9 +269,22 @@ export default function ImportStudentsDialog({
             }
           }
 
+          // Validate total payments don't exceed batch fee
+          if (batchFee && installments.length > 0) {
+            const totalPayments = installments.reduce((sum, inst) => sum + inst.amount, 0);
+            if (totalPayments > batchFee) {
+              const formattedTotal = `₹${totalPayments.toLocaleString('en-IN')}`;
+              const formattedFee = `₹${batchFee.toLocaleString('en-IN')}`;
+              rowErrors.push(
+                `Total payments (${formattedTotal}) exceed batch fee (${formattedFee}). ` +
+                `Please reduce the payment amount or remove extra payment columns.`
+              );
+            }
+          }
+
           // Add student or error
           if (rowErrors.length > 0) {
-            errors.push({ row: rowNum, errors: rowErrors });
+            errors.push({ row: rowNum, name: rawFullName || undefined, errors: rowErrors });
           } else {
             seenPhones.add(phone);
 
@@ -433,6 +447,7 @@ export default function ImportStudentsDialog({
       ["   - Payment Amount: Amount paid in rupees (just the number, like 5000)"],
       ["   - Payment Date: When was the payment made? (Example: 01-02-2024)"],
       ["   - Payment Method: How they paid - Cash, UPI, Bank Transfer, Cheque, Online, or Other"],
+      ["   * IMPORTANT: Total payments cannot exceed the batch fee shown in gray column"],
       [""],
       ["OPTIONAL - Extra Details (Yellow columns):"],
       ["   - Guardian Name: Parent or guardian's name"],
@@ -651,16 +666,22 @@ export default function ImportStudentsDialog({
 
           {/* Validation errors */}
           {validationErrors.length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+            <Alert className="border-amber-200 bg-amber-50/50">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription>
-                <p className="font-semibold mb-2">
-                  Found {validationErrors.length} error(s):
+                <p className="font-semibold mb-1 text-amber-800">
+                  {validationErrors.length} row(s) need attention
                 </p>
-                <ul className="list-disc list-inside space-y-1 max-h-40 overflow-y-auto">
+                <p className="text-xs text-amber-700 mb-2">
+                  Fix the issues below and re-upload the file. Other valid students can still be imported.
+                </p>
+                <ul className="list-none space-y-1.5 max-h-40 overflow-y-auto">
                   {validationErrors.map((err, idx) => (
-                    <li key={idx} className="text-xs">
-                      Row {err.row}: {err.errors.join(", ")}
+                    <li key={idx} className="text-xs text-amber-900 bg-amber-100/50 p-2 rounded">
+                      <span className="font-medium">
+                        Row {err.row}{err.name ? ` (${err.name})` : ''}:
+                      </span>{' '}
+                      {err.errors.join(" • ")}
                     </li>
                   ))}
                 </ul>
@@ -738,7 +759,6 @@ export default function ImportStudentsDialog({
           <Button
             disabled={
               students.length === 0 ||
-              validationErrors.length > 0 ||
               importMutation.isPending
             }
             onClick={handleImport}
