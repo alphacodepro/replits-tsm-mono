@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,13 @@ interface StudentRow {
   standard: string;
   joinDate: string;
   installments: InstallmentData[];
+  // Optional additional details
+  guardianName?: string;
+  guardianPhone?: string;
+  schoolName?: string;
+  city?: string;
+  dateOfBirth?: string;
+  notes?: string;
 }
 
 interface ValidationError {
@@ -139,10 +147,37 @@ export default function ImportStudentsDialog({
           const rawJoinDate = row["Join Date"]?.toString().trim() || "";
           
           // Extract payment fields (up to 10 payments)
-          // Supports new format: "Payment 1 Amount" and legacy format: "Inst1_Amount"
+          // Supports multiple formats:
+          // - Simplified: "Payment Amount", "Payment Date", "Payment Method" (new default template)
+          // - Numbered: "Payment 1 Amount", "Payment 2 Amount", etc.
+          // - Legacy: "Inst1_Amount", "Inst2_Amount", etc.
           const installments: InstallmentData[] = [];
+          
+          // First, check for simplified single payment columns (new template format)
+          const simpleAmount = row["Payment Amount"]?.toString().trim();
+          const simpleDate = row["Payment Date"]?.toString().trim();
+          const simpleMethod = row["Payment Method"]?.toString().trim() || null;
+          
+          if (simpleAmount) {
+            const amount = Number(simpleAmount);
+            if (!isNaN(amount) && amount > 0) {
+              const instDate = simpleDate && isValidDate(simpleDate) 
+                ? formatDate(simpleDate) 
+                : (rawJoinDate && isValidDate(rawJoinDate) ? formatDate(rawJoinDate) : "");
+              
+              if (instDate) {
+                installments.push({
+                  amount,
+                  date: instDate,
+                  method: simpleMethod,
+                });
+              }
+            }
+          }
+          
+          // Then check for numbered payment columns (Payment 1, Payment 2, etc.)
           for (let i = 1; i <= 10; i++) {
-            // Try new format first, fallback to legacy format
+            // Try numbered format first, fallback to legacy format
             const amountKey = row[`Payment ${i} Amount`] !== undefined ? `Payment ${i} Amount` : `Inst${i}_Amount`;
             const dateKey = row[`Payment ${i} Date`] !== undefined ? `Payment ${i} Date` : `Inst${i}_Date`;
             const methodKey = row[`Payment ${i} Method`] !== undefined ? `Payment ${i} Method` : `Inst${i}_Method`;
@@ -204,6 +239,31 @@ export default function ImportStudentsDialog({
             rowErrors.push("Invalid date format");
           }
 
+          // Extract optional additional details
+          const guardianName = row["Guardian Name"]?.toString().trim() || undefined;
+          const guardianPhone = row["Guardian Phone"]?.toString().trim() || undefined;
+          const schoolName = row["School Name"]?.toString().trim() || undefined;
+          const city = row["City"]?.toString().trim() || undefined;
+          const rawDateOfBirth = row["Date of Birth"]?.toString().trim() || "";
+          const notes = row["Notes"]?.toString().trim() || undefined;
+          
+          // Parse date of birth (DD-MM-YYYY format) to ISO string
+          let dateOfBirth: string | undefined = undefined;
+          if (rawDateOfBirth) {
+            // Try DD-MM-YYYY format first
+            const dobMatch = rawDateOfBirth.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            if (dobMatch) {
+              const [, day, month, year] = dobMatch;
+              const dobDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+              if (!isNaN(dobDate.getTime())) {
+                dateOfBirth = dobDate.toISOString();
+              }
+            } else if (isValidDate(rawDateOfBirth)) {
+              // Fallback to other date formats
+              dateOfBirth = new Date(formatDate(rawDateOfBirth)).toISOString();
+            }
+          }
+
           // Add student or error
           if (rowErrors.length > 0) {
             errors.push({ row: rowNum, errors: rowErrors });
@@ -217,6 +277,13 @@ export default function ImportStudentsDialog({
               standard: rawStandard,
               joinDate: formatDate(rawJoinDate),
               installments,
+              // Optional additional details
+              guardianName,
+              guardianPhone,
+              schoolName,
+              city,
+              dateOfBirth,
+              notes,
             });
           }
         });
@@ -329,71 +396,165 @@ export default function ImportStudentsDialog({
     importMutation.mutate(students);
   };
 
-  const downloadTemplate = () => {
-    const wb = XLSX.utils.book_new();
+  const downloadTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Tuition Management System';
     
     // ========== INSTRUCTIONS SHEET ==========
+    const instructionsSheet = workbook.addWorksheet('Instructions');
+    
+    // Set column width
+    instructionsSheet.getColumn(1).width = 85;
+    
     const instructionsData = [
-      ["STUDENT IMPORT TEMPLATE - INSTRUCTIONS"],
+      ["STUDENT IMPORT - QUICK GUIDE"],
       [""],
-      ["This template allows you to import students with their payment history."],
+      ["Welcome! This template helps you add multiple students at once."],
       [""],
-      ["COLUMN DESCRIPTIONS:"],
-      ["Full Name", "Required. Student's full name"],
-      ["Phone", "Required. 10-digit mobile number (must be unique within batch)"],
-      ["Email", "Optional. Student's email address"],
-      ["Class/Standard", "Required. e.g., Class 10, Grade 5, etc."],
-      ["Join Date", "Optional. Format: YYYY-MM-DD (defaults to today if empty)"],
+      ["WHAT YOU NEED TO FILL:"],
       [""],
-      ["PAYMENT COLUMNS:"],
-      ["You can record up to 10 past payments per student."],
-      ["Payment X Amount", "Payment amount in rupees (numbers only)"],
-      ["Payment X Date", "Payment date. Format: YYYY-MM-DD"],
-      ["Payment X Method", "One of: Cash, UPI, Bank Transfer, Cheque, Online, Other"],
+      ["REQUIRED (Blue columns):"],
+      ["   - Full Name: Student's complete name"],
+      ["   - Phone: 10-digit mobile number (each student needs a unique number)"],
+      ["   - Email: Student's email address"],
+      ["   - Class/Standard: Example - Class 10, Grade 5, 12th Science"],
+      ["   - Join Date: When did the student join? (Example: 15-01-2024)"],
       [""],
-      ["VALID PAYMENT METHODS:"],
-      ["Cash", "UPI", "Bank Transfer", "Cheque", "Online", "Other"],
+      ["OPTIONAL - Payment (Green columns):"],
+      ["   - Payment Amount: Amount paid in rupees (just the number, like 5000)"],
+      ["   - Payment Date: When was the payment made? (Example: 01-02-2024)"],
+      ["   - Payment Method: How they paid - Cash, UPI, Bank Transfer, Cheque, Online, or Other"],
       [""],
-      ["EXAMPLE ROW:"],
-      ["Full Name", "Phone", "Email", "Class/Standard", "Join Date", "", "Payment 1 Amount", "Payment 1 Date", "Payment 1 Method"],
-      ["Rahul Sharma", "9876543210", "rahul@example.com", "Class 10", "2024-01-15", "", "5000", "2024-02-01", "UPI"],
+      ["OPTIONAL - Extra Details (Yellow columns):"],
+      ["   - Guardian Name: Parent or guardian's name"],
+      ["   - Guardian Phone: Parent's phone number"],
+      ["   - School Name: Name of the school"],
+      ["   - City: City or town name"],
+      ["   - Date of Birth: Student's birthday (Example: 25-03-2010)"],
+      ["   - Notes: Any extra information about the student"],
       [""],
       ["TIPS:"],
-      ["- Delete these instructions before importing (use the Students sheet only)"],
-      ["- Leave unused payment columns blank"],
-      ["- Phone numbers must be unique within the batch"],
-      ["- Dates should be in YYYY-MM-DD format for best results"],
+      ["   - Look at the example row in the Students sheet - it shows exactly how to fill the data"],
+      ["   - Leave any optional columns blank if you don't have that information"],
+      ["   - Need to add more payments? Add columns: Payment 2 Amount, Payment 2 Date, Payment 2 Method"],
+      ["   - Dates can be DD-MM-YYYY (like 15-01-2024) or YYYY-MM-DD (like 2024-01-15)"],
+      [""],
+      ["READY TO IMPORT:"],
+      ["   1. Fill your student data in the 'Students' sheet"],
+      ["   2. Save this file"],
+      ["   3. Upload it using the 'Upload Excel' button"],
     ];
-    const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsData);
-    XLSX.utils.book_append_sheet(wb, wsInstructions, "Instructions");
+    
+    instructionsData.forEach((row, index) => {
+      const excelRow = instructionsSheet.addRow(row);
+      // Style the title row
+      if (index === 0) {
+        excelRow.font = { bold: true, size: 16 };
+      }
+      // Style section headers
+      if (row[0]?.startsWith("REQUIRED") || row[0]?.startsWith("OPTIONAL") || 
+          row[0]?.startsWith("TIPS:") || row[0]?.startsWith("READY") || row[0]?.startsWith("WHAT YOU")) {
+        excelRow.font = { bold: true, size: 12 };
+      }
+    });
     
     // ========== STUDENTS SHEET ==========
-    // Build headers: Basic info + separator + payments
-    const headers: string[] = [
-      "Full Name", "Phone", "Email", "Class/Standard", "Join Date",
-      "--- PAYMENTS ---"
+    const studentsSheet = workbook.addWorksheet('Students');
+    
+    // Define column widths
+    const columnWidths = [22, 14, 28, 16, 14, 16, 14, 16, 20, 14, 22, 14, 14, 30];
+    
+    // Set columns
+    studentsSheet.columns = [
+      { header: 'Full Name', key: 'fullName', width: 22 },
+      { header: 'Phone', key: 'phone', width: 14 },
+      { header: 'Email', key: 'email', width: 28 },
+      { header: 'Class/Standard', key: 'standard', width: 16 },
+      { header: 'Join Date', key: 'joinDate', width: 14 },
+      { header: 'Payment Amount', key: 'paymentAmount', width: 16 },
+      { header: 'Payment Date', key: 'paymentDate', width: 14 },
+      { header: 'Payment Method', key: 'paymentMethod', width: 16 },
+      { header: 'Guardian Name', key: 'guardianName', width: 20 },
+      { header: 'Guardian Phone', key: 'guardianPhone', width: 14 },
+      { header: 'School Name', key: 'schoolName', width: 22 },
+      { header: 'City', key: 'city', width: 14 },
+      { header: 'Date of Birth', key: 'dateOfBirth', width: 14 },
+      { header: 'Notes', key: 'notes', width: 30 },
     ];
-    for (let i = 1; i <= 10; i++) {
-      headers.push(`Payment ${i} Amount`, `Payment ${i} Date`, `Payment ${i} Method`);
+    
+    // Style header row with colors
+    const headerRow = studentsSheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FF000000' } };
+    headerRow.height = 25;
+    
+    // Color coding for header groups
+    // Student Info (Required) - Light Blue: columns 1-5
+    const lightBlue = 'FFDBEAFE';
+    for (let col = 1; col <= 5; col++) {
+      const cell = headerRow.getCell(col);
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lightBlue } };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: col === 1 ? 'medium' : 'thin' },
+        bottom: { style: 'medium' },
+        right: { style: col === 5 ? 'medium' : 'thin' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
     }
     
-    // Example row with 2 payments filled
-    const exampleRow: (string | number)[] = [
-      "Rahul Sharma", "9876543210", "rahul@example.com", "Class 10", "2024-01-15",
-      "", // separator column (leave empty)
-      5000, "2024-02-01", "UPI",
-      5000, "2024-03-01", "Cash",
-    ];
-    // Fill remaining payment columns with empty strings
-    while (exampleRow.length < headers.length) {
-      exampleRow.push("");
+    // Payment Info (Optional) - Light Green: columns 6-8
+    const lightGreen = 'FFD1FAE5';
+    for (let col = 6; col <= 8; col++) {
+      const cell = headerRow.getCell(col);
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lightGreen } };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: col === 6 ? 'medium' : 'thin' },
+        bottom: { style: 'medium' },
+        right: { style: col === 8 ? 'medium' : 'thin' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
     }
     
-    const studentsData = [headers, exampleRow];
-    const wsStudents = XLSX.utils.aoa_to_sheet(studentsData);
-    XLSX.utils.book_append_sheet(wb, wsStudents, "Students");
+    // Additional Details (Optional) - Light Yellow: columns 9-14
+    const lightYellow = 'FFFEF3C7';
+    for (let col = 9; col <= 14; col++) {
+      const cell = headerRow.getCell(col);
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lightYellow } };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: col === 9 ? 'medium' : 'thin' },
+        bottom: { style: 'medium' },
+        right: { style: col === 14 ? 'medium' : 'thin' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    }
     
-    XLSX.writeFile(wb, "student_import_template.xlsx");
+    // Add example row
+    const exampleRow = studentsSheet.addRow([
+      'Priya Sharma', '9876543210', 'priya.sharma@email.com', 'Class 10', '15-01-2024',
+      5000, '01-02-2024', 'UPI',
+      'Ramesh Sharma', '9876543211', 'Delhi Public School', 'Mumbai', '25-03-2010', 'Good at Mathematics'
+    ]);
+    
+    // Style example row with light gray background
+    exampleRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
+      cell.font = { italic: true, color: { argb: 'FF6B7280' } };
+    });
+    
+    // Freeze header row
+    studentsSheet.views = [{ state: 'frozen', ySplit: 1 }];
+    
+    // Generate and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'student_import_template.xlsx';
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   // ----------------------------------------
