@@ -7,6 +7,7 @@ import {
   timestamp,
   boolean,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -83,6 +84,7 @@ export const students = pgTable(
       table.batchId,
       table.phone,
     ),
+    batchIdIdx: index("students_batch_id_idx").on(table.batchId),
   }),
 );
 
@@ -99,7 +101,10 @@ export const payments = pgTable("payments", {
     .notNull()
     .default(sql`now()`),
   modifiedAt: timestamp("modified_at"),
-});
+}, (table) => ({
+  studentIdIdx: index("payments_student_id_idx").on(table.studentId),
+  paidAtIdx: index("payments_paid_at_idx").on(table.paidAt),
+}));
 
 /* -------------------------------------------
    VALIDATION RULES
