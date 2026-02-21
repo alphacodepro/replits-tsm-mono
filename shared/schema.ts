@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   phone: text("phone").unique(),
   isActive: boolean("is_active").notNull().default(true),
+  whatsappEnabled: boolean("whatsapp_enabled").notNull().default(false),
   hasAcceptedTerms: boolean("has_accepted_terms").notNull().default(false),
   acceptedAt: timestamp("accepted_at"),
   acceptedVersion: text("accepted_version"),
@@ -31,6 +32,22 @@ export const users = pgTable("users", {
     .notNull()
     .default(sql`now()`),
 });
+
+export const whatsappUsage = pgTable("whatsapp_usage", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  month: varchar("month", { length: 7 }).notNull(),
+  messagesUsed: integer("messages_used").notNull().default(0),
+}, (table) => ({
+  teacherMonthUnique: uniqueIndex("whatsapp_usage_teacher_month_unique").on(
+    table.teacherId,
+    table.month,
+  ),
+}));
 
 export const batches = pgTable("batches", {
   id: varchar("id")
@@ -258,6 +275,8 @@ export type UpdateStudent = z.infer<typeof updateStudentSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type UpdatePayment = z.infer<typeof updatePaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
+
+export type WhatsappUsage = typeof whatsappUsage.$inferSelect;
 
 /* -------------------------------------------
    PAGINATION TYPES

@@ -11,7 +11,7 @@ import TeacherDetailsDialog from "@/components/TeacherDetailsDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Plus, Search, Users, BookOpen, GraduationCap, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { teacherApi, statsApi, authApi } from "@/lib/api";
+import { teacherApi, statsApi, authApi, whatsappApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
 export default function SuperAdminDashboard() {
@@ -42,6 +42,21 @@ export default function SuperAdminDashboard() {
     onError: (error: Error) => {
       toast({
         title: "Error updating teacher status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleWhatsappMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      whatsappApi.toggleEnabled(id, enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating WhatsApp status",
         description: error.message,
         variant: "destructive",
       });
@@ -94,6 +109,15 @@ export default function SuperAdminDashboard() {
     toast({
       title: newStatus ? "Teacher activated" : "Teacher deactivated",
       description: `Teacher has been ${newStatus ? 'activated' : 'deactivated'}`,
+    });
+  };
+
+  const handleToggleWhatsapp = (id: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    toggleWhatsappMutation.mutate({ id, enabled: newStatus });
+    toast({
+      title: newStatus ? "WhatsApp enabled" : "WhatsApp disabled",
+      description: `WhatsApp notifications have been ${newStatus ? 'enabled' : 'disabled'}`,
     });
   };
 
@@ -199,8 +223,10 @@ export default function SuperAdminDashboard() {
               <TeacherCard
                 key={teacher.id}
                 {...teacher}
+                whatsappEnabled={teacher.whatsappEnabled ?? false}
                 onViewDetails={() => setDetailsTeacherId(teacher.id)}
                 onToggleStatus={() => handleToggleStatus(teacher.id, teacher.isActive)}
+                onToggleWhatsapp={() => handleToggleWhatsapp(teacher.id, teacher.whatsappEnabled ?? false)}
                 onDelete={() => handleDelete(teacher.id, teacher.fullName)}
               />
             ))}

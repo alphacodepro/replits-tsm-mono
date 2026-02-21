@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Phone, BookOpen, Users, MoreVertical } from "lucide-react";
+import { User, Mail, Phone, BookOpen, Users, MoreVertical, MessageCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,10 +17,12 @@ interface TeacherCardProps {
   email?: string;
   phone?: string;
   isActive: boolean;
+  whatsappEnabled: boolean;
   batchCount: number;
   studentCount: number;
   onViewDetails: () => void;
   onToggleStatus: () => void;
+  onToggleWhatsapp: () => void;
   onDelete: () => void;
 }
 
@@ -31,10 +33,12 @@ export default function TeacherCard({
   email,
   phone,
   isActive,
+  whatsappEnabled,
   batchCount,
   studentCount,
   onViewDetails,
   onToggleStatus,
+  onToggleWhatsapp,
   onDelete,
 }: TeacherCardProps) {
   return (
@@ -74,6 +78,9 @@ export default function TeacherCard({
               <DropdownMenuItem onClick={onToggleStatus}>
                 {isActive ? 'Deactivate' : 'Activate'}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleWhatsapp} data-testid="button-toggle-whatsapp">
+                {whatsappEnabled ? 'Disable WhatsApp' : 'Enable WhatsApp'}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={onDelete} className="text-destructive">
                 Delete
               </DropdownMenuItem>
@@ -96,7 +103,7 @@ export default function TeacherCard({
           )}
         </div>
 
-        <div className="flex items-center gap-4 pt-2 border-t">
+        <div className="flex items-center gap-4 flex-wrap pt-2 border-t">
           <div className="flex items-center gap-2 text-sm">
             <BookOpen className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">{batchCount}</span>
@@ -107,6 +114,17 @@ export default function TeacherCard({
             <span className="font-medium">{studentCount}</span>
             <span className="text-muted-foreground">Students</span>
           </div>
+          {whatsappEnabled ? (
+            <Badge variant="outline" className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20" data-testid="badge-whatsapp-enabled">
+              <MessageCircle className="w-3 h-3 mr-1" />
+              WA
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs bg-muted text-muted-foreground" data-testid="badge-whatsapp-disabled">
+              <MessageCircle className="w-3 h-3 mr-1" />
+              WA Off
+            </Badge>
+          )}
         </div>
 
         <Button 

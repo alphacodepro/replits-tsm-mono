@@ -61,6 +61,7 @@ export interface User {
   email?: string;
   phone?: string;
   isActive: boolean;
+  whatsappEnabled: boolean;
   hasAcceptedTerms: boolean;
   acceptedAt?: string | null;
   acceptedVersion?: string | null;
@@ -304,6 +305,26 @@ export const paymentApi = {
     apiRequest<{ payment: Payment }>(`/api/payments/${paymentId}`, {
       method: "PATCH",
       body: JSON.stringify(data),
+    }),
+};
+
+// WhatsApp API
+export interface WhatsappUsageInfo {
+  enabled: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  resetDate: string;
+  warningThreshold: boolean;
+}
+
+export const whatsappApi = {
+  getUsage: () => apiRequest<WhatsappUsageInfo>("/api/whatsapp/usage"),
+
+  toggleEnabled: (teacherId: string, enabled: boolean) =>
+    apiRequest<{ success: boolean }>(`/api/teachers/${teacherId}/whatsapp`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
     }),
 };
 

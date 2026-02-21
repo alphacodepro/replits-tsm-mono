@@ -25,8 +25,9 @@ import {
   User,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { batchApi, dashboardApi, authApi } from "@/lib/api";
+import { batchApi, dashboardApi, authApi, whatsappApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import WhatsappUsageWidget from "@/components/WhatsappUsageWidget";
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
@@ -57,6 +58,13 @@ export default function TeacherDashboard() {
     queryFn: () => dashboardApi.summary(),
     placeholderData: (previousData) => previousData,
   });
+
+  const { data: waUsage, isLoading: waLoading } = useQuery({
+    queryKey: ["/api/whatsapp/usage"],
+    queryFn: () => whatsappApi.getUsage(),
+  });
+
+  const waActive = !!waUsage?.enabled;
 
   const createBatchMutation = useMutation({
     mutationFn: batchApi.create,
@@ -225,128 +233,139 @@ export default function TeacherDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            {/* UPDATED → made font-bold */}
-            <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
-              Dashboard Overview
-            </h2>
-            <Button
-              onClick={() => setShowStats(!showStats)}
-              variant="outline"
-              size="icon"
-              className="hover:scale-105 transition-transform duration-200"
-              data-testid="button-toggle-stats"
-            >
-              {showStats ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
-        </div>
-
-        {showStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard
-              title="Total Batches"
-              value={stats.batchCount}
-              icon={BookOpen}
-            />
-            <StatCard
-              title="Total Students"
-              value={stats.studentCount}
-              icon={Users}
-            />
-            <StatCard
-              title="Fees Collected"
-              value={`₹${stats.totalCollected.toLocaleString()}`}
-              icon={IndianRupee}
-              valueColor="text-chart-2"
-            />
-            <StatCard
-              title="Pending Payments"
-              value={`₹${stats.totalPending.toLocaleString()}`}
-              icon={Clock}
-              valueColor="text-chart-3"
-            />
-          </div>
-        )}
-
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              My Batches
-            </h2>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowBatchDetails(!showBatchDetails)}
-                variant="outline"
-                size="icon"
-                className="hover:scale-105 transition-transform duration-200"
-                data-testid="button-toggle-batch-details"
-              >
-                {showBatchDetails ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </Button>
-              <Button
-                onClick={() => setCreateBatchOpen(true)}
-                className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-                data-testid="button-create-batch"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Batch
-              </Button>
+        <div className="flex flex-col lg:flex-row flex-wrap gap-6">
+          <aside className="lg:w-56 flex-shrink-0 lg:sticky lg:top-4 lg:self-start z-30" data-testid="mini-insights-panel">
+            <div className="flex">
+              <div className={`w-1 flex-shrink-0 rounded-l-md transition-colors duration-300 ${waActive ? "bg-emerald-500/60" : "bg-border/40"}`} />
+              <div className="flex-1 rounded-r-md border border-l-0 border-border/40 bg-muted/30 p-4 space-y-4">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Insights</h3>
+                <WhatsappUsageWidget usage={waUsage ?? null} isLoading={waLoading} />
+              </div>
             </div>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <Input
-              placeholder="Search batches..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
-              data-testid="input-search-batches"
-            />
+          </aside>
+
+          <div className="flex-1 min-w-0">
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                  Dashboard Overview
+                </h2>
+                <Button
+                  onClick={() => setShowStats(!showStats)}
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-toggle-stats"
+                >
+                  {showStats ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
+            </div>
+
+            {showStats && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatCard
+                  title="Total Batches"
+                  value={stats.batchCount}
+                  icon={BookOpen}
+                />
+                <StatCard
+                  title="Total Students"
+                  value={stats.studentCount}
+                  icon={Users}
+                />
+                <StatCard
+                  title="Fees Collected"
+                  value={`₹${stats.totalCollected.toLocaleString()}`}
+                  icon={IndianRupee}
+                  valueColor="text-chart-2"
+                />
+                <StatCard
+                  title="Pending Payments"
+                  value={`₹${stats.totalPending.toLocaleString()}`}
+                  icon={Clock}
+                  valueColor="text-chart-3"
+                />
+              </div>
+            )}
+
+            <div className="mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  My Batches
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setShowBatchDetails(!showBatchDetails)}
+                    variant="outline"
+                    size="icon"
+                    data-testid="button-toggle-batch-details"
+                  >
+                    {showBatchDetails ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => setCreateBatchOpen(true)}
+                    className="shadow-md"
+                    data-testid="button-create-batch"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Batch
+                  </Button>
+                </div>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <Input
+                  placeholder="Search batches..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
+                  data-testid="input-search-batches"
+                />
+              </div>
+            </div>
+
+            {filteredBatches.length === 0 ? (
+              searchQuery ? (
+                <EmptyState
+                  icon={Search}
+                  title="No batches found"
+                  description={`No batches match "${searchQuery}"`}
+                />
+              ) : (
+                <EmptyState
+                  icon={BookOpen}
+                  title="No batches yet"
+                  description="Get started by creating your first batch to organize your students and manage their fees"
+                  actionLabel="Create First Batch"
+                  onAction={() => setCreateBatchOpen(true)}
+                />
+              )
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredBatches.map((batch) => (
+                  <BatchCard
+                    key={batch.id}
+                    {...batch}
+                    showDetails={showBatchDetails}
+                    onViewDetails={() => handleViewDetails(batch.id)}
+                    onShowQR={() => handleShowQR(batch)}
+                    onCopyLink={() => handleCopyLink(batch)}
+                    onDelete={() => handleDeleteClick(batch)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-
-        {filteredBatches.length === 0 ? (
-          searchQuery ? (
-            <EmptyState
-              icon={Search}
-              title="No batches found"
-              description={`No batches match "${searchQuery}"`}
-            />
-          ) : (
-            <EmptyState
-              icon={BookOpen}
-              title="No batches yet"
-              description="Get started by creating your first batch to organize your students and manage their fees"
-              actionLabel="Create First Batch"
-              onAction={() => setCreateBatchOpen(true)}
-            />
-          )
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBatches.map((batch) => (
-              <BatchCard
-                key={batch.id}
-                {...batch}
-                showDetails={showBatchDetails}
-                onViewDetails={() => handleViewDetails(batch.id)}
-                onShowQR={() => handleShowQR(batch)}
-                onCopyLink={() => handleCopyLink(batch)}
-                onDelete={() => handleDeleteClick(batch)}
-              />
-            ))}
-          </div>
-        )}
       </main>
 
       <footer className="border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm mt-auto">
