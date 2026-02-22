@@ -364,8 +364,22 @@ export interface PaginatedStudentsResponse extends PaginatedResponse<Student> {
   };
 }
 
+export interface RecentPayment {
+  studentName: string;
+  batchName: string;
+  amount: number;
+  paidAt: string;
+}
+
+export interface RecentPaymentsResponse {
+  payments: RecentPayment[];
+  todayCollected: number;
+}
+
 export const dashboardApi = {
   summary: () => apiRequest<DashboardSummary>("/api/dashboard/summary"),
+
+  recentPayments: () => apiRequest<RecentPaymentsResponse>("/api/payments/recent"),
 
   studentsPaginated: (batchId: string, page: number = 1, limit: number = 25) =>
     apiRequest<PaginatedStudentsResponse>(

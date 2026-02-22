@@ -23,6 +23,7 @@ import {
   EyeOff,
   Settings,
   User,
+  CreditCard,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, dashboardApi, authApi, whatsappApi } from "@/lib/api";
@@ -64,7 +65,32 @@ export default function TeacherDashboard() {
     queryFn: () => whatsappApi.getUsage(),
   });
 
+  const { data: recentPaymentsData } = useQuery({
+    queryKey: ["/api/payments/recent"],
+    queryFn: () => dashboardApi.recentPayments(),
+  });
+
+  const recentPayments = recentPaymentsData?.payments;
+  const todayCollected = recentPaymentsData?.todayCollected ?? 0;
+
   const waActive = !!waUsage?.enabled;
+
+  const allSameBatch = recentPayments && recentPayments.length > 1 &&
+    recentPayments.every(p => p.batchName === recentPayments[0].batchName);
+
+  const formatRelativeTime = (dateStr: string) => {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  };
 
   const createBatchMutation = useMutation({
     mutationFn: batchApi.create,
@@ -233,39 +259,29 @@ export default function TeacherDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
+              Dashboard Overview
+            </h2>
+            <Button
+              onClick={() => setShowStats(!showStats)}
+              variant="outline"
+              size="icon"
+              data-testid="button-toggle-stats"
+            >
+              {showStats ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
+        </div>
+
         <div className="flex flex-col lg:flex-row flex-wrap gap-6">
-          <aside className="lg:w-56 flex-shrink-0 lg:sticky lg:top-4 lg:self-start z-30" data-testid="mini-insights-panel">
-            <div className="flex">
-              <div className={`w-1 flex-shrink-0 rounded-l-md transition-colors duration-300 ${waActive ? "bg-emerald-500/60" : "bg-border/40"}`} />
-              <div className="flex-1 rounded-r-md border border-l-0 border-border/40 bg-muted/30 p-4 space-y-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Insights</h3>
-                <WhatsappUsageWidget usage={waUsage ?? null} isLoading={waLoading} />
-              </div>
-            </div>
-          </aside>
-
           <div className="flex-1 min-w-0">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                  Dashboard Overview
-                </h2>
-                <Button
-                  onClick={() => setShowStats(!showStats)}
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-toggle-stats"
-                >
-                  {showStats ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
-            </div>
-
             {showStats && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
@@ -365,6 +381,57 @@ export default function TeacherDashboard() {
               </div>
             )}
           </div>
+
+          <aside className="lg:w-64 flex-shrink-0 lg:sticky lg:top-20 lg:self-start z-[5]" data-testid="mini-insights-panel">
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 px-1">Insights</h3>
+
+              <div className="rounded-lg border border-border/50 bg-muted/25 p-5 shadow-sm">
+                <WhatsappUsageWidget usage={waUsage ?? null} isLoading={waLoading} />
+              </div>
+
+              {recentPayments && recentPayments.length > 0 && (
+                <div className="rounded-lg border border-border/50 bg-muted/25 p-5 shadow-sm" data-testid="recent-payments-widget">
+                  <div className="flex items-start justify-between gap-2 flex-wrap mb-4">
+                    <div>
+                      <p className="text-xs font-semibold">Recent Payments</p>
+                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">Last 3 transactions</p>
+                    </div>
+                    {todayCollected > 0 && (
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid="today-collected">
+                        ₹{todayCollected.toLocaleString()} today
+                      </span>
+                    )}
+                  </div>
+
+                  {allSameBatch && (
+                    <p className="text-[10px] text-muted-foreground/40 mb-2.5 truncate">{recentPayments[0].batchName}</p>
+                  )}
+
+                  <div className="space-y-2.5">
+                    {recentPayments.map((p, i) => (
+                      <div
+                        key={i}
+                        className="rounded-md bg-background/60 dark:bg-background/30 px-3 py-2.5"
+                        data-testid={`recent-payment-${i}`}
+                      >
+                        <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                          <span className="text-[11px] font-medium truncate max-w-[110px]">{p.studentName}</span>
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">₹{p.amount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 flex-wrap mt-1">
+                          {!allSameBatch && (
+                            <span className="text-[10px] text-muted-foreground/50 truncate max-w-[100px]">{p.batchName}</span>
+                          )}
+                          <span className="text-[10px] text-muted-foreground/35 ml-auto">{formatRelativeTime(p.paidAt)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
       </main>
 
