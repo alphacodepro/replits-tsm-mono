@@ -259,29 +259,80 @@ export default function TeacherDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
-              Dashboard Overview
-            </h2>
-            <Button
-              onClick={() => setShowStats(!showStats)}
-              variant="outline"
-              size="icon"
-              data-testid="button-toggle-stats"
-            >
-              {showStats ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
-        </div>
-
         <div className="flex flex-col lg:flex-row flex-wrap gap-6">
+          <aside className="lg:w-64 flex-shrink-0 lg:sticky lg:top-20 lg:self-start z-[5]" data-testid="mini-insights-panel">
+            <div className="rounded-xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-4 shadow-sm">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-3">Insights</h3>
+
+              <div className="space-y-3">
+                <div className="rounded-md bg-background/70 dark:bg-background/25 p-3.5">
+                  <WhatsappUsageWidget usage={waUsage ?? null} isLoading={waLoading} />
+                </div>
+
+                {recentPayments && recentPayments.length > 0 && (
+                  <div className="rounded-md bg-background/70 dark:bg-background/25 p-3.5" data-testid="recent-payments-widget">
+                    <div className="flex items-start justify-between gap-2 flex-wrap mb-3">
+                      <div>
+                        <p className="text-xs font-semibold">Recent Payments</p>
+                        <p className="text-[10px] text-muted-foreground/50 mt-0.5">Last 3 transactions</p>
+                      </div>
+                      {todayCollected > 0 && (
+                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid="today-collected">
+                          ₹{todayCollected.toLocaleString()} today
+                        </span>
+                      )}
+                    </div>
+
+                    {allSameBatch && (
+                      <p className="text-[10px] text-muted-foreground/40 mb-2 truncate">{recentPayments[0].batchName}</p>
+                    )}
+
+                    <div className="space-y-2">
+                      {recentPayments.map((p, i) => (
+                        <div
+                          key={i}
+                          className="rounded-md bg-muted/40 dark:bg-muted/20 px-3 py-2"
+                          data-testid={`recent-payment-${i}`}
+                        >
+                          <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                            <span className="text-[11px] font-medium truncate max-w-[110px]">{p.studentName}</span>
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">₹{p.amount.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 flex-wrap mt-0.5">
+                            {!allSameBatch && (
+                              <span className="text-[10px] text-muted-foreground/50 truncate max-w-[100px]">{p.batchName}</span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground/35 ml-auto">{formatRelativeTime(p.paidAt)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </aside>
+
           <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-4 px-1">
+              <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                Dashboard Overview
+              </h2>
+              <Button
+                onClick={() => setShowStats(!showStats)}
+                variant="outline"
+                size="icon"
+                data-testid="button-toggle-stats"
+              >
+                {showStats ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
+
             {showStats && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
@@ -381,57 +432,6 @@ export default function TeacherDashboard() {
               </div>
             )}
           </div>
-
-          <aside className="lg:w-64 flex-shrink-0 lg:sticky lg:top-20 lg:self-start z-[5]" data-testid="mini-insights-panel">
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 px-1">Insights</h3>
-
-              <div className="rounded-lg border border-border/50 bg-muted/25 p-5 shadow-sm">
-                <WhatsappUsageWidget usage={waUsage ?? null} isLoading={waLoading} />
-              </div>
-
-              {recentPayments && recentPayments.length > 0 && (
-                <div className="rounded-lg border border-border/50 bg-muted/25 p-5 shadow-sm" data-testid="recent-payments-widget">
-                  <div className="flex items-start justify-between gap-2 flex-wrap mb-4">
-                    <div>
-                      <p className="text-xs font-semibold">Recent Payments</p>
-                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">Last 3 transactions</p>
-                    </div>
-                    {todayCollected > 0 && (
-                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid="today-collected">
-                        ₹{todayCollected.toLocaleString()} today
-                      </span>
-                    )}
-                  </div>
-
-                  {allSameBatch && (
-                    <p className="text-[10px] text-muted-foreground/40 mb-2.5 truncate">{recentPayments[0].batchName}</p>
-                  )}
-
-                  <div className="space-y-2.5">
-                    {recentPayments.map((p, i) => (
-                      <div
-                        key={i}
-                        className="rounded-md bg-background/60 dark:bg-background/30 px-3 py-2.5"
-                        data-testid={`recent-payment-${i}`}
-                      >
-                        <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                          <span className="text-[11px] font-medium truncate max-w-[110px]">{p.studentName}</span>
-                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">₹{p.amount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2 flex-wrap mt-1">
-                          {!allSameBatch && (
-                            <span className="text-[10px] text-muted-foreground/50 truncate max-w-[100px]">{p.batchName}</span>
-                          )}
-                          <span className="text-[10px] text-muted-foreground/35 ml-auto">{formatRelativeTime(p.paidAt)}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </aside>
         </div>
       </main>
 
