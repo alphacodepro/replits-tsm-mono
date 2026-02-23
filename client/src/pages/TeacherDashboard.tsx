@@ -352,7 +352,7 @@ export default function TeacherDashboard() {
                   valueColor="text-chart-2"
                 />
                 <StatCard
-                  title="Pending Payments"
+                  title="Pending Fees"
                   value={`₹${stats.totalPending.toLocaleString()}`}
                   icon={Clock}
                   valueColor="text-chart-3"
