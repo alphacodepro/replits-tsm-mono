@@ -48,46 +48,20 @@ export default function BatchCard({
   showDetails,
 }: BatchCardProps) {
   return (
-    <Card className="p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-      <div className="space-y-4">
-        <div className="flex justify-between gap-4">
-          <div className="flex flex-col gap-2 flex-1">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <BookOpen className="w-5 h-5 text-primary" />
-              </div>
-              <h3
-                className="text-lg font-semibold text-gray-900 dark:text-white"
-                data-testid="text-batch-name"
-              >
-                {name}
-              </h3>
+    <Card className="p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+      <div className="space-y-3">
+        <div className="flex justify-between gap-3 h-[3.5rem]">
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            <div className="bg-primary/10 p-2 rounded-lg shrink-0 mt-0.5">
+              <BookOpen className="w-5 h-5 text-primary" />
             </div>
-
-            {showDetails && (
-              <div className="flex flex-col gap-2">
-                {subject && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {subject}
-                  </p>
-                )}
-                <div className="inline-flex items-center text-sm">
-                  <IndianRupee className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {fee.toLocaleString()}
-                  </span>
-                  <span className="text-gray-500 dark:text-gray-400 ml-1">
-                    / {feePeriod}
-                  </span>
-                </div>
-                {createdAt && (
-                  <div className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
-                    <Calendar className="w-3 h-3 mr-1.5" />
-                    Created: {format(new Date(createdAt), "dd MMM yyyy")}
-                  </div>
-                )}
-              </div>
-            )}
+            <h3
+              className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2"
+              data-testid="text-batch-name"
+              title={name}
+            >
+              {name}
+            </h3>
           </div>
 
           <div className="flex flex-col items-end gap-2 shrink-0">
@@ -121,8 +95,33 @@ export default function BatchCard({
           </div>
         </div>
 
+        {showDetails && (
+          <div className="flex flex-col gap-1.5">
+            {subject && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {subject}
+              </p>
+            )}
+            <div className="inline-flex items-center text-sm">
+              <IndianRupee className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-900 dark:text-white">
+                {fee.toLocaleString()}
+              </span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">
+                / {feePeriod}
+              </span>
+            </div>
+            {createdAt && (
+              <div className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                <Calendar className="w-3 h-3 mr-1.5" />
+                Created: {format(new Date(createdAt), "dd MMM yyyy")}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ACTION BUTTONS */}
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-2 pt-1">
           <Button
             onClick={onViewDetails}
             className="flex-1 hover:scale-105 transition-transform"
