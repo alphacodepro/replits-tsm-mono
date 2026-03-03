@@ -118,6 +118,9 @@ export const payments = pgTable("payments", {
     .notNull()
     .default(sql`now()`),
   modifiedAt: timestamp("modified_at"),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
 }, (table) => ({
   studentIdIdx: index("payments_student_id_idx").on(table.studentId),
   paidAtIdx: index("payments_paid_at_idx").on(table.paidAt),
