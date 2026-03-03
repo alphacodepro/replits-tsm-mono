@@ -58,6 +58,7 @@ export default function TeacherDashboard() {
     queryKey: ["/api/dashboard/summary"],
     queryFn: () => dashboardApi.summary(),
     placeholderData: (previousData) => previousData,
+    refetchOnMount: "always",
   });
 
   const { data: waUsage, isLoading: waLoading } = useQuery({
@@ -68,6 +69,7 @@ export default function TeacherDashboard() {
   const { data: recentPaymentsData } = useQuery({
     queryKey: ["/api/payments/recent"],
     queryFn: () => dashboardApi.recentPayments(),
+    refetchOnMount: "always",
   });
 
   const recentPayments = recentPaymentsData?.payments;

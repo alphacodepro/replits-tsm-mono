@@ -46,6 +46,7 @@ interface PaymentHistoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   studentId: string;
+  studentName?: string;
   batchFee: number;
   feePeriod: string;
 }
@@ -54,6 +55,7 @@ export default function PaymentHistoryDialog({
   open,
   onOpenChange,
   studentId,
+  studentName,
   batchFee,
   feePeriod,
 }: PaymentHistoryDialogProps) {
@@ -463,7 +465,7 @@ export default function PaymentHistoryDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-lg md:text-xl">
-            Payment History - {student?.fullName || "Loading..."}
+            Payment History - {student?.fullName || studentName || "Loading..."}
           </DialogTitle>
           <DialogDescription>View and manage payment records</DialogDescription>
         </DialogHeader>

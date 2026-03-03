@@ -51,6 +51,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedStudentName, setSelectedStudentName] = useState<string>("");
   const [studentToEdit, setStudentToEdit] = useState<StudentWithPaymentInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "pending">("all");
@@ -204,7 +205,9 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   });
 
   const handleViewPayments = (studentId: string) => {
+    const student = students.find((s) => s.id === studentId);
     setSelectedStudentId(studentId);
+    setSelectedStudentName(student?.fullName || "");
     setPaymentDialogOpen(true);
   };
 
@@ -586,6 +589,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
           studentId={selectedStudentId}
+          studentName={selectedStudentName}
           batchFee={batch.fee}
           feePeriod={batch.feePeriod}
         />
@@ -611,3 +615,4 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     </div>
   );
 }
+ 
