@@ -4,7 +4,9 @@ import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -42,6 +44,106 @@ interface BatchDetailsPageProps {
   batchId: string;
 }
 
+function BatchDetailsSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <Skeleton className="h-8 w-44 rounded-md" />
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
+        <Card className="mb-6 p-6 rounded-2xl">
+          <div className="flex flex-col md:flex-row gap-6 justify-between">
+            <div className="flex items-start gap-4">
+              <Skeleton className="h-16 w-16 rounded-xl flex-shrink-0" />
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <div className="flex gap-2 flex-wrap mt-2">
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-28 rounded-full" />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 flex-shrink-0">
+              <div className="flex gap-2">
+                <Skeleton className="h-9 w-28 rounded-md" />
+                <Skeleton className="h-9 w-28 rounded-md" />
+              </div>
+              <Skeleton className="h-10 w-44 rounded-lg" />
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {[0, 1, 2].map(i => (
+            <Card key={i} className="p-6 rounded-2xl">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div>
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+            <Skeleton className="h-8 w-28" />
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-32 rounded-md" />
+              <Skeleton className="h-9 w-32 rounded-md" />
+            </div>
+          </div>
+
+          <Skeleton className="h-10 w-full rounded-xl mb-4" />
+
+          <div className="flex gap-2 mb-4">
+            <Skeleton className="h-8 w-16 rounded-full" />
+            <Skeleton className="h-8 w-16 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+          </div>
+
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="flex gap-4 px-4 py-3 border-b bg-muted/30">
+              {[120, 100, 60, 80, 70, 60, 80, 90].map((w, idx) => (
+                <Skeleton key={idx} className={`h-3.5 rounded`} style={{ width: w }} />
+              ))}
+            </div>
+            {[0, 1, 2, 3, 4].map(i => (
+              <div key={i} className="flex gap-4 px-4 py-3.5 border-b last:border-0 items-center">
+                <div className="flex items-center gap-2" style={{ width: 120 }}>
+                  <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+                  <Skeleton className="h-3.5 flex-1" />
+                </div>
+                <div className="space-y-1.5" style={{ width: 100 }}>
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-4/5" />
+                </div>
+                <Skeleton className="h-5 rounded-md" style={{ width: 60 }} />
+                <Skeleton className="h-3.5" style={{ width: 80 }} />
+                <Skeleton className="h-5 rounded-full" style={{ width: 70 }} />
+                <Skeleton className="h-5 rounded-full" style={{ width: 60 }} />
+                <Skeleton className="h-5 rounded-md" style={{ width: 80 }} />
+                <div className="flex items-center gap-1" style={{ width: 90 }}>
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -65,6 +167,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     queryFn: () => dashboardApi.studentsPaginated(batchId, currentPage, pageSize),
     placeholderData: (previousData) => previousData,
   });
+
+  const showSkeleton = useDelayedLoading(batchLoading);
 
   const addStudentMutation = useMutation({
     mutationFn: studentApi.create,
@@ -245,12 +349,12 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     }
   };
 
-  if (batchLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (batchLoading && !showSkeleton) {
+    return null;
+  }
+
+  if (showSkeleton) {
+    return <BatchDetailsSkeleton />;
   }
 
   if (!batch) {

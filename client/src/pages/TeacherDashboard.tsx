@@ -3,7 +3,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import StatCard from "@/components/StatCard";
 import BatchCard from "@/components/BatchCard";
 import EmptyState from "@/components/EmptyState";
@@ -29,6 +31,123 @@ import { useToast } from "@/hooks/use-toast";
 import { batchApi, dashboardApi, authApi, whatsappApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import WhatsappUsageWidget from "@/components/WhatsappUsageWidget";
+
+function TeacherDashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
+      <header className="border-b bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-3.5 w-28" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-9 rounded-md" />
+              <Skeleton className="h-9 w-24 rounded-md" />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
+        <div className="flex flex-col lg:flex-row flex-wrap gap-6">
+          <aside className="lg:w-64 flex-shrink-0">
+            <div className="rounded-xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-4 shadow-sm">
+              <Skeleton className="h-3 w-16 mb-3" />
+              <div className="space-y-3">
+                <div className="rounded-md bg-background/70 dark:bg-background/25 p-3.5 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                    <Skeleton className="h-3.5 w-28" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <div className="rounded-md bg-background/70 dark:bg-background/25 p-3.5 space-y-2">
+                  <Skeleton className="h-3.5 w-28 mb-1" />
+                  <Skeleton className="h-3 w-20 mb-3" />
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="rounded-md bg-muted/40 px-3 py-2 space-y-1.5">
+                      <div className="flex justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-12" />
+                      </div>
+                      <Skeleton className="h-2.5 w-16" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-4 px-1">
+              <Skeleton className="h-6 w-44" />
+              <Skeleton className="h-9 w-9 rounded-md" />
+            </div>
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="rounded-xl border bg-card p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                  </div>
+                  <Skeleton className="h-7 w-20 mb-1" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+                <Skeleton className="h-7 w-32" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-9 w-9 rounded-md" />
+                  <Skeleton className="h-9 w-32 rounded-md" />
+                </div>
+              </div>
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="rounded-xl border bg-card p-5 shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <div className="space-y-1.5">
+                        <Skeleton className="h-5 w-28" />
+                        <Skeleton className="h-3.5 w-20" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-5 w-12 rounded-full" />
+                  </div>
+                  <div className="space-y-1.5 mb-3">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-3.5 w-20" />
+                    <Skeleton className="h-3.5 w-28" />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Skeleton className="h-9 flex-1 rounded-md" />
+                    <Skeleton className="h-9 w-9 rounded-md" />
+                    <Skeleton className="h-9 w-9 rounded-md" />
+                    <Skeleton className="h-9 w-9 rounded-md" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
@@ -149,6 +268,8 @@ export default function TeacherDashboard() {
     },
   });
 
+  const showSkeleton = useDelayedLoading(batchesLoading);
+
   const batches = batchesData?.batches || [];
   const stats = summaryData || {
     batchCount: 0,
@@ -203,12 +324,12 @@ export default function TeacherDashboard() {
       .slice(0, 2);
   };
 
-  if (batchesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (batchesLoading && !showSkeleton) {
+    return null;
+  }
+
+  if (showSkeleton) {
+    return <TeacherDashboardSkeleton />;
   }
 
   return (
