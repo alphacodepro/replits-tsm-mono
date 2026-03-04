@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -46,11 +47,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { studentApi, paymentApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -491,29 +487,36 @@ export default function PaymentHistoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         ref={dialogContentRef}
-        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="max-w-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden"
       >
         <DialogHeader>
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg md:text-xl">
               Payment History – {student?.fullName || studentName || "Loading..."}
             </DialogTitle>
-            {remaining > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => setReminderConfirmOpen(true)}
-                    data-testid="button-send-reminder"
-                  >
-                    <Bell className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Send Reminder</TooltipContent>
-              </Tooltip>
-            )}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {remaining > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground transition-transform duration-150 hover:scale-110"
+                  onClick={() => setReminderConfirmOpen(true)}
+                  data-testid="button-send-reminder"
+                >
+                  <Bell className="w-4 h-4" />
+                </Button>
+              )}
+              <DialogClose asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground"
+                  data-testid="button-close-dialog"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </DialogClose>
+            </div>
           </div>
           <DialogDescription>View and manage payment records</DialogDescription>
         </DialogHeader>
