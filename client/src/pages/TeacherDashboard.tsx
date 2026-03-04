@@ -36,7 +36,7 @@ function TeacherDashboardSkeleton() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
       <header className="border-b bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Skeleton className="h-12 w-12 rounded-full" />
@@ -53,8 +53,8 @@ function TeacherDashboardSkeleton() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
-        <div className="flex flex-col lg:flex-row flex-wrap gap-6">
+      <main className="max-w-[1400px] mx-auto px-6 lg:px-8 py-8 flex-1">
+        <div className="flex flex-col lg:flex-row flex-wrap gap-8">
           <aside className="lg:w-64 flex-shrink-0">
             <div className="rounded-xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-4 shadow-sm">
               <Skeleton className="h-3 w-16 mb-3" />
@@ -335,7 +335,7 @@ export default function TeacherDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
       <header className="border-b bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12 border-2 border-primary/20">
@@ -381,8 +381,8 @@ export default function TeacherDashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
-        <div className="flex flex-col lg:flex-row flex-wrap gap-6">
+      <main className="max-w-[1400px] mx-auto px-6 lg:px-8 py-8 flex-1">
+        <div className="flex flex-col lg:flex-row flex-wrap gap-8">
           <aside className="lg:w-64 flex-shrink-0 lg:sticky lg:top-20 lg:self-start z-[5]" data-testid="mini-insights-panel">
             <div className="rounded-xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-4 shadow-sm">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-3">Insights</h3>
@@ -559,7 +559,7 @@ export default function TeacherDashboard() {
       </main>
 
       <footer className="border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm mt-auto">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-4">
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
             © 2026 Tuition Management System. All rights reserved.
           </p>
