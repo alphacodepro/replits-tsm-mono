@@ -34,7 +34,23 @@ import {
   Pencil,
   Check,
   X,
+  Bell,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { studentApi, paymentApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -79,7 +95,21 @@ export default function PaymentHistoryDialog({
   const [editCustomMethod, setEditCustomMethod] = useState("");
   const [editCustomMethodError, setEditCustomMethodError] = useState("");
 
+  const [reminderConfirmOpen, setReminderConfirmOpen] = useState(false);
+
   const dialogContentRef = useRef<HTMLDivElement>(null);
+
+  const remindMutation = useMutation({
+    mutationFn: () => studentApi.remind(studentId),
+    onSuccess: () => {
+      setReminderConfirmOpen(false);
+      toast({ title: "Reminder sent successfully" });
+    },
+    onError: (error: Error) => {
+      setReminderConfirmOpen(false);
+      toast({ title: "Failed to send reminder", description: error.message, variant: "destructive" });
+    },
+  });
 
   // Scroll to top when dialog opens
   useEffect(() => {
@@ -464,11 +494,51 @@ export default function PaymentHistoryDialog({
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
       >
         <DialogHeader>
-          <DialogTitle className="text-lg md:text-xl">
-            Payment History - {student?.fullName || studentName || "Loading..."}
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl">
+              Payment History – {student?.fullName || studentName || "Loading..."}
+            </DialogTitle>
+            {remaining > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => setReminderConfirmOpen(true)}
+                    data-testid="button-send-reminder"
+                  >
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Send Reminder</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
           <DialogDescription>View and manage payment records</DialogDescription>
         </DialogHeader>
+
+        <AlertDialog open={reminderConfirmOpen} onOpenChange={setReminderConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Send payment reminder to {student?.fullName || studentName}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Outstanding amount: ₹{remaining.toLocaleString()}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => remindMutation.mutate()}
+                disabled={remindMutation.isPending}
+              >
+                {remindMutation.isPending ? "Sending..." : "Confirm"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {isLoading ? (
           <div className="py-8 text-center text-muted-foreground">

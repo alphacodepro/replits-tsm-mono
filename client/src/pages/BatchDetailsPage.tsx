@@ -19,6 +19,16 @@ import ImportStudentsDialog from "@/components/ImportStudentsDialog";
 import EmptyState from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Plus,
   Search,
@@ -29,6 +39,8 @@ import {
   Link as LinkIcon,
   Clock,
   FileUp,
+  Bell,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, studentApi, dashboardApi, Student as ApiStudent } from "@/lib/api";
@@ -161,6 +173,10 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [studentToDelete, setStudentToDelete] = useState<StudentWithPaymentInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
+
+  const [remindMode, setRemindMode] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
 
   const { data: paginatedData, isLoading: batchLoading } = useQuery({
     queryKey: ["/api/batches", batchId, "students", currentPage],
@@ -314,6 +330,23 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     setSelectedStudentName(student?.fullName || "");
     setPaymentDialogOpen(true);
   };
+
+  const exitRemindMode = () => {
+    setRemindMode(false);
+    setSelectedStudentIds(new Set());
+    setBulkConfirmOpen(false);
+  };
+
+  const remindBulkMutation = useMutation({
+    mutationFn: () => studentApi.remindBulk(Array.from(selectedStudentIds)),
+    onSuccess: (data) => {
+      exitRemindMode();
+      toast({ title: `Reminders sent to ${data.sent} student(s)` });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to send reminders", description: error.message, variant: "destructive" });
+    },
+  });
 
   const handleCopyLink = () => {
     if (!batch) return;
@@ -515,9 +548,18 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Students</h2>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button
+                onClick={() => remindMode ? exitRemindMode() : setRemindMode(true)}
+                variant="outline"
+                className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
+                data-testid="button-remind-toggle"
+              >
+                {remindMode ? <><X className="w-4 h-4 mr-2" />Cancel</> : <><Bell className="w-4 h-4 mr-2" />Remind</>}
+              </Button>
               <Button 
                 onClick={() => setImportDialogOpen(true)}
                 variant="outline"
+                disabled={remindMode}
                 className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
                 data-testid="button-import-students"
               >
@@ -526,6 +568,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               </Button>
               <Button 
                 onClick={() => setAddStudentOpen(true)}
+                disabled={remindMode}
                 className="hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
                 data-testid="button-add-student"
               >
@@ -534,6 +577,31 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               </Button>
             </div>
           </div>
+
+          {remindMode && (
+            <div className="flex items-center gap-4 mb-4 px-4 py-3 rounded-xl bg-muted/60 border">
+              <span className="text-sm font-medium text-muted-foreground">
+                {selectedStudentIds.size} selected
+              </span>
+              <div className="w-px h-4 bg-border" />
+              <Button
+                size="sm"
+                disabled={selectedStudentIds.size === 0 || remindBulkMutation.isPending}
+                onClick={() => setBulkConfirmOpen(true)}
+                data-testid="button-send-bulk-reminder"
+              >
+                <Bell className="w-3.5 h-3.5 mr-1.5" />
+                Send Reminder
+              </Button>
+              <button
+                onClick={exitRemindMode}
+                className="ml-auto text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-cancel-remind-mode"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           
           <div className="space-y-4">
             <div className="relative">
@@ -603,11 +671,35 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           )
         ) : (
           <>
-            <StudentTable 
-              students={filteredStudents} 
+            <StudentTable
+              students={filteredStudents}
               onViewPayments={handleViewPayments}
               onEditStudent={handleEditStudent}
               onDeleteStudent={handleDeleteClick}
+              selectionMode={remindMode}
+              selectedIds={selectedStudentIds}
+              onToggleSelect={(id) => {
+                setSelectedStudentIds(prev => {
+                  const next = new Set(prev);
+                  if (next.has(id)) { next.delete(id); } else { next.add(id); }
+                  return next;
+                });
+              }}
+              allVisibleSelected={
+                filteredStudents.filter(s => s.totalDue > 0).length > 0 &&
+                filteredStudents.filter(s => s.totalDue > 0).every(s => selectedStudentIds.has(s.id))
+              }
+              onToggleAll={() => {
+                const selectableIds = filteredStudents.filter(s => s.totalDue > 0).map(s => s.id);
+                const allSelected = selectableIds.every(id => selectedStudentIds.has(id));
+                setSelectedStudentIds(prev => {
+                  const next = new Set(prev);
+                  if (allSelected) { selectableIds.forEach(id => next.delete(id)); }
+                  else { selectableIds.forEach(id => next.add(id)); }
+                  return next;
+                });
+              }}
+              disableActions={remindMode}
             />
             
             {pagination && pagination.totalPages > 1 && (
@@ -716,6 +808,26 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
         confirmText="Delete Student"
         destructive
       />
+
+      <AlertDialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send payment reminders?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are sending a reminder to {selectedStudentIds.size} student{selectedStudentIds.size !== 1 ? "s" : ""}. This will use {selectedStudentIds.size} WhatsApp credit{selectedStudentIds.size !== 1 ? "s" : ""}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => remindBulkMutation.mutate()}
+              disabled={remindBulkMutation.isPending}
+            >
+              {remindBulkMutation.isPending ? "Sending..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -286,6 +286,17 @@ export const studentApi = {
     }),
 
   getRegistrationInfo: (token: string) => apiRequest<{ batch: Batch; instituteName: string }>(`/api/register/${token}`),
+
+  remind: (studentId: string) =>
+    apiRequest<{ success: boolean; whatsappSent: boolean }>(`/api/students/${studentId}/remind`, {
+      method: "POST",
+    }),
+
+  remindBulk: (studentIds: string[]) =>
+    apiRequest<{ success: boolean; sent: number; failed: number }>("/api/students/remind/bulk", {
+      method: "POST",
+      body: JSON.stringify({ studentIds }),
+    }),
 };
 
 // Payment API
