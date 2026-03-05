@@ -66,18 +66,20 @@ function BatchDetailsSkeleton() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
-        <Card className="mb-6 p-6 rounded-2xl">
-          <div className="flex flex-col md:flex-row gap-6 justify-between">
-            <div className="flex items-start gap-4">
-              <Skeleton className="h-16 w-16 rounded-xl flex-shrink-0" />
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-32" />
-                <div className="flex gap-2 flex-wrap mt-2">
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                  <Skeleton className="h-6 w-24 rounded-full" />
-                  <Skeleton className="h-6 w-28 rounded-full" />
+        <div className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 mb-8">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-48" />
+                  <Skeleton className="h-4 w-32" />
                 </div>
+              </div>
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
+                <Skeleton className="h-7 w-24 rounded-full" />
+                <Skeleton className="h-7 w-28 rounded-full" />
+                <Skeleton className="h-7 w-32 rounded-full" />
               </div>
             </div>
             <div className="flex flex-col gap-3 flex-shrink-0">
@@ -85,18 +87,24 @@ function BatchDetailsSkeleton() {
                 <Skeleton className="h-9 w-28 rounded-md" />
                 <Skeleton className="h-9 w-28 rounded-md" />
               </div>
-              <Skeleton className="h-10 w-44 rounded-lg" />
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40 border border-gray-200 dark:border-gray-700">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-5 w-9 rounded-full" />
+              </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {[0, 1, 2].map(i => (
-            <Card key={i} className="p-6 rounded-2xl">
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
+            <Card key={i} className="p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-md">
+              <div className="flex items-start gap-4">
+                <div className="relative flex-shrink-0">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-8 w-20" />
                 </div>
               </div>
@@ -123,25 +131,24 @@ function BatchDetailsSkeleton() {
 
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="flex gap-4 px-4 py-3 border-b bg-muted/30">
-              {[120, 100, 60, 80, 70, 60, 80, 90].map((w, idx) => (
-                <Skeleton key={idx} className={`h-3.5 rounded`} style={{ width: w }} />
+              {[140, 100, 80, 70, 70, 60, 80, 90].map((w, idx) => (
+                <Skeleton key={idx} className="h-3.5 rounded" style={{ width: w }} />
               ))}
             </div>
-            {[0, 1, 2, 3, 4].map(i => (
+            {[0, 1, 2, 3, 4, 5].map(i => (
               <div key={i} className="flex gap-4 px-4 py-3.5 border-b last:border-0 items-center">
-                <div className="flex items-center gap-2" style={{ width: 120 }}>
-                  <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-                  <Skeleton className="h-3.5 flex-1" />
+                <div style={{ width: 140 }}>
+                  <Skeleton className="h-3.5 w-full" />
                 </div>
                 <div className="space-y-1.5" style={{ width: 100 }}>
                   <Skeleton className="h-3 w-full" />
                   <Skeleton className="h-3 w-4/5" />
                 </div>
+                <Skeleton className="h-3.5 rounded" style={{ width: 80 }} />
+                <Skeleton className="h-3.5 rounded" style={{ width: 70 }} />
+                <Skeleton className="h-3.5 rounded" style={{ width: 70 }} />
                 <Skeleton className="h-5 rounded-md" style={{ width: 60 }} />
-                <Skeleton className="h-3.5" style={{ width: 80 }} />
-                <Skeleton className="h-5 rounded-full" style={{ width: 70 }} />
-                <Skeleton className="h-5 rounded-full" style={{ width: 60 }} />
-                <Skeleton className="h-5 rounded-md" style={{ width: 80 }} />
+                <Skeleton className="h-3.5 rounded" style={{ width: 80 }} />
                 <div className="flex items-center gap-1" style={{ width: 90 }}>
                   <Skeleton className="h-7 w-7 rounded-md" />
                   <Skeleton className="h-7 w-7 rounded-md" />
