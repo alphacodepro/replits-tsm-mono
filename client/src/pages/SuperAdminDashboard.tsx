@@ -3,6 +3,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import StatCard from "@/components/StatCard";
 import TeacherCard from "@/components/TeacherCard";
 import EmptyState from "@/components/EmptyState";
@@ -13,6 +15,72 @@ import { Plus, Search, Users, BookOpen, GraduationCap, LogOut } from "lucide-rea
 import { useToast } from "@/hooks/use-toast";
 import { teacherApi, statsApi, authApi, whatsappApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+
+function SuperAdminSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-3.5 w-36" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-24 rounded-md" />
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+              <Skeleton className="h-7 w-16 mb-1" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
+            <Skeleton className="h-8 w-28" />
+            <Skeleton className="h-9 w-36 rounded-md" />
+          </div>
+          <Skeleton className="h-10 w-full rounded-md" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3.5 w-24" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-3.5 w-40" />
+                <Skeleton className="h-3.5 w-32" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Skeleton className="h-8 flex-1 rounded-md" />
+                <Skeleton className="h-8 flex-1 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast();
@@ -27,6 +95,8 @@ export default function SuperAdminDashboard() {
     queryKey: ["/api/teachers"],
     queryFn: () => teacherApi.list(),
   });
+
+  const showSkeleton = useDelayedLoading(teachersLoading);
 
   const { data: statsData } = useQuery({
     queryKey: ["/api/stats/system"],
@@ -139,12 +209,12 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  if (teachersLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (teachersLoading && !showSkeleton) {
+    return null;
+  }
+
+  if (showSkeleton) {
+    return <SuperAdminSkeleton />;
   }
 
   return (
