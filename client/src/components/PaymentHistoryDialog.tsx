@@ -77,6 +77,7 @@ export default function PaymentHistoryDialog({
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [customMethod, setCustomMethod] = useState("");
   const [customMethodError, setCustomMethodError] = useState("");
+  const [nextPaymentDate, setNextPaymentDate] = useState("");
 
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [editingFee, setEditingFee] = useState(false);
@@ -129,6 +130,7 @@ export default function PaymentHistoryDialog({
       setPaymentMethod("");
       setCustomMethod("");
       setCustomMethodError("");
+      setNextPaymentDate("");
       setCustomFeeInput("");
       setCustomFeeError("");
       // Reset edit payment states
@@ -177,6 +179,7 @@ export default function PaymentHistoryDialog({
       setPaymentMethod("");
       setCustomMethod("");
       setCustomMethodError("");
+      setNextPaymentDate("");
       setShowAddPayment(false);
 
       if (data.emailSent === true) {
@@ -341,6 +344,7 @@ export default function PaymentHistoryDialog({
       studentId,
       amount: paymentAmount,
       paymentMethod: finalMethod,
+      nextPaymentDate: nextPaymentDate ? new Date(nextPaymentDate).toISOString() : undefined,
     });
   };
 
@@ -940,6 +944,24 @@ export default function PaymentHistoryDialog({
                       </p>
                     </div>
                   )}
+                  <div className="space-y-1 md:col-span-2">
+                    <Label htmlFor="nextPaymentDate" className="text-sm">
+                      Next Payment Date{" "}
+                      <span className="text-muted-foreground font-normal">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="nextPaymentDate"
+                      type="date"
+                      value={nextPaymentDate}
+                      onChange={(e) => setNextPaymentDate(e.target.value)}
+                      min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                      className="rounded-xl"
+                      data-testid="input-next-payment-date"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      When is the student expected to pay the remaining amount?
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -960,6 +982,7 @@ export default function PaymentHistoryDialog({
                       setPaymentMethod("");
                       setCustomMethod("");
                       setCustomMethodError("");
+                      setNextPaymentDate("");
                     }}
                   >
                     Cancel

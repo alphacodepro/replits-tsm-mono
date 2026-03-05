@@ -118,6 +118,7 @@ export const payments = pgTable("payments", {
     .notNull()
     .default(sql`now()`),
   modifiedAt: timestamp("modified_at"),
+  nextPaymentDate: timestamp("next_payment_date"),
   createdAt: timestamp("created_at")
     .notNull()
     .default(sql`now()`),
@@ -222,11 +223,13 @@ export const insertPaymentSchema = createInsertSchema(payments)
     id: true,
     paidAt: true,
     modifiedAt: true,
+    nextPaymentDate: true,
   })
   .extend({
     amount: positiveAmount,
     paymentMethod: paymentMethodSchema,
     paidAt: z.string().datetime().optional(),
+    nextPaymentDate: z.string().datetime().optional().nullable(),
   });
 
 // Schema for updating payment (amount and method only)
