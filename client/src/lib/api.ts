@@ -306,6 +306,7 @@ export const paymentApi = {
     amount: number; 
     paymentMethod?: string | null;
     paidAt?: string;
+    nextPaymentDate?: string;
   }) =>
     apiRequest<{ payment: Payment; emailSent: boolean | null }>("/api/payments", {
       method: "POST",
