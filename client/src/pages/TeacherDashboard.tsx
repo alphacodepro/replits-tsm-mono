@@ -399,11 +399,9 @@ export default function TeacherDashboard() {
                         <p className="text-xs font-semibold">Recent Payments</p>
                         <p className="text-[10px] text-muted-foreground/50 mt-0.5">Last 3 transactions</p>
                       </div>
-                      {todayCollected > 0 && (
-                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid="today-collected">
-                          ₹{todayCollected.toLocaleString()} today
-                        </span>
-                      )}
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid="today-collected">
+                        ₹{todayCollected.toLocaleString()} collected
+                      </span>
                     </div>
 
                     {allSameBatch && (
