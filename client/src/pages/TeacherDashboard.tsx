@@ -28,9 +28,11 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { batchApi, dashboardApi, authApi, whatsappApi } from "@/lib/api";
+import { batchApi, dashboardApi, authApi, whatsappApi, type AppNotification } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import WhatsappUsageWidget from "@/components/WhatsappUsageWidget";
+import NotificationBell from "@/components/NotificationBell";
+import NotificationDrawer from "@/components/NotificationDrawer";
 
 function TeacherDashboardSkeleton() {
   return (
@@ -161,6 +163,8 @@ export default function TeacherDashboard() {
   const [showStats, setShowStats] = useState(true);
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [showBatchDetails, setShowBatchDetails] = useState(true);
+  const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
+  const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -366,6 +370,12 @@ export default function TeacherDashboard() {
               >
                 <Settings className="w-4 h-4" />
               </Button>
+              <NotificationBell
+                onNotificationClick={(n) => {
+                  setSelectedNotification(n);
+                  setNotificationDrawerOpen(true);
+                }}
+              />
               <Button
                 variant="outline"
                 onClick={() => logoutMutation.mutate()}
@@ -599,6 +609,12 @@ export default function TeacherDashboard() {
           queryClient.clear();
           setLocation("/");
         }}
+      />
+
+      <NotificationDrawer
+        notification={selectedNotification}
+        open={notificationDrawerOpen}
+        onClose={() => setNotificationDrawerOpen(false)}
       />
     </div>
   );

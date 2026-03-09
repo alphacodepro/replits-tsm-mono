@@ -388,6 +388,36 @@ export interface RecentPaymentsResponse {
   todayCollected: number;
 }
 
+// Notification API
+export interface NotificationStudentData {
+  id: string;
+  name: string;
+  batchName: string;
+  amount: number;
+  daysOverdue?: number;
+  standard?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  teacherId: string;
+  type: "birthday";
+  isRead: boolean;
+  studentCount: number;
+  totalAmount: number;
+  studentData: string; // JSON string
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const notificationApi = {
+  list: () => apiRequest<{ notifications: AppNotification[] }>("/api/notifications"),
+  markRead: (id: string) =>
+    apiRequest<{ success: boolean }>(`/api/notifications/${id}/read`, { method: "POST" }),
+  markAllRead: () =>
+    apiRequest<{ success: boolean }>("/api/notifications/read-all", { method: "POST" }),
+};
+
 export const dashboardApi = {
   summary: () => apiRequest<DashboardSummary>("/api/dashboard/summary"),
 
