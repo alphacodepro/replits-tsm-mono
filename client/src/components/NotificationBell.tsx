@@ -16,7 +16,14 @@ interface NotificationBellProps {
 }
 
 function getNotificationLabel(n: AppNotification): string {
-  return `${n.studentCount} student${n.studentCount > 1 ? "s" : ""} ${n.studentCount > 1 ? "have" : "has"} birthdays today`;
+  if (n.studentCount === 1) {
+    try {
+      const students = JSON.parse(n.studentData || "[]");
+      const name = students[0]?.name;
+      if (name) return `${name} has a birthday today`;
+    } catch {}
+  }
+  return `${n.studentCount} students have birthdays today`;
 }
 
 function NotificationIcon() {
