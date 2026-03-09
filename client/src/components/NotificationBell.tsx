@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Bell, Cake } from "lucide-react";
+import { Bell, Cake, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -49,11 +49,11 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
     },
   });
 
-  const markAllReadMutation = useMutation({
-    mutationFn: () => notificationApi.markAllRead(),
-    onSuccess: () => {
+  const deleteOneMutation = useMutation({
+    mutationFn: (id: string) => notificationApi.deleteOne(id),
+    onSuccess: (_data, id) => {
       queryClient.setQueryData(["/api/notifications"], (old: any) => ({
-        notifications: old?.notifications?.map((n: any) => ({ ...n, isRead: true })) ?? [],
+        notifications: old?.notifications?.filter((n: any) => n.id !== id) ?? [],
       }));
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
     },
@@ -93,17 +93,8 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
         className="w-[370px] p-0 rounded-xl shadow-lg"
         data-testid="popover-notifications"
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex items-center px-4 py-3 border-b">
           <span className="font-semibold text-sm">Notifications</span>
-          {unreadCount > 0 && (
-            <button
-              onClick={() => markAllReadMutation.mutate()}
-              className="text-xs text-primary hover:underline"
-              data-testid="button-mark-all-read"
-            >
-              Mark all as read
-            </button>
-          )}
         </div>
 
         {isLoading ? (
@@ -117,9 +108,9 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
         ) : (
           <div className="divide-y">
             {displayList.map((n) => (
-              <button
+              <div
                 key={n.id}
-                className="w-full text-left px-4 py-3 flex items-start gap-3 hover-elevate transition-colors"
+                className="w-full text-left px-4 py-3 flex items-start gap-3 hover-elevate transition-colors cursor-pointer"
                 onClick={() => handleNotificationClick(n)}
                 data-testid={`notification-item-${n.type}`}
               >
@@ -135,7 +126,19 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
                 {!n.isRead && (
                   <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0 mt-1.5" />
                 )}
-              </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteOneMutation.mutate(n.id);
+                  }}
+                  disabled={deleteOneMutation.isPending}
+                  className="flex-shrink-0 text-muted-foreground hover:text-destructive transition-colors p-0.5 rounded"
+                  data-testid={`button-delete-notification-${n.id}`}
+                  title="Delete notification"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         )}

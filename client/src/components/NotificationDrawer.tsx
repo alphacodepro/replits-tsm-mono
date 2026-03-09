@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Cake } from "lucide-react";
+import { Cake, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -17,12 +17,10 @@ interface NotificationDrawerProps {
 }
 
 export default function NotificationDrawer({ notification, open, onClose }: NotificationDrawerProps) {
-  const markAllReadMutation = useMutation({
-    mutationFn: () => notificationApi.markAllRead(),
+  const deleteAllMutation = useMutation({
+    mutationFn: () => notificationApi.deleteAll(),
     onSuccess: () => {
-      queryClient.setQueryData(["/api/notifications"], (old: any) => ({
-        notifications: old?.notifications?.map((n: any) => ({ ...n, isRead: true })) ?? [],
-      }));
+      queryClient.setQueryData(["/api/notifications"], { notifications: [] });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       onClose();
     },
@@ -77,19 +75,19 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
           ))}
         </div>
 
-        <div className="border-t px-6 py-4 flex gap-2 flex-shrink-0">
+        <div className="border-t px-6 py-4 flex items-center justify-between gap-2 flex-shrink-0">
           <Button
             variant="ghost"
-            className="flex-1 text-sm"
-            onClick={() => markAllReadMutation.mutate()}
-            disabled={markAllReadMutation.isPending}
-            data-testid="button-mark-all-read-drawer"
+            className="text-sm text-destructive hover:text-destructive"
+            onClick={() => deleteAllMutation.mutate()}
+            disabled={deleteAllMutation.isPending}
+            data-testid="button-delete-all-notifications"
           >
-            Mark all as read
+            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+            Delete all
           </Button>
           <Button
             variant="outline"
-            className="flex-1"
             onClick={onClose}
             data-testid="button-close-drawer"
           >

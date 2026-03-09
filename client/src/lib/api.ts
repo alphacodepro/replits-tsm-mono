@@ -416,6 +416,10 @@ export const notificationApi = {
     apiRequest<{ success: boolean }>(`/api/notifications/${id}/read`, { method: "POST" }),
   markAllRead: () =>
     apiRequest<{ success: boolean }>("/api/notifications/read-all", { method: "POST" }),
+  deleteOne: (id: string) =>
+    apiRequest<{ success: boolean }>(`/api/notifications/${id}`, { method: "DELETE" }),
+  deleteAll: () =>
+    apiRequest<{ success: boolean }>("/api/notifications", { method: "DELETE" }),
 };
 
 export const dashboardApi = {
