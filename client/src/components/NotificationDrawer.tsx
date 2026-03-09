@@ -20,6 +20,9 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
   const markAllReadMutation = useMutation({
     mutationFn: () => notificationApi.markAllRead(),
     onSuccess: () => {
+      queryClient.setQueryData(["/api/notifications"], (old: any) => ({
+        notifications: old?.notifications?.map((n: any) => ({ ...n, isRead: true })) ?? [],
+      }));
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       onClose();
     },

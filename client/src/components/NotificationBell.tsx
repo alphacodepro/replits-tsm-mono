@@ -39,12 +39,24 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => notificationApi.markRead(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/notifications"] }),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData(["/api/notifications"], (old: any) => ({
+        notifications: old?.notifications?.map((n: any) =>
+          n.id === id ? { ...n, isRead: true } : n
+        ) ?? [],
+      }));
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: () => notificationApi.markAllRead(),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/notifications"] }),
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/notifications"], (old: any) => ({
+        notifications: old?.notifications?.map((n: any) => ({ ...n, isRead: true })) ?? [],
+      }));
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
   });
 
   const notifications = data?.notifications ?? [];
@@ -132,7 +144,10 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
           <div className="border-t px-4 py-2.5 flex justify-end">
             <button
               className="text-xs text-primary hover:underline font-medium"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                if (notifications[0]) onNotificationClick(notifications[0]);
+              }}
             >
               View all
             </button>
