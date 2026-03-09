@@ -361,6 +361,12 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationBell
+                onNotificationClick={(n) => {
+                  setSelectedNotification(n);
+                  setNotificationDrawerOpen(true);
+                }}
+              />
               <Button
                 variant="outline"
                 size="icon"
@@ -370,12 +376,6 @@ export default function TeacherDashboard() {
               >
                 <Settings className="w-4 h-4" />
               </Button>
-              <NotificationBell
-                onNotificationClick={(n) => {
-                  setSelectedNotification(n);
-                  setNotificationDrawerOpen(true);
-                }}
-              />
               <Button
                 variant="outline"
                 onClick={() => logoutMutation.mutate()}
