@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Bell, Cake, Trash2 } from "lucide-react";
+import { Bell, Cake, CircleDollarSign, AlertCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { notificationApi, type AppNotification } from "@/lib/api";
+import { notificationApi, type AppNotification, type NotificationType } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 
@@ -16,17 +16,41 @@ interface NotificationBellProps {
 }
 
 function getNotificationLabel(n: AppNotification): string {
-  if (n.studentCount === 1) {
-    try {
-      const students = JSON.parse(n.studentData || "[]");
-      const name = students[0]?.name;
-      if (name) return `${name} has a birthday today`;
-    } catch {}
+  let students: any[] = [];
+  try { students = JSON.parse(n.studentData || "[]"); } catch {}
+  const firstName = students[0]?.name;
+  const count = n.studentCount;
+
+  if (n.type === "birthday") {
+    if (count === 1 && firstName) return `${firstName} has a birthday today`;
+    return `${count} students have birthdays today`;
   }
-  return `${n.studentCount} students have birthdays today`;
+  if (n.type === "fee_due_today") {
+    if (count === 1 && firstName) return `${firstName}'s fee is due today`;
+    return `${count} students have fees due today`;
+  }
+  if (n.type === "fee_overdue") {
+    if (count === 1 && firstName) return `${firstName}'s fee is overdue`;
+    return `${count} students have overdue fees`;
+  }
+  return "New notification";
 }
 
-function NotificationIcon() {
+function NotificationIcon({ type }: { type: NotificationType }) {
+  if (type === "fee_due_today") {
+    return (
+      <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+        <CircleDollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+      </div>
+    );
+  }
+  if (type === "fee_overdue") {
+    return (
+      <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+        <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+      </div>
+    );
+  }
   return (
     <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
       <Cake className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -121,7 +145,7 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
                 onClick={() => handleNotificationClick(n)}
                 data-testid={`notification-item-${n.type}`}
               >
-                <NotificationIcon />
+                <NotificationIcon type={n.type} />
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm leading-snug ${n.isRead ? "font-normal text-foreground" : "font-semibold text-foreground"}`}>
                     {getNotificationLabel(n)}

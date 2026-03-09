@@ -396,12 +396,15 @@ export interface NotificationStudentData {
   amount: number;
   daysOverdue?: number;
   standard?: string;
+  dueDate?: string;
 }
+
+export type NotificationType = "birthday" | "fee_due_today" | "fee_overdue";
 
 export interface AppNotification {
   id: string;
   teacherId: string;
-  type: "birthday";
+  type: NotificationType;
   isRead: boolean;
   studentCount: number;
   totalAmount: number;
@@ -420,6 +423,8 @@ export const notificationApi = {
     apiRequest<{ success: boolean }>(`/api/notifications/${id}`, { method: "DELETE" }),
   deleteAll: () =>
     apiRequest<{ success: boolean }>("/api/notifications", { method: "DELETE" }),
+  markFeePaid: (studentId: string) =>
+    apiRequest<{ success: boolean }>(`/api/notifications/fee/mark-paid/${studentId}`, { method: "POST" }),
 };
 
 export const dashboardApi = {
