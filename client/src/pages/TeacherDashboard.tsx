@@ -163,7 +163,7 @@ export default function TeacherDashboard() {
   const [showStats, setShowStats] = useState(true);
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [showBatchDetails, setShowBatchDetails] = useState(true);
-  const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
 
   const { data: userData } = useQuery({
@@ -363,7 +363,7 @@ export default function TeacherDashboard() {
             <div className="flex items-center gap-2">
               <NotificationBell
                 onNotificationClick={(n) => {
-                  setSelectedNotification(n);
+                  setSelectedNotificationId(n.id);
                   setNotificationDrawerOpen(true);
                 }}
               />
@@ -612,7 +612,7 @@ export default function TeacherDashboard() {
       />
 
       <NotificationDrawer
-        notification={selectedNotification}
+        notificationId={selectedNotificationId}
         open={notificationDrawerOpen}
         onClose={() => setNotificationDrawerOpen(false)}
       />

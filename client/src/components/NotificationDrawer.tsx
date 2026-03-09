@@ -1,4 +1,5 @@
-import { useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Cake, CircleDollarSign, AlertCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,12 +14,11 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 interface NotificationDrawerProps {
-  notification: AppNotification | null;
+  notificationId: string | null;
   open: boolean;
   onClose: () => void;
 }
 
-// ── Config per notification type ──────────────────────────────
 const TYPE_CONFIG: Record<NotificationType, {
   title: (count: number) => string;
   icon: typeof Cake;
@@ -57,8 +57,27 @@ const TYPE_CONFIG: Record<NotificationType, {
   },
 };
 
-export default function NotificationDrawer({ notification, open, onClose }: NotificationDrawerProps) {
+export default function NotificationDrawer({ notificationId, open, onClose }: NotificationDrawerProps) {
   const { toast } = useToast();
+
+  // Read live from the cache — any setQueryData call re-renders the drawer instantly
+  const { data } = useQuery({
+    queryKey: ["/api/notifications"],
+    queryFn: () => notificationApi.list(),
+    refetchOnMount: "always",
+    staleTime: 60_000,
+  });
+
+  const notification: AppNotification | undefined = data?.notifications?.find(
+    (n) => n.id === notificationId
+  );
+
+  // Auto-close if the notification was fully removed from the cache
+  useEffect(() => {
+    if (open && notificationId && !notification) {
+      onClose();
+    }
+  }, [open, notificationId, notification, onClose]);
 
   const markAllReadMutation = useMutation({
     mutationFn: () => notificationApi.markAllRead(),
@@ -75,14 +94,14 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
     mutationFn: (studentId: string) => notificationApi.markFeePaid(studentId),
     onSuccess: (_data, studentId) => {
       queryClient.setQueryData(["/api/notifications"], (old: any) => {
-        const updated = old?.notifications?.map((n: any) => {
+        const updated = (old?.notifications ?? []).map((n: any) => {
           if (n.type !== "fee_due_today" && n.type !== "fee_overdue") return n;
           let students: any[] = [];
           try { students = JSON.parse(n.studentData || "[]"); } catch {}
           const filtered = students.filter((s: any) => s.id !== studentId);
           if (filtered.length === 0) return null;
           return { ...n, studentCount: filtered.length, studentData: JSON.stringify(filtered) };
-        }).filter(Boolean) ?? [];
+        }).filter(Boolean);
         return { notifications: updated };
       });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
@@ -102,11 +121,11 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
 
   const sendBulkReminderMutation = useMutation({
     mutationFn: (studentIds: string[]) => studentApi.remindBulk(studentIds),
-    onSuccess: (data) => {
-      toast({ title: "Reminders sent", description: `${data.sent} reminder(s) sent successfully.` });
+    onSuccess: (res) => {
+      toast({ title: "Reminders sent", description: `${res.sent} reminder(s) sent.` });
     },
     onError: () => {
-      toast({ title: "Bulk reminder failed", description: "Could not send reminders.", variant: "destructive" });
+      toast({ title: "Failed", description: "Could not send reminders.", variant: "destructive" });
     },
   });
 
@@ -142,7 +161,7 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
             </div>
           </div>
 
-          {/* "Send All" button at top for multi-student */}
+          {/* "Send All" button for multi-student */}
           {isMultiple && (
             <div className="mt-3">
               {isFee ? (
@@ -172,7 +191,7 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
           )}
         </SheetHeader>
 
-        {/* Student list */}
+        {/* Student list — updates live as students are removed */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No students found</p>
@@ -182,12 +201,10 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
               className={`flex items-center gap-4 rounded-lg border ${config.cardBorder} ${config.cardBg} px-4 py-3 hover-elevate cursor-default`}
               data-testid={`drawer-student-${student.id}`}
             >
-              {/* Icon */}
               <div className={`h-8 w-8 rounded-full ${config.iconBg} flex items-center justify-center flex-shrink-0`}>
                 <Icon className={`w-4 h-4 ${config.iconColor}`} />
               </div>
 
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{student.name}</p>
                 <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -202,7 +219,7 @@ export default function NotificationDrawer({ notification, open, onClose }: Noti
                 )}
               </div>
 
-              {/* Actions */}
+              {/* Per-card actions */}
               {isFee ? (
                 <div className="flex flex-col gap-1.5 flex-shrink-0">
                   <Button
