@@ -109,9 +109,34 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     },
   });
 
+  const removeStudentFromCache = (studentId: string, types: string[]) => {
+    queryClient.setQueryData(["/api/notifications"], (old: any) => {
+      const updated = (old?.notifications ?? []).map((n: any) => {
+        if (!types.includes(n.type)) return n;
+        let students: any[] = [];
+        try { students = JSON.parse(n.studentData || "[]"); } catch {}
+        const filtered = students.filter((s: any) => s.id !== studentId);
+        if (filtered.length === 0) return null;
+        return { ...n, studentCount: filtered.length, studentData: JSON.stringify(filtered) };
+      }).filter(Boolean);
+      return { notifications: updated };
+    });
+    queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+  };
+
+  const removeAllFromCache = (types: string[]) => {
+    queryClient.setQueryData(["/api/notifications"], (old: any) => {
+      const updated = (old?.notifications ?? []).filter((n: any) => !types.includes(n.type));
+      return { notifications: updated };
+    });
+    queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+  };
+
   const sendReminderMutation = useMutation({
     mutationFn: (studentId: string) => studentApi.remind(studentId),
-    onSuccess: () => {
+    onSuccess: (_data, studentId) => {
+      notificationApi.markFeePaid(studentId).catch(() => {});
+      removeStudentFromCache(studentId, ["fee_due_today", "fee_overdue"]);
       toast({ title: "Reminder sent", description: "WhatsApp reminder has been sent." });
     },
     onError: () => {
@@ -121,11 +146,36 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
 
   const sendBulkReminderMutation = useMutation({
     mutationFn: (studentIds: string[]) => studentApi.remindBulk(studentIds),
-    onSuccess: (res) => {
+    onSuccess: (res, studentIds) => {
+      studentIds.forEach((id) => notificationApi.markFeePaid(id).catch(() => {}));
+      removeAllFromCache(["fee_due_today", "fee_overdue"]);
       toast({ title: "Reminders sent", description: `${res.sent} reminder(s) sent.` });
     },
     onError: () => {
       toast({ title: "Failed", description: "Could not send reminders.", variant: "destructive" });
+    },
+  });
+
+  const sendWishMutation = useMutation({
+    mutationFn: (studentId: string) => notificationApi.dismissFromBirthday(studentId),
+    onSuccess: (_data, studentId) => {
+      removeStudentFromCache(studentId, ["birthday"]);
+      toast({ title: "Wish sent", description: "Birthday wish sent and student removed from notifications." });
+    },
+    onError: () => {
+      toast({ title: "Failed", description: "Could not dismiss birthday notification.", variant: "destructive" });
+    },
+  });
+
+  const sendWishesToAllMutation = useMutation({
+    mutationFn: (studentIds: string[]) =>
+      Promise.all(studentIds.map((id) => notificationApi.dismissFromBirthday(id))),
+    onSuccess: () => {
+      removeAllFromCache(["birthday"]);
+      toast({ title: "Wishes sent", description: "Birthday wishes sent to all students." });
+    },
+    onError: () => {
+      toast({ title: "Failed", description: "Could not dismiss birthday notifications.", variant: "destructive" });
     },
   });
 
@@ -181,6 +231,8 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                   variant="outline"
                   size="sm"
                   className="w-full border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300"
+                  onClick={() => sendWishesToAllMutation.mutate(allStudentIds)}
+                  disabled={sendWishesToAllMutation.isPending}
                   data-testid="button-send-wishes-all"
                 >
                   <Cake className="w-3.5 h-3.5 mr-1.5" />
@@ -244,16 +296,16 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                   </Button>
                 </div>
               ) : (
-                !isMultiple && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-shrink-0 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 text-xs"
-                    data-testid={`button-send-wish-${student.id}`}
-                  >
-                    Send Wish
-                  </Button>
-                )
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 text-xs"
+                  onClick={() => sendWishMutation.mutate(student.id)}
+                  disabled={sendWishMutation.isPending}
+                  data-testid={`button-send-wish-${student.id}`}
+                >
+                  Send Wish
+                </Button>
               )}
             </div>
           ))}
