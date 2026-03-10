@@ -145,20 +145,21 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
 
   // Bulk reminder — optimistic: clears ONLY the current drawer's type immediately
   const sendBulkReminderMutation = useMutation({
-    mutationFn: async ({ studentIds, type }: { studentIds: string[]; type: string }) => {
-      // Optimistic: clear the drawer immediately before server responds
+    mutationFn: async ({ studentIds, type, singleName }: { studentIds: string[]; type: string; singleName?: string }) => {
       updateCacheRemoveAll([type]);
       const result = await studentApi.remindBulk(studentIds);
       await notificationApi.dismissNotificationType(type);
       return result;
     },
-    onSuccess: (res) => {
+    onSuccess: (_res, { studentIds, singleName }) => {
       syncFromServer();
-      toast({ title: "Reminders sent", description: `${res.sent} reminder(s) sent.` });
+      const n = studentIds.length;
+      toast({ title: n === 1 ? `Reminder sent to ${singleName}.` : `${n} reminders sent.` });
     },
-    onError: () => {
+    onError: (_err, { studentIds, singleName }) => {
       syncFromServer();
-      toast({ title: "Reminders sent", description: "Action recorded. WhatsApp delivery may vary." });
+      const n = studentIds.length;
+      toast({ title: n === 1 ? `Reminder sent to ${singleName}.` : `${n} reminders sent.`, description: "WhatsApp delivery may vary." });
     },
   });
 
@@ -177,18 +178,17 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
 
   // Bulk wishes — optimistic + atomic single DB delete (no race condition)
   const sendWishesToAllMutation = useMutation({
-    mutationFn: async () => {
-      // Optimistic: clear the drawer immediately before server responds
+    mutationFn: async ({ count, singleName }: { count: number; singleName?: string }) => {
       updateCacheRemoveAll(["birthday"]);
       await notificationApi.dismissNotificationType("birthday");
     },
-    onSuccess: () => {
+    onSuccess: (_res, { count, singleName }) => {
       syncFromServer();
-      toast({ title: "Wishes sent", description: "Birthday wishes sent to all students." });
+      toast({ title: count === 1 ? `Birthday wish sent to ${singleName}.` : `Wishes sent to ${count} students.` });
     },
-    onError: () => {
+    onError: (_err, { count, singleName }) => {
       syncFromServer();
-      toast({ title: "Wishes sent", description: "Action recorded. WhatsApp delivery may vary." });
+      toast({ title: count === 1 ? `Birthday wish sent to ${singleName}.` : `Wishes sent to ${count} students.`, description: "WhatsApp delivery may vary." });
     },
   });
 
@@ -232,7 +232,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                   variant="outline"
                   size="sm"
                   className="w-full border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300"
-                  onClick={() => sendBulkReminderMutation.mutate({ studentIds: allStudentIds, type: notification.type })}
+                  onClick={() => sendBulkReminderMutation.mutate({ studentIds: allStudentIds, type: notification.type, singleName: students.length === 1 ? students[0].name : undefined })}
                   disabled={sendBulkReminderMutation.isPending}
                   data-testid="button-send-reminder-all"
                 >
@@ -244,7 +244,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                   variant="outline"
                   size="sm"
                   className="w-full border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300"
-                  onClick={() => sendWishesToAllMutation.mutate()}
+                  onClick={() => sendWishesToAllMutation.mutate({ count, singleName: count === 1 ? students[0].name : undefined })}
                   disabled={sendWishesToAllMutation.isPending}
                   data-testid="button-send-wishes-all"
                 >
