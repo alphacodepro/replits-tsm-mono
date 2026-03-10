@@ -425,6 +425,8 @@ export const notificationApi = {
     apiRequest<{ success: boolean }>("/api/notifications", { method: "DELETE" }),
   markFeePaid: (studentId: string) =>
     apiRequest<{ success: boolean }>(`/api/notifications/fee/mark-paid/${studentId}`, { method: "POST" }),
+  dismissNotificationType: (type: string) =>
+    apiRequest<{ success: boolean }>(`/api/notifications/${type}/dismiss-all`, { method: "POST" }),
   dismissFromBirthday: (studentId: string) =>
     apiRequest<{ success: boolean }>(`/api/notifications/birthday/dismiss/${studentId}`, { method: "POST" }),
 };

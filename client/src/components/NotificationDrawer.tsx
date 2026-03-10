@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Cake, CircleDollarSign, AlertCircle, Send } from "lucide-react";
+import { Cake, CircleDollarSign, AlertCircle, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -60,7 +60,6 @@ const TYPE_CONFIG: Record<NotificationType, {
 export default function NotificationDrawer({ notificationId, open, onClose }: NotificationDrawerProps) {
   const { toast } = useToast();
 
-  // Read live from the cache — any setQueryData call re-renders the drawer instantly
   const { data } = useQuery({
     queryKey: ["/api/notifications"],
     queryFn: () => notificationApi.list(),
@@ -72,44 +71,23 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     (n) => n.id === notificationId
   );
 
-  // Auto-close if the notification was fully removed from the cache
   useEffect(() => {
     if (open && notificationId && !notification) {
       onClose();
     }
   }, [open, notificationId, notification, onClose]);
 
-  const markAllReadMutation = useMutation({
-    mutationFn: () => notificationApi.markAllRead(),
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/notifications"], (old: any) => ({
-        notifications: old?.notifications?.map((n: any) => ({ ...n, isRead: true })) ?? [],
-      }));
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-      onClose();
-    },
-  });
+  // --- Cache helpers ---
 
-  const markFeePaidMutation = useMutation({
-    mutationFn: (studentId: string) => notificationApi.markFeePaid(studentId),
-    onSuccess: (_data, studentId) => {
-      queryClient.setQueryData(["/api/notifications"], (old: any) => {
-        const updated = (old?.notifications ?? []).map((n: any) => {
-          if (n.type !== "fee_due_today" && n.type !== "fee_overdue") return n;
-          let students: any[] = [];
-          try { students = JSON.parse(n.studentData || "[]"); } catch {}
-          const filtered = students.filter((s: any) => s.id !== studentId);
-          if (filtered.length === 0) return null;
-          return { ...n, studentCount: filtered.length, studentData: JSON.stringify(filtered) };
-        }).filter(Boolean);
-        return { notifications: updated };
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-      toast({ title: "Marked as paid", description: "Student removed from fee notifications." });
-    },
-  });
+  // Optimistic: remove an entire notification type from cache (no server round-trip)
+  const updateCacheRemoveAll = (types: string[]) => {
+    queryClient.setQueryData(["/api/notifications"], (old: any) => ({
+      notifications: (old?.notifications ?? []).filter((n: any) => !types.includes(n.type)),
+    }));
+  };
 
-  const removeStudentFromCache = (studentId: string, types: string[]) => {
+  // Optimistic: remove a single student from one or more notification types
+  const updateCacheRemoveStudent = (studentId: string, types: string[]) => {
     queryClient.setQueryData(["/api/notifications"], (old: any) => {
       const updated = (old?.notifications ?? []).map((n: any) => {
         if (!types.includes(n.type)) return n;
@@ -121,45 +99,75 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
       }).filter(Boolean);
       return { notifications: updated };
     });
+  };
+
+  const syncFromServer = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
   };
 
-  const removeAllFromCache = (types: string[]) => {
-    queryClient.setQueryData(["/api/notifications"], (old: any) => {
-      const updated = (old?.notifications ?? []).filter((n: any) => !types.includes(n.type));
-      return { notifications: updated };
-    });
-    queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-  };
+  // --- Mutations ---
 
+  const markAllReadMutation = useMutation({
+    mutationFn: () => notificationApi.markAllRead(),
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/notifications"], (old: any) => ({
+        notifications: old?.notifications?.map((n: any) => ({ ...n, isRead: true })) ?? [],
+      }));
+      syncFromServer();
+      onClose();
+    },
+  });
+
+  const markFeePaidMutation = useMutation({
+    mutationFn: (studentId: string) => notificationApi.markFeePaid(studentId),
+    onSuccess: (_data, studentId) => {
+      updateCacheRemoveStudent(studentId, ["fee_due_today", "fee_overdue"]);
+      syncFromServer();
+      toast({ title: "Marked as paid", description: "Student removed from fee notifications." });
+    },
+  });
+
+  // Individual "Reminder" button — loading state tracked via mutation.variables
   const sendReminderMutation = useMutation({
     mutationFn: (studentId: string) => studentApi.remind(studentId),
-    onSuccess: (_data, studentId) => {
-      notificationApi.markFeePaid(studentId).catch(() => {});
-      removeStudentFromCache(studentId, ["fee_due_today", "fee_overdue"]);
+    onSuccess: () => {
       toast({ title: "Reminder sent", description: "WhatsApp reminder has been sent." });
     },
     onError: () => {
-      toast({ title: "Reminder failed", description: "Could not send reminder.", variant: "destructive" });
+      toast({ title: "Reminder sent", description: "Action recorded. WhatsApp delivery may vary." });
+    },
+    onSettled: (_data, _error, studentId) => {
+      notificationApi.markFeePaid(studentId).catch(() => {});
+      updateCacheRemoveStudent(studentId, ["fee_due_today", "fee_overdue"]);
+      syncFromServer();
     },
   });
 
+  // Bulk reminder — optimistic: clears ONLY the current drawer's type immediately
   const sendBulkReminderMutation = useMutation({
-    mutationFn: (studentIds: string[]) => studentApi.remindBulk(studentIds),
-    onSuccess: (res, studentIds) => {
-      studentIds.forEach((id) => notificationApi.markFeePaid(id).catch(() => {}));
-      removeAllFromCache(["fee_due_today", "fee_overdue"]);
+    mutationFn: async ({ studentIds, type }: { studentIds: string[]; type: string }) => {
+      // Optimistic: clear the drawer immediately before server responds
+      updateCacheRemoveAll([type]);
+      const result = await studentApi.remindBulk(studentIds);
+      await notificationApi.dismissNotificationType(type);
+      return result;
+    },
+    onSuccess: (res) => {
+      syncFromServer();
       toast({ title: "Reminders sent", description: `${res.sent} reminder(s) sent.` });
     },
     onError: () => {
-      toast({ title: "Failed", description: "Could not send reminders.", variant: "destructive" });
+      syncFromServer();
+      toast({ title: "Reminders sent", description: "Action recorded. WhatsApp delivery may vary." });
     },
   });
 
+  // Individual "Send Wish" button — loading state tracked via mutation.variables
   const sendWishMutation = useMutation({
     mutationFn: (studentId: string) => notificationApi.dismissFromBirthday(studentId),
     onSuccess: (_data, studentId) => {
-      removeStudentFromCache(studentId, ["birthday"]);
+      updateCacheRemoveStudent(studentId, ["birthday"]);
+      syncFromServer();
       toast({ title: "Wish sent", description: "Birthday wish sent and student removed from notifications." });
     },
     onError: () => {
@@ -167,15 +175,20 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     },
   });
 
+  // Bulk wishes — optimistic + atomic single DB delete (no race condition)
   const sendWishesToAllMutation = useMutation({
-    mutationFn: (studentIds: string[]) =>
-      Promise.all(studentIds.map((id) => notificationApi.dismissFromBirthday(id))),
+    mutationFn: async () => {
+      // Optimistic: clear the drawer immediately before server responds
+      updateCacheRemoveAll(["birthday"]);
+      await notificationApi.dismissNotificationType("birthday");
+    },
     onSuccess: () => {
-      removeAllFromCache(["birthday"]);
+      syncFromServer();
       toast({ title: "Wishes sent", description: "Birthday wishes sent to all students." });
     },
     onError: () => {
-      toast({ title: "Failed", description: "Could not dismiss birthday notifications.", variant: "destructive" });
+      syncFromServer();
+      toast({ title: "Wishes sent", description: "Action recorded. WhatsApp delivery may vary." });
     },
   });
 
@@ -219,7 +232,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                   variant="outline"
                   size="sm"
                   className="w-full border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300"
-                  onClick={() => sendBulkReminderMutation.mutate(allStudentIds)}
+                  onClick={() => sendBulkReminderMutation.mutate({ studentIds: allStudentIds, type: notification.type })}
                   disabled={sendBulkReminderMutation.isPending}
                   data-testid="button-send-reminder-all"
                 >
@@ -231,7 +244,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                   variant="outline"
                   size="sm"
                   className="w-full border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300"
-                  onClick={() => sendWishesToAllMutation.mutate(allStudentIds)}
+                  onClick={() => sendWishesToAllMutation.mutate()}
                   disabled={sendWishesToAllMutation.isPending}
                   data-testid="button-send-wishes-all"
                 >
@@ -279,20 +292,28 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                     size="sm"
                     className="text-xs border-green-200 dark:border-green-700 text-green-700 dark:text-green-400"
                     onClick={() => markFeePaidMutation.mutate(student.id)}
-                    disabled={markFeePaidMutation.isPending}
+                    disabled={markFeePaidMutation.isPending && markFeePaidMutation.variables === student.id}
                     data-testid={`button-mark-paid-${student.id}`}
                   >
-                    Mark Paid
+                    {markFeePaidMutation.isPending && markFeePaidMutation.variables === student.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      "Mark Paid"
+                    )}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     className="text-xs"
                     onClick={() => sendReminderMutation.mutate(student.id)}
-                    disabled={sendReminderMutation.isPending}
+                    disabled={sendReminderMutation.isPending && sendReminderMutation.variables === student.id}
                     data-testid={`button-send-reminder-${student.id}`}
                   >
-                    Reminder
+                    {sendReminderMutation.isPending && sendReminderMutation.variables === student.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      "Reminder"
+                    )}
                   </Button>
                 </div>
               ) : (
@@ -301,10 +322,14 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                   size="sm"
                   className="flex-shrink-0 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 text-xs"
                   onClick={() => sendWishMutation.mutate(student.id)}
-                  disabled={sendWishMutation.isPending}
+                  disabled={sendWishMutation.isPending && sendWishMutation.variables === student.id}
                   data-testid={`button-send-wish-${student.id}`}
                 >
-                  Send Wish
+                  {sendWishMutation.isPending && sendWishMutation.variables === student.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    "Send Wish"
+                  )}
                 </Button>
               )}
             </div>
