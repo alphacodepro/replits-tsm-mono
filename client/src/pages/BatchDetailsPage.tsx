@@ -206,12 +206,22 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       });
     },
     onError: (error: Error) => {
+      const errorCode = (error as any).errorCode;
       const errorMessage = error.message.toLowerCase();
       const isDuplicateStudent = errorMessage.includes('student already exists');
-      
+      const isLimitReached = errorCode === "STUDENT_LIMIT_REACHED";
+
       toast({
-        title: isDuplicateStudent ? "Student Already Exists in This Batch" : "Error Adding Student",
-        description: isDuplicateStudent ? "Phone number already registered" : error.message,
+        title: isLimitReached
+          ? "Student Limit Reached"
+          : isDuplicateStudent
+            ? "Student Already Exists in This Batch"
+            : "Error Adding Student",
+        description: isLimitReached
+          ? "You have reached your student limit for the current plan. Please upgrade your plan to add more students."
+          : isDuplicateStudent
+            ? "Phone number already registered"
+            : error.message,
         variant: "destructive",
       });
     },

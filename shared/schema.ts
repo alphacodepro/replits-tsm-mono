@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   hasAcceptedTerms: boolean("has_accepted_terms").notNull().default(false),
   acceptedAt: timestamp("accepted_at"),
   acceptedVersion: text("accepted_version"),
+  studentLimit: integer("student_limit"),
   createdAt: timestamp("created_at")
     .notNull()
     .default(sql`now()`),
@@ -125,6 +126,24 @@ export const payments = pgTable("payments", {
 }, (table) => ({
   studentIdIdx: index("payments_student_id_idx").on(table.studentId),
   paidAtIdx: index("payments_paid_at_idx").on(table.paidAt),
+}));
+
+export const notifications = pgTable("notifications", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // 'fee_due_today' | 'fee_overdue' | 'birthday'
+  isRead: boolean("is_read").notNull().default(false),
+  studentCount: integer("student_count").notNull().default(0),
+  totalAmount: integer("total_amount").notNull().default(0),
+  studentData: text("student_data").notNull().default("[]"), // JSON stringified
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+}, (table) => ({
+  teacherTypeUnique: uniqueIndex("notifications_teacher_type_unique").on(table.teacherId, table.type),
 }));
 
 /* -------------------------------------------
@@ -283,6 +302,18 @@ export type UpdatePayment = z.infer<typeof updatePaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
 
 export type WhatsappUsage = typeof whatsappUsage.$inferSelect;
+
+export type Notification = typeof notifications.$inferSelect;
+
+export interface NotificationStudentData {
+  id: string;
+  name: string;
+  batchName: string;
+  amount: number;
+  daysOverdue?: number;
+  standard?: string;
+  dueDate?: string;
+}
 
 /* -------------------------------------------
    PAGINATION TYPES

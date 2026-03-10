@@ -401,9 +401,12 @@ export default function ImportStudentsDialog({
       }
     },
     onError: (err: Error) => {
+      const isLimitReached = err.message.includes("STUDENT_LIMIT_REACHED");
       toast({
-        title: "Import Error",
-        description: err.message,
+        title: isLimitReached ? "Student Limit Reached" : "Import Error",
+        description: isLimitReached
+          ? "You have reached your student limit for the current plan. Please upgrade your plan to add more students."
+          : err.message,
         variant: "destructive",
       });
     },

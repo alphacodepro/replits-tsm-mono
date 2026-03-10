@@ -24,29 +24,36 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const text = await res.text();
     let errorMessage = "An error occurred";
+    let errorCode: string | undefined;
     
     try {
       const errorData = JSON.parse(text);
-      const rawError = errorData.error || errorData.message;
+      errorCode = errorData.error;
+      const rawError = errorData.message || errorData.error;
       errorMessage = rawError ? String(rawError) : errorMessage;
     } catch {
       errorMessage = text || errorMessage;
     }
 
-    const lowerErrorMessage = String(errorMessage).toLowerCase();
-    if (res.status === 401 && lowerErrorMessage.includes("invalid")) {
-      errorMessage = "Invalid username or password";
-    } else if (res.status === 401) {
-      errorMessage = "Unauthorized access";
-    } else if (res.status === 403) {
-      errorMessage = "Access denied";
-    } else if (res.status === 404) {
-      errorMessage = "Resource not found";
-    } else if (res.status >= 500) {
-      errorMessage = "Server error. Please try again later";
+    // Preserve specific error codes — do not overwrite them with generic messages
+    if (errorCode !== "STUDENT_LIMIT_REACHED") {
+      const lowerErrorMessage = String(errorMessage).toLowerCase();
+      if (res.status === 401 && lowerErrorMessage.includes("invalid")) {
+        errorMessage = "Invalid username or password";
+      } else if (res.status === 401) {
+        errorMessage = "Unauthorized access";
+      } else if (res.status === 403) {
+        errorMessage = "Access denied";
+      } else if (res.status === 404) {
+        errorMessage = "Resource not found";
+      } else if (res.status >= 500) {
+        errorMessage = "Server error. Please try again later";
+      }
     }
 
-    throw new Error(errorMessage);
+    const err = new Error(errorMessage);
+    (err as any).errorCode = errorCode;
+    throw err;
   }
 
   return await res.json();
@@ -165,6 +172,7 @@ export const teacherApi = {
     instituteName?: string;
     email?: string;
     phone?: string;
+    studentLimit?: number;
   }) =>
     apiRequest<{ teacher: User }>("/api/teachers", {
       method: "POST",
@@ -185,6 +193,12 @@ export const teacherApi = {
     apiRequest<{ success: boolean }>(`/api/teachers/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ isActive }),
+    }),
+
+  updateStudentLimit: (id: string, studentLimit: number | null) =>
+    apiRequest<{ success: boolean }>(`/api/teachers/${id}/student-limit`, {
+      method: "PATCH",
+      body: JSON.stringify({ studentLimit }),
     }),
 
   delete: (id: string) =>

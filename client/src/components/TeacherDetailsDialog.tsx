@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { teacherApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +25,7 @@ import {
   Building,
   Copy,
   CheckCircle,
+  GraduationCap,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -44,12 +47,37 @@ export default function TeacherDetailsDialog({
   const { toast } = useToast();
   const [newCredentials, setNewCredentials] = useState<{ username: string; password: string } | null>(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const [editingLimit, setEditingLimit] = useState(false);
+  const [limitInput, setLimitInput] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["/api/teachers", teacherId],
     queryFn: () => teacherApi.get(teacherId!),
     enabled: !!teacherId && open,
   });
+
+  const updateLimitMutation = useMutation({
+    mutationFn: (limit: number | null) => teacherApi.updateStudentLimit(teacherId!, limit),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers", teacherId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+      toast({ title: "Student limit updated." });
+      setEditingLimit(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update limit", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleSaveLimit = () => {
+    const val = limitInput.trim();
+    const limit = val === "" ? null : parseInt(val, 10);
+    if (val !== "" && (isNaN(limit!) || limit! < 1)) {
+      toast({ title: "Enter a valid number or leave blank for unlimited.", variant: "destructive" });
+      return;
+    }
+    updateLimitMutation.mutate(limit);
+  };
 
   const resetPasswordMutation = useMutation({
     mutationFn: () => teacherApi.resetPassword(teacherId!),
@@ -87,6 +115,8 @@ export default function TeacherDetailsDialog({
   const handleClose = () => {
     setNewCredentials(null);
     setCopiedPassword(false);
+    setEditingLimit(false);
+    setLimitInput("");
     onOpenChange(false);
   };
 
@@ -215,10 +245,86 @@ export default function TeacherDetailsDialog({
                     </div>
                     <div>
                       <div className="text-2xl font-bold" data-testid="text-detail-student-count">{stats?.studentCount || 0}</div>
-                      <div className="text-sm text-muted-foreground">Students</div>
+                      <div className="text-sm text-muted-foreground">
+                        Students
+                        {(teacher as any)?.studentLimit != null && (
+                          <span className="ml-1 text-muted-foreground">/ {(teacher as any).studentLimit} limit</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
+              </Card>
+
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    Student Limit
+                  </h3>
+                  {!editingLimit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setLimitInput((teacher as any)?.studentLimit?.toString() ?? "");
+                        setEditingLimit(true);
+                      }}
+                      data-testid="button-edit-student-limit"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
+
+                {!editingLimit ? (
+                  <div className="flex items-center gap-2 text-sm" data-testid="text-student-limit">
+                    {(teacher as any)?.studentLimit != null ? (
+                      <>
+                        <span className="text-2xl font-bold">{(teacher as any).studentLimit}</span>
+                        <span className="text-muted-foreground">students max</span>
+                        {stats?.studentCount != null && (
+                          <Badge variant="outline" className="ml-2">
+                            {stats.studentCount} used
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Unlimited</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="limit-input" className="text-sm">Maximum students allowed (blank = unlimited)</Label>
+                    <Input
+                      id="limit-input"
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 500"
+                      value={limitInput}
+                      onChange={(e) => setLimitInput(e.target.value)}
+                      data-testid="input-student-limit-edit"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveLimit}
+                        disabled={updateLimitMutation.isPending}
+                        data-testid="button-save-student-limit"
+                      >
+                        {updateLimitMutation.isPending ? "Saving..." : "Save"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingLimit(false)}
+                        disabled={updateLimitMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </Card>
 
               {batches.length > 0 && (

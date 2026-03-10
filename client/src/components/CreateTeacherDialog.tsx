@@ -31,6 +31,7 @@ export default function CreateTeacherDialog({
   const [instituteName, setInstituteName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [studentLimit, setStudentLimit] = useState("");
 
   const [errors, setErrors] = useState({
     fullName: "",
@@ -88,6 +89,7 @@ export default function CreateTeacherDialog({
     setInstituteName("");
     setEmail("");
     setPhone("");
+    setStudentLimit("");
     setErrors({
       fullName: "",
       username: "",
@@ -150,6 +152,7 @@ export default function CreateTeacherDialog({
       instituteName: instituteName || undefined,
       email,
       phone,
+      studentLimit: studentLimit ? parseInt(studentLimit, 10) : undefined,
     });
   };
 
@@ -266,6 +269,21 @@ export default function CreateTeacherDialog({
               {errors.phone && (
                 <p className="text-red-500 text-xs">{errors.phone}</p>
               )}
+            </div>
+
+            {/* Student Limit */}
+            <div className="space-y-1">
+              <Label htmlFor="studentLimit">Maximum Students Allowed</Label>
+              <Input
+                id="studentLimit"
+                type="number"
+                min="1"
+                placeholder="e.g. 500 (leave blank for unlimited)"
+                value={studentLimit}
+                onChange={(e) => setStudentLimit(e.target.value)}
+                data-testid="input-student-limit"
+              />
+              <p className="text-xs text-muted-foreground">Leave blank for unlimited students.</p>
             </div>
           </div>
 
