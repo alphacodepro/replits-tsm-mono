@@ -334,7 +334,7 @@ export const paymentApi = {
     }),
 };
 
-// WhatsApp API
+// SMS API
 export interface WhatsappUsageInfo {
   enabled: boolean;
   used: number;
@@ -344,7 +344,7 @@ export interface WhatsappUsageInfo {
   warningThreshold: boolean;
 }
 
-export const whatsappApi = {
+export const smsApi = {
   getUsage: () => apiRequest<WhatsappUsageInfo>("/api/whatsapp/usage"),
 
   toggleEnabled: (teacherId: string, enabled: boolean) =>
@@ -353,6 +353,8 @@ export const whatsappApi = {
       body: JSON.stringify({ enabled }),
     }),
 };
+
+export const whatsappApi = smsApi;
 
 // Stats API
 export const statsApi = {

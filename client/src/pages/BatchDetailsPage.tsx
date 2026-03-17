@@ -831,7 +831,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Send payment reminders?</AlertDialogTitle>
             <AlertDialogDescription>
-              You are sending a reminder to {selectedStudentIds.size} student{selectedStudentIds.size !== 1 ? "s" : ""}. This will use {selectedStudentIds.size} WhatsApp credit{selectedStudentIds.size !== 1 ? "s" : ""}.
+              You are sending a reminder to {selectedStudentIds.size} student{selectedStudentIds.size !== 1 ? "s" : ""}. This will use {selectedStudentIds.size} SMS credit{selectedStudentIds.size !== 1 ? "s" : ""}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -79,7 +79,7 @@ export default function TeacherCard({
                 {isActive ? 'Deactivate' : 'Activate'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onToggleWhatsapp} data-testid="button-toggle-whatsapp">
-                {whatsappEnabled ? 'Disable WhatsApp' : 'Enable WhatsApp'}
+                {whatsappEnabled ? 'Disable SMS' : 'Enable SMS'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onDelete} className="text-destructive">
                 Delete
@@ -117,12 +117,12 @@ export default function TeacherCard({
           {whatsappEnabled ? (
             <Badge variant="outline" className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20" data-testid="badge-whatsapp-enabled">
               <MessageCircle className="w-3 h-3 mr-1" />
-              WA
+              SMS
             </Badge>
           ) : (
             <Badge variant="outline" className="text-xs bg-muted text-muted-foreground" data-testid="badge-whatsapp-disabled">
               <MessageCircle className="w-3 h-3 mr-1" />
-              WA Off
+              SMS Off
             </Badge>
           )}
         </div>

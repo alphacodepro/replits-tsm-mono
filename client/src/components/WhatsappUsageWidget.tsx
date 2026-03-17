@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, AlertTriangle } from "lucide-react";
-import { whatsappApi } from "@/lib/api";
+import { MessageSquare, AlertTriangle } from "lucide-react";
+import { smsApi } from "@/lib/api";
 
 interface WhatsappUsage {
   enabled: boolean;
@@ -19,7 +19,7 @@ interface Props {
 export default function WhatsappUsageWidget({ usage: propUsage, isLoading: propLoading }: Props = {}) {
   const { data: queryUsage, isLoading: queryLoading } = useQuery({
     queryKey: ["/api/whatsapp/usage"],
-    queryFn: () => whatsappApi.getUsage(),
+    queryFn: () => smsApi.getUsage(),
     enabled: propUsage === undefined,
   });
 
@@ -42,12 +42,12 @@ export default function WhatsappUsageWidget({ usage: propUsage, isLoading: propL
   if (!usage?.enabled) {
     return (
       <div className="space-y-3" data-testid="whatsapp-upsell-widget">
-        <MessageCircle className="w-6 h-6 text-muted-foreground/50" />
+        <MessageSquare className="w-6 h-6 text-muted-foreground/50" />
         <p className="text-sm font-semibold text-muted-foreground">
-          WhatsApp Add-on
+          SMS Add-on
         </p>
         <p className="text-xs text-muted-foreground/70">
-          Activate to send registration and payment notifications to students.
+          Activate to send registration and payment notifications to students via SMS.
         </p>
       </div>
     );
@@ -73,9 +73,9 @@ export default function WhatsappUsageWidget({ usage: propUsage, isLoading: propL
   return (
     <div className="space-y-4" data-testid="whatsapp-usage-widget">
       <div className="flex items-start gap-2.5">
-        <MessageCircle className={`w-6 h-6 ${iconColor} flex-shrink-0 mt-0.5`} />
+        <MessageSquare className={`w-6 h-6 ${iconColor} flex-shrink-0 mt-0.5`} />
         <div>
-          <p className="text-sm font-semibold leading-tight" data-testid="text-whatsapp-title">WhatsApp Usage</p>
+          <p className="text-sm font-semibold leading-tight" data-testid="text-whatsapp-title">SMS Usage</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             <span className="font-medium" data-testid="text-whatsapp-limit">{usage.limit.toLocaleString()}</span> messages/month
           </p>
@@ -107,7 +107,7 @@ export default function WhatsappUsageWidget({ usage: propUsage, isLoading: propL
       {isLow && !isExhausted && (
         <div className="flex items-start gap-1.5 text-xs text-orange-600 dark:text-orange-400" data-testid="whatsapp-low-warning">
           <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-          <span>Only {usage.remaining} messages left this month.</span>
+          <span>Only {usage.remaining} SMS left this month.</span>
         </div>
       )}
 

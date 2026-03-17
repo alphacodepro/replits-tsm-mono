@@ -138,7 +138,7 @@ export default function SuperAdminDashboard() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error updating WhatsApp status",
+        title: "Error updating SMS status",
         description: error.message,
         variant: "destructive",
       });
@@ -198,8 +198,8 @@ export default function SuperAdminDashboard() {
     const newStatus = !currentStatus;
     toggleWhatsappMutation.mutate({ id, enabled: newStatus });
     toast({
-      title: newStatus ? "WhatsApp enabled" : "WhatsApp disabled",
-      description: `WhatsApp notifications have been ${newStatus ? 'enabled' : 'disabled'}`,
+      title: newStatus ? "SMS enabled" : "SMS disabled",
+      description: `SMS notifications have been ${newStatus ? 'enabled' : 'disabled'}`,
     });
   };
 

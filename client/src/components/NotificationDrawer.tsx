@@ -131,10 +131,10 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
   const sendReminderMutation = useMutation({
     mutationFn: (studentId: string) => studentApi.remind(studentId),
     onSuccess: () => {
-      toast({ title: "Reminder sent", description: "WhatsApp reminder has been sent." });
+      toast({ title: "Reminder sent", description: "SMS reminder has been sent." });
     },
     onError: () => {
-      toast({ title: "Reminder sent", description: "Action recorded. WhatsApp delivery may vary." });
+      toast({ title: "Reminder sent", description: "Action recorded. SMS delivery may vary." });
     },
     onSettled: (_data, _error, studentId) => {
       notificationApi.markFeePaid(studentId).catch(() => {});
@@ -159,7 +159,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     onError: (_err, { studentIds, singleName }) => {
       syncFromServer();
       const n = studentIds.length;
-      toast({ title: n === 1 ? `Reminder sent to ${singleName}.` : `${n} reminders sent.`, description: "WhatsApp delivery may vary." });
+      toast({ title: n === 1 ? `Reminder sent to ${singleName}.` : `${n} reminders sent.`, description: "SMS delivery may vary." });
     },
   });
 
@@ -188,7 +188,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     },
     onError: (_err, { count, singleName }) => {
       syncFromServer();
-      toast({ title: count === 1 ? `Birthday wish sent to ${singleName}.` : `Wishes sent to ${count} students.`, description: "WhatsApp delivery may vary." });
+      toast({ title: count === 1 ? `Birthday wish sent to ${singleName}.` : `Wishes sent to ${count} students.`, description: "SMS delivery may vary." });
     },
   });
 
