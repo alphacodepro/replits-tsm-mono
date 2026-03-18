@@ -69,6 +69,7 @@ export interface User {
   phone?: string;
   isActive: boolean;
   whatsappEnabled: boolean;
+  waBusinessEnabled: boolean;
   hasAcceptedTerms: boolean;
   acceptedAt?: string | null;
   acceptedVersion?: string | null;
@@ -355,6 +356,15 @@ export const smsApi = {
 };
 
 export const whatsappApi = smsApi;
+
+// WhatsApp Business API (MSG91 WA, separate toggle from SMS)
+export const waBusinessApi = {
+  toggleEnabled: (teacherId: string, enabled: boolean) =>
+    apiRequest<{ success: boolean }>(`/api/teachers/${teacherId}/whatsapp-business`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
+};
 
 // Stats API
 export const statsApi = {

@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -18,11 +19,13 @@ interface TeacherCardProps {
   phone?: string;
   isActive: boolean;
   whatsappEnabled: boolean;
+  waBusinessEnabled: boolean;
   batchCount: number;
   studentCount: number;
   onViewDetails: () => void;
   onToggleStatus: () => void;
   onToggleWhatsapp: () => void;
+  onToggleWaBusiness: () => void;
   onDelete: () => void;
 }
 
@@ -34,11 +37,13 @@ export default function TeacherCard({
   phone,
   isActive,
   whatsappEnabled,
+  waBusinessEnabled,
   batchCount,
   studentCount,
   onViewDetails,
   onToggleStatus,
   onToggleWhatsapp,
+  onToggleWaBusiness,
   onDelete,
 }: TeacherCardProps) {
   return (
@@ -78,9 +83,14 @@ export default function TeacherCard({
               <DropdownMenuItem onClick={onToggleStatus}>
                 {isActive ? 'Deactivate' : 'Activate'}
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onToggleWhatsapp} data-testid="button-toggle-whatsapp">
                 {whatsappEnabled ? 'Disable SMS' : 'Enable SMS'}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleWaBusiness} data-testid="button-toggle-wa-business">
+                {waBusinessEnabled ? 'Disable WhatsApp' : 'Enable WhatsApp'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDelete} className="text-destructive">
                 Delete
               </DropdownMenuItem>
@@ -123,6 +133,17 @@ export default function TeacherCard({
             <Badge variant="outline" className="text-xs bg-muted text-muted-foreground" data-testid="badge-whatsapp-disabled">
               <MessageCircle className="w-3 h-3 mr-1" />
               SMS Off
+            </Badge>
+          )}
+          {waBusinessEnabled ? (
+            <Badge variant="outline" className="text-xs bg-chart-3/10 text-chart-3 border-chart-3/20" data-testid="badge-wa-business-enabled">
+              <MessageCircle className="w-3 h-3 mr-1" />
+              WA
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs bg-muted text-muted-foreground" data-testid="badge-wa-business-disabled">
+              <MessageCircle className="w-3 h-3 mr-1" />
+              WA Off
             </Badge>
           )}
         </div>
