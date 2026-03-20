@@ -28,7 +28,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { batchApi, dashboardApi, authApi, whatsappApi, type AppNotification } from "@/lib/api";
+import { batchApi, dashboardApi, authApi, whatsappApi, waBusinessApi, type AppNotification } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import WhatsappUsageWidget from "@/components/WhatsappUsageWidget";
 import NotificationBell from "@/components/NotificationBell";
@@ -187,6 +187,11 @@ export default function TeacherDashboard() {
   const { data: waUsage, isLoading: waLoading } = useQuery({
     queryKey: ["/api/whatsapp/usage"],
     queryFn: () => whatsappApi.getUsage(),
+  });
+
+  const { data: waBusinessUsage, isLoading: waBusinessLoading } = useQuery({
+    queryKey: ["/api/wa-business/usage"],
+    queryFn: () => waBusinessApi.getUsage(),
   });
 
   const { data: recentPaymentsData } = useQuery({
@@ -399,7 +404,11 @@ export default function TeacherDashboard() {
 
               <div className="space-y-3">
                 <div className="rounded-md bg-background/70 dark:bg-background/25 p-3.5">
-                  <WhatsappUsageWidget usage={waUsage ?? null} isLoading={waLoading} />
+                  <WhatsappUsageWidget
+                    smsUsage={waUsage ?? null}
+                    waUsage={waBusinessUsage ?? null}
+                    isLoading={waLoading || waBusinessLoading}
+                  />
                 </div>
 
                 {recentPayments && recentPayments.length > 0 && (

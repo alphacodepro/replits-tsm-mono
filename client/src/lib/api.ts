@@ -359,6 +359,8 @@ export const whatsappApi = smsApi;
 
 // WhatsApp Business API (MSG91 WA, separate toggle from SMS)
 export const waBusinessApi = {
+  getUsage: () => apiRequest<WhatsappUsageInfo>("/api/wa-business/usage"),
+
   toggleEnabled: (teacherId: string, enabled: boolean) =>
     apiRequest<{ success: boolean }>(`/api/teachers/${teacherId}/whatsapp-business`, {
       method: "PATCH",
