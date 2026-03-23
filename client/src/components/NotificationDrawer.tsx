@@ -35,7 +35,7 @@ const TYPE_CONFIG: Record<NotificationType, {
     iconColor: "text-purple-600 dark:text-purple-400",
     cardBg: "bg-purple-50 dark:bg-purple-900/20",
     cardBorder: "border-purple-100 dark:border-purple-800",
-    sendAllLabel: "Send Wishes to All",
+    sendAllLabel: "",
   },
   fee_due_today: {
     title: (n) => `Fees Due Today (${n})`,
@@ -79,14 +79,12 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
 
   // --- Cache helpers ---
 
-  // Optimistic: remove an entire notification type from cache (no server round-trip)
   const updateCacheRemoveAll = (types: string[]) => {
     queryClient.setQueryData(["/api/notifications"], (old: any) => ({
       notifications: (old?.notifications ?? []).filter((n: any) => !types.includes(n.type)),
     }));
   };
 
-  // Optimistic: remove a single student from one or more notification types
   const updateCacheRemoveStudent = (studentId: string, types: string[]) => {
     queryClient.setQueryData(["/api/notifications"], (old: any) => {
       const updated = (old?.notifications ?? []).map((n: any) => {
@@ -127,7 +125,6 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     },
   });
 
-  // Individual "Reminder" button — loading state tracked via mutation.variables
   const sendReminderMutation = useMutation({
     mutationFn: (studentId: string) => studentApi.remind(studentId),
     onSuccess: () => {
@@ -143,7 +140,6 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     },
   });
 
-  // Bulk reminder — optimistic: clears ONLY the current drawer's type immediately
   const sendBulkReminderMutation = useMutation({
     mutationFn: async ({ studentIds, type, singleName }: { studentIds: string[]; type: string; singleName?: string }) => {
       updateCacheRemoveAll([type]);
@@ -163,40 +159,12 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
     },
   });
 
-  // Individual "Send Wish" button — loading state tracked via mutation.variables
-  const sendWishMutation = useMutation({
-    mutationFn: (studentId: string) => notificationApi.dismissFromBirthday(studentId),
-    onSuccess: (_data, studentId) => {
-      updateCacheRemoveStudent(studentId, ["birthday"]);
-      syncFromServer();
-      toast({ title: "Wish sent", description: "Birthday wish sent and student removed from notifications." });
-    },
-    onError: () => {
-      toast({ title: "Failed", description: "Could not dismiss birthday notification.", variant: "destructive" });
-    },
-  });
-
-  // Bulk wishes — optimistic + atomic single DB delete (no race condition)
-  const sendWishesToAllMutation = useMutation({
-    mutationFn: async ({ count, singleName }: { count: number; singleName?: string }) => {
-      updateCacheRemoveAll(["birthday"]);
-      await notificationApi.dismissNotificationType("birthday");
-    },
-    onSuccess: (_res, { count, singleName }) => {
-      syncFromServer();
-      toast({ title: count === 1 ? `Birthday wish sent to ${singleName}.` : `Wishes sent to ${count} students.` });
-    },
-    onError: (_err, { count, singleName }) => {
-      syncFromServer();
-      toast({ title: count === 1 ? `Birthday wish sent to ${singleName}.` : `Wishes sent to ${count} students.`, description: "SMS delivery may vary." });
-    },
-  });
-
   if (!notification) return null;
 
   const config = TYPE_CONFIG[notification.type] ?? TYPE_CONFIG.birthday;
   const Icon = config.icon;
   const isFee = notification.type === "fee_due_today" || notification.type === "fee_overdue";
+  const isBirthday = notification.type === "birthday";
   const count = notification.studentCount;
   const isMultiple = count > 1;
 
@@ -206,6 +174,12 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
   })();
 
   const allStudentIds = students.map((s) => s.id);
+
+  const birthdayBannerText = isBirthday
+    ? isMultiple
+      ? `Celebrating ${count} birthdays today! Wishing them all a wonderful year ahead.`
+      : `Today is ${students[0]?.name}'s birthday! Wishing him/her a wonderful year ahead.`
+    : "";
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -224,46 +198,44 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
             </div>
           </div>
 
-          {/* "Send All" button for multi-student */}
-          {isMultiple && (
+          {/* "Send Reminder to All" button — fee notifications only */}
+          {isMultiple && isFee && (
             <div className="mt-3">
-              {isFee ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300"
-                  onClick={() => sendBulkReminderMutation.mutate({ studentIds: allStudentIds, type: notification.type, singleName: students.length === 1 ? students[0].name : undefined })}
-                  disabled={sendBulkReminderMutation.isPending}
-                  data-testid="button-send-reminder-all"
-                >
-                  <Send className="w-3.5 h-3.5 mr-1.5" />
-                  {config.sendAllLabel}
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300"
-                  onClick={() => sendWishesToAllMutation.mutate({ count, singleName: count === 1 ? students[0].name : undefined })}
-                  disabled={sendWishesToAllMutation.isPending}
-                  data-testid="button-send-wishes-all"
-                >
-                  <Cake className="w-3.5 h-3.5 mr-1.5" />
-                  {config.sendAllLabel}
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300"
+                onClick={() => sendBulkReminderMutation.mutate({ studentIds: allStudentIds, type: notification.type, singleName: students.length === 1 ? students[0].name : undefined })}
+                disabled={sendBulkReminderMutation.isPending}
+                data-testid="button-send-reminder-all"
+              >
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+                {config.sendAllLabel}
+              </Button>
             </div>
           )}
         </SheetHeader>
 
-        {/* Student list — updates live as students are removed */}
+        {/* Birthday warm message banner */}
+        {isBirthday && (
+          <div className="px-6 pt-4">
+            <div className="rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 px-4 py-3">
+              <p className="text-sm text-purple-700 dark:text-purple-300 leading-snug">
+                {birthdayBannerText}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1.5">— TMS</p>
+            </div>
+          </div>
+        )}
+
+        {/* Student list */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No students found</p>
           ) : students.map((student) => (
             <div
               key={student.id}
-              className={`flex items-center gap-4 rounded-lg border ${config.cardBorder} ${config.cardBg} px-4 py-3 hover-elevate cursor-default`}
+              className={`flex items-center gap-4 rounded-lg border ${config.cardBorder} ${config.cardBg} px-4 py-3 cursor-default${isFee ? " hover-elevate" : ""}`}
               data-testid={`drawer-student-${student.id}`}
             >
               <div className={`h-8 w-8 rounded-full ${config.iconBg} flex items-center justify-center flex-shrink-0`}>
@@ -284,8 +256,8 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                 )}
               </div>
 
-              {/* Per-card actions */}
-              {isFee ? (
+              {/* Per-card actions — fee notifications only */}
+              {isFee && (
                 <div className="flex flex-col gap-1.5 flex-shrink-0">
                   <Button
                     variant="outline"
@@ -316,21 +288,6 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
                     )}
                   </Button>
                 </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 text-xs"
-                  onClick={() => sendWishMutation.mutate(student.id)}
-                  disabled={sendWishMutation.isPending && sendWishMutation.variables === student.id}
-                  data-testid={`button-send-wish-${student.id}`}
-                >
-                  {sendWishMutation.isPending && sendWishMutation.variables === student.id ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    "Send Wish"
-                  )}
-                </Button>
               )}
             </div>
           ))}
