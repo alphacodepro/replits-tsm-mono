@@ -3,110 +3,172 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  BookOpen,
-  AlertCircle,
-  Loader2,
-  GraduationCap,
-  Mail,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { BookOpen, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
 /* -----------------------------------------------------
-   WEEKLY ORGANIC GROWTH
+   BASE NUMBERS (starting values)
+----------------------------------------------------- */
+const BASE = {
+  students: 22140,
+  emails: 97850,
+  whatsapp: 251320,
+  sms: 112480,
+};
+
+/* -----------------------------------------------------
+   ISO YEAR-WEEK KEY  e.g. "2026-W12"
+----------------------------------------------------- */
+function getISOWeekKey(): string {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${week}`;
+}
+
+function randBetween(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/* -----------------------------------------------------
+   WEEKLY ORGANIC GROWTH HOOK
 ----------------------------------------------------- */
 function useOrganicStats() {
-  const [students, setStudents] = useState(2000);
-  const [emails, setEmails] = useState(5000);
+  const [stats, setStats] = useState(BASE);
 
   useEffect(() => {
-    const savedStudents = parseInt(localStorage.getItem("tsm_students_count") || "2000");
-    const savedEmails = parseInt(localStorage.getItem("tsm_emails_count") || "5000");
-    const lastUpdate = parseInt(localStorage.getItem("tsm_last_update") || "0");
+    const currentWeek = getISOWeekKey();
+    const storedWeek = localStorage.getItem("tsm_v2_week") ?? "";
 
-    const now = Date.now();
-    const weekMs = 7 * 24 * 60 * 60 * 1000;
-    const weeksPassed = lastUpdate ? Math.floor((now - lastUpdate) / weekMs) : 1;
+    const parse = (key: string): number => {
+      const raw = localStorage.getItem(key);
+      if (raw === null) return NaN;
+      const n = parseInt(raw, 10);
+      return isNaN(n) ? NaN : n;
+    };
 
-    let newStudents = savedStudents;
-    let newEmails = savedEmails;
+    let s = parse("tsm_v2_students");
+    let e = parse("tsm_v2_emails");
+    let w = parse("tsm_v2_whatsapp");
+    let m = parse("tsm_v2_sms");
 
-    if (weeksPassed >= 1) {
-      for (let i = 0; i < weeksPassed; i++) {
-        newStudents += Math.floor(Math.random() * (156 - 80 + 1)) + 80;
-        newEmails += Math.floor(Math.random() * (350 - 250 + 1)) + 250;
-      }
-
-      localStorage.setItem("tsm_students_count", newStudents.toString());
-      localStorage.setItem("tsm_emails_count", newEmails.toString());
-      localStorage.setItem("tsm_last_update", now.toString());
+    // First visit or any key missing/corrupt — seed with base numbers, no growth
+    if (!storedWeek || isNaN(s) || isNaN(e) || isNaN(w) || isNaN(m)) {
+      s = BASE.students; e = BASE.emails; w = BASE.whatsapp; m = BASE.sms;
+      localStorage.setItem("tsm_v2_students", s.toString());
+      localStorage.setItem("tsm_v2_emails",   e.toString());
+      localStorage.setItem("tsm_v2_whatsapp", w.toString());
+      localStorage.setItem("tsm_v2_sms",      m.toString());
+      localStorage.setItem("tsm_v2_week",     currentWeek);
+      setStats({ students: s, emails: e, whatsapp: w, sms: m });
+      return;
     }
 
-    setStudents(newStudents);
-    setEmails(newEmails);
+    // New week → apply growth once
+    if (storedWeek !== currentWeek) {
+      s += Math.max(15,  randBetween(20, 60));
+      e += Math.max(60,  randBetween(80, 200));
+      w += Math.max(150, randBetween(200, 500));
+      m += Math.max(60,  randBetween(80, 180));
+
+      localStorage.setItem("tsm_v2_students", s.toString());
+      localStorage.setItem("tsm_v2_emails",   e.toString());
+      localStorage.setItem("tsm_v2_whatsapp", w.toString());
+      localStorage.setItem("tsm_v2_sms",      m.toString());
+      localStorage.setItem("tsm_v2_week",     currentWeek);
+    }
+
+    setStats({ students: s, emails: e, whatsapp: w, sms: m });
   }, []);
 
-  return { students, emails };
+  return stats;
 }
 
 /* -----------------------------------------------------
-   SLOW, LUXURY COUNT-UP WITH MICRO-SCALE AT END
+   ROTATING STATS COMPONENT
 ----------------------------------------------------- */
-function useAnimatedNumber(value: number) {
-  const [display, setDisplay] = useState(0);
-  const [pop, setPop] = useState(false);
+const ANIM_MS = 400;
+const STAT_DURATIONS = [2500, 2500, 2500, 2500, 2500, 5000];
+
+interface StatItem {
+  value: string | null;
+  label: string;
+}
+
+function RotatingStats({ stats }: { stats: typeof BASE }) {
+  const statList: StatItem[] = [
+    { value: stats.students.toLocaleString("en-IN") + "+", label: "Students Managed" },
+    { value: stats.emails.toLocaleString("en-IN") + "+",   label: "Emails Delivered" },
+    { value: stats.whatsapp.toLocaleString("en-IN") + "+", label: "WhatsApp Notifications Sent" },
+    { value: stats.sms.toLocaleString("en-IN") + "+",      label: "SMS Notifications Sent" },
+    { value: null,                                          label: "Present in 5+ Cities" },
+    { value: null,                                          label: "Growing Every Month" },
+  ];
+
+  const [index, setIndex] = useState(0);
+  const [phase, setPhase] = useState<"entering" | "visible" | "exiting">("entering");
 
   useEffect(() => {
-    let start = 0;
-    const end = value;
-    const duration = 2000;
-    const stepTime = 20;
+    if (phase === "entering") {
+      const t = setTimeout(() => setPhase("visible"), ANIM_MS);
+      return () => clearTimeout(t);
+    }
+    if (phase === "visible") {
+      const visibleMs = Math.max(100, STAT_DURATIONS[index] - ANIM_MS * 2);
+      const t = setTimeout(() => setPhase("exiting"), visibleMs);
+      return () => clearTimeout(t);
+    }
+    if (phase === "exiting") {
+      const t = setTimeout(() => {
+        setIndex(i => (i + 1) % statList.length);
+        setPhase("entering");
+      }, ANIM_MS);
+      return () => clearTimeout(t);
+    }
+  }, [phase, index]);
 
-    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+  const current = statList[index];
 
-    let step = 0;
-    const totalSteps = duration / stepTime;
+  const animClass =
+    phase === "entering" ? "stat-entering" :
+    phase === "exiting"  ? "stat-exiting"  :
+    "stat-visible";
 
-    const interval = setInterval(() => {
-      step++;
-      const progress = easeOut(step / totalSteps);
-      const animatedValue = Math.floor(progress * end);
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400/90">
+        Platform Usage Across All Institutes
+      </p>
 
-      setDisplay(animatedValue);
-
-      if (step >= totalSteps) {
-        clearInterval(interval);
-        setDisplay(end);
-
-        // MICRO SCALE POP EFFECT
-        setPop(true);
-        setTimeout(() => setPop(false), 200);
-      }
-    }, stepTime);
-
-    return () => clearInterval(interval);
-  }, [value]);
-
-  return { display, pop };
-}
-
-/* -----------------------------------------------------
-   FORMAT LIKE "2630+"
------------------------------------------------------ */
-function formatPlus(num: number) {
-  return `${Math.round(num / 10) * 10}+`;
+      <div className={`stat-container ${animClass}`}>
+        {current.value !== null ? (
+          <>
+            <p className="text-[58px] font-extrabold leading-none tracking-tight text-blue-600">
+              {current.value}
+            </p>
+            <p className="text-[17px] font-medium text-gray-500 mt-3 leading-snug">
+              {current.label}
+            </p>
+          </>
+        ) : (
+          <p className="text-[36px] font-bold text-gray-700 leading-snug">
+            {current.label}
+          </p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /* -----------------------------------------------------
    MAIN PAGE
 ----------------------------------------------------- */
 export default function LoginPage({ onLogin }: any) {
-  const { students, emails } = useOrganicStats();
-  const { display: animatedStudents, pop: studentPop } = useAnimatedNumber(students);
-  const { display: animatedEmails, pop: emailPop } = useAnimatedNumber(emails);
+  const stats = useOrganicStats();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -119,7 +181,6 @@ export default function LoginPage({ onLogin }: any) {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
       await onLogin(username, password);
     } catch (err: any) {
@@ -134,88 +195,52 @@ export default function LoginPage({ onLogin }: any) {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
 
-      {/* BACKGROUND LUXURY GRADIENT */}
+      {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950" />
 
-      {/* PARALLAX BLOB FLOAT */}
+      {/* BLOBS */}
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
         <div className="absolute top-10 left-20 w-96 h-96 bg-blue-300/40 rounded-full blur-3xl animate-float-slow" />
         <div className="absolute top-20 right-20 w-[500px] h-[500px] bg-indigo-400/40 rounded-full blur-3xl animate-float-slower" />
       </div>
 
-      {/* CREATE FLOAT ANIMATIONS */}
-      <style>
-        {`
-          @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
-            100% { transform: translateY(0px); }
-          }
-          .animate-float { animation: float 4s ease-in-out infinite; }
+      {/* ANIMATIONS */}
+      <style>{`
+        @keyframes float {
+          0%   { transform: translateY(0px); }
+          50%  { transform: translateY(-6px); }
+          100% { transform: translateY(0px); }
+        }
+        .animate-float        { animation: float 4s ease-in-out infinite; }
+        .animate-float-slow   { animation: float 6s ease-in-out infinite; }
+        .animate-float-slower { animation: float 9s ease-in-out infinite; }
 
-          .animate-float-slow { animation: float 6s ease-in-out infinite; }
-          .animate-float-slower { animation: float 9s ease-in-out infinite; }
+        @keyframes shimmer {
+          0%   { opacity: 0.3; }
+          50%  { opacity: 1; }
+          100% { opacity: 0.3; }
+        }
+        .animate-shimmer { animation: shimmer 2.4s ease-in-out infinite; }
 
-          @keyframes shimmer {
-            0% { opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { opacity: 0.3; }
-          }
-          .animate-shimmer { animation: shimmer 2.4s ease-in-out infinite; }
-        `}
-      </style>
+        @keyframes stat-enter {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes stat-exit {
+          from { opacity: 1; transform: translateY(0); }
+          to   { opacity: 0; transform: translateY(-8px); }
+        }
+        .stat-entering { animation: stat-enter ${ANIM_MS}ms ease-out forwards; }
+        .stat-visible  { opacity: 1; transform: translateY(0); }
+        .stat-exiting  { animation: stat-exit ${ANIM_MS}ms ease-in forwards; }
+        .stat-container { min-height: 100px; }
+      `}</style>
 
       <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-20">
 
-        {/* LEFT — ULTRA-PREMIUM STATS */}
-        <div className="hidden md:flex flex-col gap-8 w-[45%] pl-6 -translate-y-2 animate-in fade-in duration-700">
-
-          {/* SHIMMER GLOW */}
-          <div className="absolute left-0 top-28 w-[550px] h-[550px] bg-blue-200/30 blur-3xl rounded-full animate-shimmer"></div>
-
-          {/* STUDENTS */}
-          <div className="flex items-center gap-6 animate-in slide-in-from-left-8 duration-1000 delay-150">
-            <div className="relative group animate-float">
-              <div className="absolute inset-0 bg-blue-200/50 rounded-2xl blur-xl opacity-70 group-hover:opacity-90 transition-all"></div>
-              <div className="relative p-4 rounded-2xl bg-white/70 backdrop-blur-xl shadow-lg group-hover:scale-[1.04] transition-all duration-500">
-                <GraduationCap className="w-8 h-8 text-blue-600" />
-              </div>
-            </div>
-
-            <p
-              className={`text-[33px] leading-snug font-extrabold text-gray-900 tracking-tight max-w-[380px] transition-transform ${
-                studentPop ? "scale-[1.05]" : "scale-100"
-              }`}
-            >
-              {formatPlus(animatedStudents)} students added so far
-            </p>
-          </div>
-
-          {/* EMAILS */}
-          <div className="flex items-center gap-6 animate-in slide-in-from-left-8 duration-1000 delay-300">
-            <div className="relative group animate-float-slow">
-              <div className="absolute inset-0 bg-indigo-200/50 rounded-2xl blur-xl opacity-70 group-hover:opacity-90 transition-all"></div>
-              <div className="relative p-4 rounded-2xl bg-white/70 backdrop-blur-xl shadow-lg group-hover:scale-[1.04] transition-all duration-500">
-                <Mail className="w-8 h-8 text-indigo-600" />
-              </div>
-            </div>
-
-            <p
-              className={`text-[24px] font-semibold text-gray-800 leading-snug tracking-tight transition-transform ${
-                emailPop ? "scale-[1.04]" : "scale-100"
-              }`}
-            >
-              {formatPlus(animatedEmails)} emails sent successfully
-            </p>
-          </div>
-
-          {/* DIVIDER */}
-          <div className="w-14 h-[1px] bg-gray-400/40 ml-1 animate-in fade-in duration-700 delay-500"></div>
-
-          {/* TAGLINE */}
-          <p className="text-[17px] tracking-wide text-gray-700 font-medium ml-1 mt-2 animate-in fade-in duration-700 delay-650">
-            Trusted by educators. Built for teachers.
-          </p>
+        {/* LEFT — ROTATING STATS */}
+        <div className="hidden md:flex flex-col justify-center w-[45%] pl-6 animate-in fade-in duration-700">
+          <RotatingStats stats={stats} />
         </div>
 
         {/* RIGHT — LOGIN CARD */}
@@ -231,7 +256,6 @@ export default function LoginPage({ onLogin }: any) {
                     <BookOpen className="w-10 h-10 text-white" />
                   </div>
                 </div>
-
                 <h2 className="text-3xl font-extrabold text-gray-900 text-center">
                   Welcome Back
                 </h2>
@@ -279,11 +303,7 @@ export default function LoginPage({ onLogin }: any) {
                       tabIndex={-1}
                       data-testid="button-toggle-password"
                     >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -298,9 +318,7 @@ export default function LoginPage({ onLogin }: any) {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Signing in...
                     </span>
-                  ) : (
-                    "Sign In"
-                  )}
+                  ) : "Sign In"}
                 </Button>
               </form>
 
