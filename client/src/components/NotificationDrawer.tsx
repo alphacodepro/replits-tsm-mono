@@ -175,14 +175,10 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
 
   const allStudentIds = students.map((s) => s.id);
 
-  const birthdayTitle = isBirthday && !isMultiple && students[0]?.name
-    ? `${students[0].name}'s Birthday`
-    : config.title(count);
-
   const birthdayBannerText = isBirthday
     ? isMultiple
       ? `Celebrating ${count} birthdays today! Wishing them all a wonderful year ahead.`
-      : `Today is ${students[0]?.name}'s birthday! Wishing them a wonderful year ahead.`
+      : `Today is ${students[0]?.name}'s birthday! Wishing him/her a wonderful year ahead.`
     : "";
 
   return (
@@ -197,7 +193,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
             </div>
             <div className="flex-1 min-w-0">
               <SheetTitle className="text-base font-semibold leading-snug">
-                {birthdayTitle}
+                {config.title(count)}
               </SheetTitle>
             </div>
           </div>
@@ -249,11 +245,7 @@ export default function NotificationDrawer({ notificationId, open, onClose }: No
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{student.name}</p>
                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {isBirthday
-                    ? student.batchName
-                    : [student.standard ? `Class ${student.standard}` : null, student.batchName]
-                        .filter(Boolean)
-                        .join(" • ")}
+                  {student.batchName}
                 </p>
                 {isFee && student.dueDate && (
                   <p className="text-xs text-muted-foreground mt-0.5">
