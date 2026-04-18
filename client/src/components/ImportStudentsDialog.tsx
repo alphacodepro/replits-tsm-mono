@@ -77,6 +77,7 @@ export default function ImportStudentsDialog({
   const [importFailures, setImportFailures] = useState<ImportFailure[]>([]);
   const [fileName, setFileName] = useState("");
   const [existingPhones, setExistingPhones] = useState<string[]>([]);
+  const [fileLimitError, setFileLimitError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -115,6 +116,7 @@ export default function ImportStudentsDialog({
     if (!file) return;
 
     setFileName(file.name);
+    setFileLimitError(null);
     const reader = new FileReader();
 
     reader.onload = (e) => {
@@ -306,6 +308,18 @@ export default function ImportStudentsDialog({
           }
         });
 
+        // Hard limit: reject files with more than 250 students
+        if (parsed.length > 250) {
+          setFileLimitError(
+            `Your file contains ${parsed.length} students. You can import a maximum of 250 students at a time. Please split your file and try again.`
+          );
+          setStudents([]);
+          setValidationErrors([]);
+          setImportFailures([]);
+          return;
+        }
+
+        setFileLimitError(null);
         setStudents(parsed);
         setValidationErrors(errors);
         setImportFailures([]);
@@ -402,10 +416,17 @@ export default function ImportStudentsDialog({
     },
     onError: (err: Error) => {
       const isLimitReached = err.message.includes("STUDENT_LIMIT_REACHED");
+      const isImportLimit = err.message.includes("IMPORT_LIMIT_EXCEEDED");
       toast({
-        title: isLimitReached ? "Student Limit Reached" : "Import Error",
+        title: isLimitReached
+          ? "Student Limit Reached"
+          : isImportLimit
+          ? "Too Many Students"
+          : "Import Error",
         description: isLimitReached
           ? "You have reached your student limit for the current plan. Please upgrade your plan to add more students."
+          : isImportLimit
+          ? "You can import a maximum of 250 students at a time. Please split your file and try again."
           : err.message,
         variant: "destructive",
       });
@@ -663,6 +684,17 @@ export default function ImportStudentsDialog({
               <CheckCircle2 className="h-4 w-4 text-blue-600" />
               <AlertDescription>
                 File loaded: <strong>{fileName}</strong>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Import limit exceeded error */}
+          {fileLimitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="font-semibold mb-1">Too many students</p>
+                <p className="text-sm">{fileLimitError}</p>
               </AlertDescription>
             </Alert>
           )}
