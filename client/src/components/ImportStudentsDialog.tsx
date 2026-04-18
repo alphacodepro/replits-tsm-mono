@@ -82,6 +82,14 @@ export default function ImportStudentsDialog({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const resetState = () => {
+    setStudents([]);
+    setValidationErrors([]);
+    setImportFailures([]);
+    setFileName("");
+    setFileLimitError(null);
+  };
+
   // ----------------------------------------
   // Fetch existing batch phones ONCE
   // ----------------------------------------
@@ -406,11 +414,7 @@ export default function ImportStudentsDialog({
           description: `${data.success} students imported successfully!`,
         });
 
-        setStudents([]);
-        setValidationErrors([]);
-        setImportFailures([]);
-        setFileName("");
-
+        resetState();
         onOpenChange(false);
       }
     },
@@ -636,7 +640,7 @@ export default function ImportStudentsDialog({
   // UI Rendering
   // ----------------------------------------
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(val) => { if (!val) resetState(); onOpenChange(val); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Import Students</DialogTitle>
@@ -781,10 +785,7 @@ export default function ImportStudentsDialog({
           <Button
             variant="outline"
             onClick={() => {
-              setStudents([]);
-              setValidationErrors([]);
-              setImportFailures([]);
-              setFileName("");
+              resetState();
               onOpenChange(false);
             }}
           >
