@@ -120,6 +120,7 @@ export const students = pgTable(
       table.phone,
     ),
     batchIdIdx: index("students_batch_id_idx").on(table.batchId),
+    dobIdx: index("students_dob_idx").on(table.dateOfBirth),
   }),
 );
 
