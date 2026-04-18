@@ -38,7 +38,12 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
     // Preserve specific error codes — do not overwrite them with generic messages
     if (errorCode !== "STUDENT_LIMIT_REACHED") {
       const lowerErrorMessage = String(errorMessage).toLowerCase();
-      if (res.status === 401 && lowerErrorMessage.includes("invalid")) {
+      if (res.status === 401 && !url.includes("/auth/login") && tokenStorage.get()) {
+        // Session expired — only redirect when a token was present (not a normal unauth request)
+        tokenStorage.remove();
+        window.location.href = "/?reason=session_expired";
+        return undefined as unknown as T; // redirect is in flight
+      } else if (res.status === 401 && lowerErrorMessage.includes("invalid")) {
         errorMessage = "Invalid username or password";
       } else if (res.status === 401) {
         errorMessage = "Unauthorized access";

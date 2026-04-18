@@ -3,9 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
+import { BookOpen, AlertCircle, Loader2, Eye, EyeOff, Info, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 
 /* -----------------------------------------------------
    BASE NUMBERS (starting values)
@@ -22,11 +22,15 @@ const BASE = {
 ----------------------------------------------------- */
 function getISOWeekKey(): string {
   const now = new Date();
-  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const d = new Date(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+  );
   const day = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  const week = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
   return `${d.getUTCFullYear()}-W${week}`;
 }
 
@@ -58,28 +62,31 @@ function useOrganicStats() {
 
     // First visit or any key missing/corrupt — seed with base numbers, no growth
     if (!storedWeek || isNaN(s) || isNaN(e) || isNaN(w) || isNaN(m)) {
-      s = BASE.students; e = BASE.emails; w = BASE.whatsapp; m = BASE.sms;
+      s = BASE.students;
+      e = BASE.emails;
+      w = BASE.whatsapp;
+      m = BASE.sms;
       localStorage.setItem("tsm_v2_students", s.toString());
-      localStorage.setItem("tsm_v2_emails",   e.toString());
+      localStorage.setItem("tsm_v2_emails", e.toString());
       localStorage.setItem("tsm_v2_whatsapp", w.toString());
-      localStorage.setItem("tsm_v2_sms",      m.toString());
-      localStorage.setItem("tsm_v2_week",     currentWeek);
+      localStorage.setItem("tsm_v2_sms", m.toString());
+      localStorage.setItem("tsm_v2_week", currentWeek);
       setStats({ students: s, emails: e, whatsapp: w, sms: m });
       return;
     }
 
     // New week → apply growth once
     if (storedWeek !== currentWeek) {
-      s += Math.max(15,  randBetween(20, 60));
-      e += Math.max(60,  randBetween(80, 200));
+      s += Math.max(15, randBetween(20, 60));
+      e += Math.max(60, randBetween(80, 200));
       w += Math.max(150, randBetween(200, 500));
-      m += Math.max(60,  randBetween(80, 180));
+      m += Math.max(60, randBetween(80, 180));
 
       localStorage.setItem("tsm_v2_students", s.toString());
-      localStorage.setItem("tsm_v2_emails",   e.toString());
+      localStorage.setItem("tsm_v2_emails", e.toString());
       localStorage.setItem("tsm_v2_whatsapp", w.toString());
-      localStorage.setItem("tsm_v2_sms",      m.toString());
-      localStorage.setItem("tsm_v2_week",     currentWeek);
+      localStorage.setItem("tsm_v2_sms", m.toString());
+      localStorage.setItem("tsm_v2_week", currentWeek);
     }
 
     setStats({ students: s, emails: e, whatsapp: w, sms: m });
@@ -101,16 +108,30 @@ interface StatItem {
 
 function RotatingStats({ stats }: { stats: typeof BASE }) {
   const statList: StatItem[] = [
-    { value: stats.students.toLocaleString("en-IN") + "+", label: "Students Managed" },
-    { value: stats.emails.toLocaleString("en-IN") + "+",   label: "Emails Delivered" },
-    { value: stats.whatsapp.toLocaleString("en-IN") + "+", label: "WhatsApp Notifications Sent" },
-    { value: stats.sms.toLocaleString("en-IN") + "+",      label: "SMS Notifications Sent" },
-    { value: null,                                          label: "Present in 5+ Cities" },
-    { value: null,                                          label: "Growing Every Month" },
+    {
+      value: stats.students.toLocaleString("en-IN") + "+",
+      label: "Students Managed",
+    },
+    {
+      value: stats.emails.toLocaleString("en-IN") + "+",
+      label: "Emails Delivered",
+    },
+    {
+      value: stats.whatsapp.toLocaleString("en-IN") + "+",
+      label: "WhatsApp Notifications Sent",
+    },
+    {
+      value: stats.sms.toLocaleString("en-IN") + "+",
+      label: "SMS Notifications Sent",
+    },
+    { value: null, label: "Present in 5+ Cities" },
+    { value: null, label: "Growing Every Month" },
   ];
 
   const [index, setIndex] = useState(0);
-  const [phase, setPhase] = useState<"entering" | "visible" | "exiting">("entering");
+  const [phase, setPhase] = useState<"entering" | "visible" | "exiting">(
+    "entering",
+  );
 
   useEffect(() => {
     if (phase === "entering") {
@@ -124,7 +145,7 @@ function RotatingStats({ stats }: { stats: typeof BASE }) {
     }
     if (phase === "exiting") {
       const t = setTimeout(() => {
-        setIndex(i => (i + 1) % statList.length);
+        setIndex((i) => (i + 1) % statList.length);
         setPhase("entering");
       }, ANIM_MS);
       return () => clearTimeout(t);
@@ -134,9 +155,11 @@ function RotatingStats({ stats }: { stats: typeof BASE }) {
   const current = statList[index];
 
   const animClass =
-    phase === "entering" ? "stat-entering" :
-    phase === "exiting"  ? "stat-exiting"  :
-    "stat-visible";
+    phase === "entering"
+      ? "stat-entering"
+      : phase === "exiting"
+        ? "stat-exiting"
+        : "stat-visible";
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,13 +192,24 @@ function RotatingStats({ stats }: { stats: typeof BASE }) {
 ----------------------------------------------------- */
 export default function LoginPage({ onLogin }: any) {
   const stats = useOrganicStats();
+  const search = useSearch();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sessionExpired, setSessionExpired] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get("reason") === "session_expired") {
+      setSessionExpired(true);
+      // Clean the param from the URL without triggering a navigation
+      window.history.replaceState({}, "", "/");
+    }
+  }, [search]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,7 +220,11 @@ export default function LoginPage({ onLogin }: any) {
     } catch (err: any) {
       const msg = err.message || "Login failed";
       setError(msg);
-      toast({ title: "Login failed", description: msg, variant: "destructive" });
+      toast({
+        title: "Login failed",
+        description: msg,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +232,6 @@ export default function LoginPage({ onLogin }: any) {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
-
       {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950" />
 
@@ -237,7 +274,6 @@ export default function LoginPage({ onLogin }: any) {
       `}</style>
 
       <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-20">
-
         {/* LEFT — ROTATING STATS */}
         <div className="hidden md:flex flex-col justify-center w-[45%] pl-6 animate-in fade-in duration-700">
           <RotatingStats stats={stats} />
@@ -245,10 +281,8 @@ export default function LoginPage({ onLogin }: any) {
 
         {/* RIGHT — LOGIN CARD */}
         <div className="flex flex-col items-center w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
-
           <Card className="w-full shadow-2xl border-0 rounded-2xl backdrop-blur-sm bg-white/85">
             <div className="p-8 md:p-10">
-
               <div className="flex flex-col items-center mb-8">
                 <div className="relative mb-6 animate-float">
                   <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150 animate-shimmer" />
@@ -265,6 +299,23 @@ export default function LoginPage({ onLogin }: any) {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                {sessionExpired && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-800">
+                    <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-blue-700 dark:text-blue-300 flex-1">
+                      Your session has expired. Please log in again.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSessionExpired(false)}
+                      className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200 shrink-0"
+                      aria-label="Dismiss"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
                 {error && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
                     <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
@@ -303,7 +354,11 @@ export default function LoginPage({ onLogin }: any) {
                       tabIndex={-1}
                       data-testid="button-toggle-password"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -318,21 +373,35 @@ export default function LoginPage({ onLogin }: any) {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Signing in...
                     </span>
-                  ) : "Sign In"}
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
               </form>
 
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
-                  <Link href="/privacy-policy" className="text-xs text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-privacy-policy">
+                  <Link
+                    href="/privacy-policy"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    data-testid="link-privacy-policy"
+                  >
                     Privacy Policy
                   </Link>
                   <span className="text-xs text-gray-400">•</span>
-                  <Link href="/terms-conditions" className="text-xs text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-terms-conditions">
+                  <Link
+                    href="/terms-conditions"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    data-testid="link-terms-conditions"
+                  >
                     Terms & Conditions
                   </Link>
                   <span className="text-xs text-gray-400">•</span>
-                  <Link href="/refund-policy" className="text-xs text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-refund-policy">
+                  <Link
+                    href="/refund-policy"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    data-testid="link-refund-policy"
+                  >
                     Refund Policy
                   </Link>
                 </div>
@@ -340,11 +409,9 @@ export default function LoginPage({ onLogin }: any) {
                   © 2026 Tuition Management System. All rights reserved.
                 </p>
               </div>
-
             </div>
           </Card>
         </div>
-
       </div>
     </div>
   );

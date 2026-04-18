@@ -5,8 +5,22 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 // Get token from sessionStorage (session ends when window closes)
 const getToken = () => sessionStorage.getItem('auth_token');
 
+function handleSessionExpiry() {
+  // Only redirect if there was an active token — a 401 without a token
+  // is just a normal unauthenticated request, not a session expiry.
+  const token = sessionStorage.getItem("auth_token");
+  if (!token) return;
+  sessionStorage.removeItem("auth_token");
+  window.location.href = "/?reason=session_expired";
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    if (res.status === 401) {
+      handleSessionExpiry();
+      return; // redirect in flight — do not throw or parse body
+    }
+
     let errorMessage = res.statusText;
     
     try {
@@ -54,28 +68,33 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
+export function getQueryFn<T>({ on401: unauthorizedBehavior }: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+}): QueryFunction<T> {
+  return async ({ queryKey }) => {
     const url = queryKey.join("/") as string;
     const fullUrl = `${API_BASE_URL}${url}`;
     const token = getToken();
-    
+
     const res = await fetch(fullUrl, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    if (res.status === 401) {
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      // Session expired — clear token, redirect, stop processing
+      handleSessionExpiry();
+      return null as unknown as T;
     }
 
     await throwIfResNotOk(res);
     return await res.json();
   };
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {
