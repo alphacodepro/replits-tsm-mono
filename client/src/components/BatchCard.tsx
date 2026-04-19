@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useFinancePin } from "@/context/FinancePinContext";
 
 interface BatchCardProps {
   id: string;
@@ -47,6 +48,7 @@ export default function BatchCard({
   onDelete,
   showDetails,
 }: BatchCardProps) {
+  const { financeUnlocked, pinIsSet } = useFinancePin();
   return (
     <Card className="p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
       <div className="space-y-3">
@@ -67,7 +69,7 @@ export default function BatchCard({
           <div className="flex flex-col items-end gap-2 shrink-0">
             <Badge variant="outline" className="h-fit">
               <Users className="w-3.5 h-3.5 mr-1" />
-              <span className="text-base font-semibold">{studentCount || 0}</span>
+              <span className="text-base font-semibold">{pinIsSet && !financeUnlocked ? "••" : (studentCount || 0)}</span>
             </Badge>
 
             {showDetails && (
