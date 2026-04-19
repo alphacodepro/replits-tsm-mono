@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { teacherApi } from "@/lib/api";
+import { teacherApi, financePinApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -26,6 +26,7 @@ import {
   Copy,
   CheckCircle,
   GraduationCap,
+  ShieldOff,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -111,6 +112,17 @@ export default function TeacherDetailsDialog({
       setTimeout(() => setCopiedPassword(false), 2000);
     }
   };
+
+  const clearPinMutation = useMutation({
+    mutationFn: () => financePinApi.adminClear(teacherId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers", teacherId] });
+      toast({ title: "Finance PIN cleared", description: "The teacher's finance PIN has been removed." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to clear PIN", description: error.message, variant: "destructive" });
+    },
+  });
 
   const handleClose = () => {
     setNewCredentials(null);
@@ -356,7 +368,7 @@ export default function TeacherDetailsDialog({
               )}
             </div>
 
-            <div className="flex gap-2 pt-4 border-t">
+            <div className="flex gap-2 pt-4 border-t flex-wrap">
               <Button
                 variant="outline"
                 onClick={() => resetPasswordMutation.mutate()}
@@ -367,6 +379,18 @@ export default function TeacherDetailsDialog({
                 <Key className="w-4 h-4 mr-2" />
                 {resetPasswordMutation.isPending ? "Generating..." : "Generate New Password"}
               </Button>
+              {(teacher as any)?.hasPinSet && (
+                <Button
+                  variant="outline"
+                  onClick={() => clearPinMutation.mutate()}
+                  disabled={clearPinMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-clear-finance-pin"
+                >
+                  <ShieldOff className="w-4 h-4 mr-2" />
+                  {clearPinMutation.isPending ? "Clearing..." : "Clear Finance PIN"}
+                </Button>
+              )}
               <Button variant="outline" onClick={handleClose} className="flex-1" data-testid="button-close-dialog">
                 Close
               </Button>

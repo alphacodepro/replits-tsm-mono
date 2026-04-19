@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useFinancePin } from "@/context/FinancePinContext";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,6 +167,7 @@ function BatchDetailsSkeleton() {
 export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { financeUnlocked, pinIsSet } = useFinancePin();
   const [addStudentOpen, setAddStudentOpen] = useState(false);
   const [editStudentOpen, setEditStudentOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -537,7 +539,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Fees Collected</p>
                 <p className="text-3xl font-bold text-chart-2 mt-1">
-                  ₹{batchTotals.totalCollected.toLocaleString()}
+                  {pinIsSet && !financeUnlocked ? "₹ ••••••" : `₹${batchTotals.totalCollected.toLocaleString()}`}
                 </p>
               </div>
             </div>
@@ -554,7 +556,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Pending Payments</p>
                 <p className="text-3xl font-bold text-chart-3 mt-1">
-                  ₹{batchTotals.totalPending.toLocaleString()}
+                  {pinIsSet && !financeUnlocked ? "₹ ••••••" : `₹${batchTotals.totalPending.toLocaleString()}`}
                 </p>
               </div>
             </div>

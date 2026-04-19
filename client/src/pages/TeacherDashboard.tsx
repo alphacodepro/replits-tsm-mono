@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useFinancePin } from "@/context/FinancePinContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -160,7 +161,7 @@ export default function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<any>(null);
-  const [showStats, setShowStats] = useState(true);
+  const { financeUnlocked, pinIsSet, openPinDialog, lockFinance } = useFinancePin();
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [showBatchDetails, setShowBatchDetails] = useState(true);
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
@@ -419,7 +420,7 @@ export default function TeacherDashboard() {
                         <p className="text-[10px] text-muted-foreground/50 mt-0.5">Last 3 transactions</p>
                       </div>
                       <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid="today-collected">
-                        ₹{todayCollected.toLocaleString()} collected
+                        {pinIsSet && !financeUnlocked ? "₹ ••••" : `₹${todayCollected.toLocaleString()}`} collected
                       </span>
                     </div>
 
@@ -436,7 +437,9 @@ export default function TeacherDashboard() {
                         >
                           <div className="flex items-baseline justify-between gap-2 flex-wrap">
                             <span className="text-[11px] font-medium truncate max-w-[110px]">{p.studentName}</span>
-                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">₹{p.amount.toLocaleString()}</span>
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                              {pinIsSet && !financeUnlocked ? "₹ ••••" : `₹${p.amount.toLocaleString()}`}
+                            </span>
                           </div>
                           <div className="flex items-center justify-between gap-2 flex-wrap mt-0.5">
                             {!allSameBatch && (
@@ -459,46 +462,67 @@ export default function TeacherDashboard() {
                 Dashboard Overview
               </h2>
               <Button
-                onClick={() => setShowStats(!showStats)}
+                onClick={() => {
+                  if (pinIsSet && financeUnlocked) {
+                    lockFinance();
+                  } else {
+                    openPinDialog();
+                  }
+                }}
                 variant="outline"
                 size="icon"
+                title={
+                  !pinIsSet
+                    ? "Set Finance PIN"
+                    : financeUnlocked
+                    ? "Lock financial data"
+                    : "Unlock financial data"
+                }
                 data-testid="button-toggle-stats"
               >
-                {showStats ? (
+                {pinIsSet && financeUnlocked ? (
                   <EyeOff className="w-4 h-4" />
+                ) : pinIsSet ? (
+                  <Eye className="w-4 h-4 text-muted-foreground" />
                 ) : (
-                  <Eye className="w-4 h-4" />
+                  <EyeOff className="w-4 h-4" />
                 )}
               </Button>
             </div>
             <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
 
-            {showStats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard
-                  title="Total Batches"
-                  value={stats.batchCount}
-                  icon={BookOpen}
-                />
-                <StatCard
-                  title="Total Students"
-                  value={stats.studentCount}
-                  icon={Users}
-                />
-                <StatCard
-                  title="Fees Collected"
-                  value={`₹${stats.totalCollected.toLocaleString()}`}
-                  icon={IndianRupee}
-                  valueColor="text-chart-2"
-                />
-                <StatCard
-                  title="Pending Fees"
-                  value={`₹${stats.totalPending.toLocaleString()}`}
-                  icon={Clock}
-                  valueColor="text-chart-3"
-                />
-              </div>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <StatCard
+                title="Total Batches"
+                value={stats.batchCount}
+                icon={BookOpen}
+              />
+              <StatCard
+                title="Total Students"
+                value={stats.studentCount}
+                icon={Users}
+              />
+              <StatCard
+                title="Fees Collected"
+                value={
+                  pinIsSet && !financeUnlocked
+                    ? "₹ ••••••"
+                    : `₹${stats.totalCollected.toLocaleString()}`
+                }
+                icon={IndianRupee}
+                valueColor="text-chart-2"
+              />
+              <StatCard
+                title="Pending Fees"
+                value={
+                  pinIsSet && !financeUnlocked
+                    ? "₹ ••••••"
+                    : `₹${stats.totalPending.toLocaleString()}`
+                }
+                icon={Clock}
+                valueColor="text-chart-3"
+              />
+            </div>
 
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">

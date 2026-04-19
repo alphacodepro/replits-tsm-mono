@@ -30,6 +30,7 @@ export const users = pgTable("users", {
   acceptedAt: timestamp("accepted_at"),
   acceptedVersion: text("accepted_version"),
   studentLimit: integer("student_limit"),
+  financePin: text("finance_pin"),
   createdAt: timestamp("created_at")
     .notNull()
     .default(sql`now()`),

@@ -464,6 +464,22 @@ export const notificationApi = {
     apiRequest<{ success: boolean }>(`/api/notifications/birthday/dismiss/${studentId}`, { method: "POST" }),
 };
 
+export const financePinApi = {
+  status: () => apiRequest<{ isSet: boolean }>("/api/finance-pin/status"),
+  set: (pin: string) =>
+    apiRequest<{ success: boolean }>("/api/finance-pin/set", {
+      method: "POST",
+      body: JSON.stringify({ pin }),
+    }),
+  verify: (pin: string) =>
+    apiRequest<{ success: boolean; locked?: boolean; minutesLeft?: number; attemptsLeft?: number }>(
+      "/api/finance-pin/verify",
+      { method: "POST", body: JSON.stringify({ pin }) }
+    ),
+  adminClear: (teacherId: string) =>
+    apiRequest<{ success: boolean }>(`/api/admin/finance-pin/${teacherId}`, { method: "DELETE" }),
+};
+
 export const dashboardApi = {
   summary: () => apiRequest<DashboardSummary>("/api/dashboard/summary"),
 

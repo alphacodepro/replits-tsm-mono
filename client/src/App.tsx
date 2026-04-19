@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { authApi } from "@/lib/api";
 import { useEffect } from "react";
+import { FinancePinProvider } from "@/context/FinancePinContext";
 import LoginPage from "@/pages/LoginPage";
 import TeacherDashboard from "@/pages/TeacherDashboard";
 import BatchDetailsPage from "@/pages/BatchDetailsPage";
@@ -85,12 +86,25 @@ function Router() {
   );
 }
 
+function AppWithProvider() {
+  const { data: userData } = useQuery<{ user: any }>({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+  });
+  const isTeacher = userData?.user?.role === "teacher";
+  return (
+    <FinancePinProvider isTeacher={isTeacher}>
+      <Router />
+    </FinancePinProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <AppWithProvider />
       </TooltipProvider>
     </QueryClientProvider>
   );
