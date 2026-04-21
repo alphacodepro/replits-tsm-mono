@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useFinancePin } from "@/context/FinancePinContext";
+import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -453,8 +454,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               </div>
               <div className="flex items-center gap-2 mt-4 flex-wrap">
                 <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center">
-                  <IndianRupee className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{batch.fee.toLocaleString()}<span className="ml-1">/ {batch.feePeriod}</span></span>
+                  <span>{formatCurrency(batch.fee)}<span className="ml-1">/ {batch.feePeriod}</span></span>
                 </Badge>
                 <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 flex-shrink-0" />
@@ -539,7 +539,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Fees Collected</p>
                 <p className="text-3xl font-bold text-chart-2 mt-1">
-                  {pinIsSet && !financeUnlocked ? "₹ ••••••" : `₹${batchTotals.totalCollected.toLocaleString()}`}
+                  {pinIsSet && !financeUnlocked ? "₹ ••••••" : formatCurrency(batchTotals.totalCollected)}
                 </p>
               </div>
             </div>
@@ -556,7 +556,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Pending Payments</p>
                 <p className="text-3xl font-bold text-chart-3 mt-1">
-                  {pinIsSet && !financeUnlocked ? "₹ ••••••" : `₹${batchTotals.totalPending.toLocaleString()}`}
+                  {pinIsSet && !financeUnlocked ? "₹ ••••••" : formatCurrency(batchTotals.totalPending)}
                 </p>
               </div>
             </div>

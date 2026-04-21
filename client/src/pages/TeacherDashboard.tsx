@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useFinancePin } from "@/context/FinancePinContext";
+import { formatCurrency, formatCurrencyFull } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -420,7 +421,7 @@ export default function TeacherDashboard() {
                         <p className="text-[10px] text-muted-foreground/50 mt-0.5">Last 3 transactions</p>
                       </div>
                       <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid="today-collected">
-                        {pinIsSet && !financeUnlocked ? "₹ ••••" : `₹${todayCollected.toLocaleString()}`} collected
+                        {pinIsSet && !financeUnlocked ? "₹ ••••" : formatCurrency(todayCollected)} collected
                       </span>
                     </div>
 
@@ -438,7 +439,7 @@ export default function TeacherDashboard() {
                           <div className="flex items-baseline justify-between gap-2 flex-wrap">
                             <span className="text-[11px] font-medium truncate max-w-[110px]">{p.studentName}</span>
                             <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                              {pinIsSet && !financeUnlocked ? "₹ ••••" : `₹${p.amount.toLocaleString()}`}
+                              {pinIsSet && !financeUnlocked ? "₹ ••••" : formatCurrency(p.amount)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-2 flex-wrap mt-0.5">
@@ -507,20 +508,30 @@ export default function TeacherDashboard() {
                 value={
                   pinIsSet && !financeUnlocked
                     ? "₹ ••••••"
-                    : `₹${stats.totalCollected.toLocaleString()}`
+                    : formatCurrency(stats.totalCollected)
                 }
                 icon={IndianRupee}
                 valueColor="text-chart-2"
+                tooltip={
+                  pinIsSet && !financeUnlocked
+                    ? undefined
+                    : formatCurrencyFull(stats.totalCollected)
+                }
               />
               <StatCard
                 title="Pending Fees"
                 value={
                   pinIsSet && !financeUnlocked
                     ? "₹ ••••••"
-                    : `₹${stats.totalPending.toLocaleString()}`
+                    : formatCurrency(stats.totalPending)
                 }
                 icon={Clock}
                 valueColor="text-chart-3"
+                tooltip={
+                  pinIsSet && !financeUnlocked
+                    ? undefined
+                    : formatCurrencyFull(stats.totalPending)
+                }
               />
             </div>
 

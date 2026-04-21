@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useFinancePin } from "@/context/FinancePinContext";
+import { formatCurrency } from "@/lib/utils";
 
 interface BatchCardProps {
   id: string;
@@ -105,9 +106,8 @@ export default function BatchCard({
               </p>
             )}
             <div className="inline-flex items-center text-sm">
-              <IndianRupee className="w-3 h-3 text-gray-500 dark:text-gray-400" />
               <span className="font-medium text-gray-900 dark:text-white">
-                {fee.toLocaleString()}
+                {formatCurrency(fee)}
               </span>
               <span className="text-gray-500 dark:text-gray-400 ml-1">
                 / {feePeriod}

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Mail, Phone, Trash2, Calendar, GraduationCap, Edit } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface Student {
   id: string;
@@ -124,11 +125,11 @@ export default function StudentTable({
                 <div className="grid grid-cols-2 gap-4 pt-3 border-t">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Fees Paid</p>
-                    <p className="font-semibold text-chart-2">₹{student.totalPaid.toLocaleString()}</p>
+                    <p className="font-semibold text-chart-2">{formatCurrency(student.totalPaid)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Due Amount</p>
-                    <p className="font-semibold text-chart-3">₹{student.totalDue.toLocaleString()}</p>
+                    <p className="font-semibold text-chart-3">{formatCurrency(student.totalDue)}</p>
                   </div>
                 </div>
 
@@ -232,8 +233,8 @@ export default function StudentTable({
                   </TableCell>
                   <TableCell>{student.standard}</TableCell>
                   <TableCell>{student.joinDate}</TableCell>
-                  <TableCell className="text-right font-mono text-chart-2">₹{student.totalPaid.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-mono text-chart-3">₹{student.totalDue.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono text-chart-2">{formatCurrency(student.totalPaid)}</TableCell>
+                  <TableCell className="text-right font-mono text-chart-3">{formatCurrency(student.totalDue)}</TableCell>
                   <TableCell className="text-right">
                     {isPaid ? (
                       <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20 rounded-full">
