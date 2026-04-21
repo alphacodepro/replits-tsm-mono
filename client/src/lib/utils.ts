@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(value: number | null | undefined): string {
-  if (!value || value === 0) return "₹0";
+  if (value == null || isNaN(value) || value === 0) return "₹0";
   if (value >= 10_000_000) {
     return `₹${parseFloat((value / 10_000_000).toFixed(2))}Cr`;
   }
@@ -17,6 +17,6 @@ export function formatCurrency(value: number | null | undefined): string {
 }
 
 export function formatCurrencyFull(value: number | null | undefined): string {
-  if (!value || value === 0) return "₹0";
+  if (value == null || isNaN(value) || value === 0) return "₹0";
   return `₹${value.toLocaleString("en-IN")}`;
 }
