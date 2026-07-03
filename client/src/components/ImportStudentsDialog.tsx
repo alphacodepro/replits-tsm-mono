@@ -227,7 +227,6 @@ export default function ImportStudentsDialog({
           // Required fields
           if (!rawFullName) rowErrors.push("Full Name is required");
           if (!rawPhone) rowErrors.push("Phone is required");
-          if (!rawEmail) rowErrors.push("Email is required");
           if (!rawStandard) rowErrors.push("Standard is required");
           if (!rawJoinDate) rowErrors.push("Join Date is required");
 
@@ -462,7 +461,7 @@ export default function ImportStudentsDialog({
       ["REQUIRED (Blue columns):"],
       ["   - Full Name: Student's complete name"],
       ["   - Phone: 10-digit mobile number (each student needs a unique number)"],
-      ["   - Email: Student's email address"],
+      ["   - Email: Student's email address (optional - leave blank if not available)"],
       ["   - Class/Standard: Example - Class 10, Grade 5, 12th Science"],
       ["   - Join Date: When did the student join? (Example: 15-01-2024)"],
       [""],
@@ -524,7 +523,7 @@ export default function ImportStudentsDialog({
     studentsSheet.columns = [
       { header: 'Full Name', key: 'fullName', width: 22 },
       { header: 'Phone', key: 'phone', width: 14 },
-      { header: 'Email', key: 'email', width: 28 },
+      { header: 'Email (Optional)', key: 'email', width: 28 },
       { header: 'Class/Standard', key: 'standard', width: 16 },
       { header: 'Join Date', key: 'joinDate', width: 14 },
       { header: 'Batch Fee (Info)\n(for reference)', key: 'batchFeeInfo', width: 18 },

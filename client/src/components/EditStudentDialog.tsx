@@ -46,7 +46,7 @@ interface EditStudentDialogProps {
   onSubmit: (data: {
     fullName: string;
     phone: string;
-    email: string;
+    email?: string | null;
     standard: string;
     joinDate: string;
     guardianName?: string | null;
@@ -201,10 +201,7 @@ export default function EditStudentDialog({
       isValid = false;
     }
 
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email format";
       isValid = false;
     }
@@ -250,7 +247,7 @@ export default function EditStudentDialog({
     onSubmit({
       fullName,
       phone,
-      email,
+      email: email.trim() || null,
       standard,
       joinDate: joinDateISO,
       guardianName: guardianName.trim() || null,
@@ -508,7 +505,7 @@ export default function EditStudentDialog({
                 {/* Email */}
                 <div className="space-y-1">
                   <Label htmlFor="email" className="text-sm">
-                    Email <span className="text-destructive">*</span>
+                    Email (optional)
                   </Label>
                   <Input
                     id="email"

@@ -98,7 +98,7 @@ export const students = pgTable(
       .references(() => batches.id, { onDelete: "cascade" }),
     fullName: text("full_name").notNull(),
     phone: text("phone").notNull(),
-    email: text("email").notNull(),
+    email: text("email"),
     standard: text("standard").notNull(),
     customFee: integer("custom_fee"),
     joinDate: timestamp("join_date")
@@ -178,7 +178,8 @@ const emailOptionalSchema = z
   .string()
   .email("Invalid email")
   .optional()
-  .or(z.literal("")); // allow empty (for teachers/admins)
+  .nullable()
+  .or(z.literal("")); // allow empty/null (for teachers/admins, and students without email)
 
 const emailRequiredSchema = z
   .string()
@@ -227,7 +228,7 @@ export const insertStudentSchema = createInsertSchema(students)
   .extend({
     fullName: z.string().min(1, "Full name is required"),
     phone: phoneSchema,
-    email: emailRequiredSchema,
+    email: emailOptionalSchema,
     customFee: positiveAmount.optional().nullable(),
     // Additional optional fields with string validation
     guardianName: z.string().max(100).optional().nullable(),
@@ -289,7 +290,7 @@ const guardianPhoneSchema = z
 export const updateStudentSchema = z.object({
   fullName: z.string().min(1, "Name is required"),
   phone: phoneSchema,
-  email: emailRequiredSchema,
+  email: emailOptionalSchema,
   standard: z.string().min(1, "Standard is required"),
   customFee: positiveAmount.optional().nullable(),
   joinDate: z.string().datetime(),

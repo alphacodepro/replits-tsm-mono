@@ -65,10 +65,7 @@ export default function StudentRegistrationPage() {
       isValid = false;
     }
 
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email format";
       isValid = false;
     }
@@ -112,7 +109,7 @@ export default function StudentRegistrationPage() {
     mutationFn: (data: {
       fullName: string;
       phone: string;
-      email: string;
+      email?: string | null;
       standard: string;
       guardianName?: string | null;
       guardianPhone?: string | null;
@@ -165,7 +162,7 @@ export default function StudentRegistrationPage() {
     registerMutation.mutate({
       fullName,
       phone,
-      email,
+      email: email.trim() || null,
       standard: batchData?.batch.standard || "",
       guardianName: guardianName.trim() || null,
       guardianPhone: guardianPhone.trim() || null,
@@ -280,7 +277,7 @@ export default function StudentRegistrationPage() {
 
           {/* Email */}
           <div className="space-y-1">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email">Email (optional)</Label>
             <Input
               id="email"
               data-testid="input-email"
@@ -288,7 +285,6 @@ export default function StudentRegistrationPage() {
               value={email}
               placeholder="student@example.com"
               onChange={(e) => setEmail(e.target.value)}
-              required
               className="rounded-xl"
             />
             {errors.email && (

@@ -243,7 +243,7 @@ export const studentApi = {
     batchId: string;
     fullName: string;
     phone: string;
-    email?: string;
+    email?: string | null;
     standard: string;
     guardianName?: string | null;
     guardianPhone?: string | null;
@@ -268,7 +268,7 @@ export const studentApi = {
   update: (id: string, data: {
     fullName: string;
     phone: string;
-    email: string;
+    email?: string | null;
     standard: string;
     joinDate: string;
     guardianName?: string | null;
@@ -292,7 +292,7 @@ export const studentApi = {
   register: (token: string, data: {
     fullName: string;
     phone: string;
-    email?: string;
+    email?: string | null;
     standard: string;
     guardianName?: string | null;
     guardianPhone?: string | null;

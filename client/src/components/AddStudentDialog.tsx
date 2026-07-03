@@ -21,7 +21,7 @@ interface AddStudentDialogProps {
   onSubmit: (data: {
     fullName: string;
     phone: string;
-    email: string;
+    email?: string | null;
     standard: string;
     guardianName?: string | null;
     guardianPhone?: string | null;
@@ -96,10 +96,7 @@ export default function AddStudentDialog({
       isValid = false;
     }
 
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email format";
       isValid = false;
     }
@@ -144,7 +141,7 @@ export default function AddStudentDialog({
     onSubmit({
       fullName,
       phone,
-      email,
+      email: email.trim() || null,
       standard,
       guardianName: guardianName.trim() || null,
       guardianPhone: guardianPhone.trim() || null,
@@ -232,7 +229,7 @@ export default function AddStudentDialog({
             {/* Email */}
             <div className="space-y-1">
               <Label htmlFor="email" className="text-sm">
-                Email *
+                Email (optional)
               </Label>
               <Input
                 id="email"
@@ -241,7 +238,6 @@ export default function AddStudentDialog({
                 placeholder="student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 className="rounded-xl text-sm md:text-base"
               />
               {errors.email && (
