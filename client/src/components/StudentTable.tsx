@@ -12,6 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Mail, Phone, Trash2, Calendar, GraduationCap, Edit } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { format } from "date-fns";
+
+function formatJoinDate(joinDate: string): string {
+  const date = new Date(joinDate);
+  return isNaN(date.getTime()) ? joinDate : format(date, "dd MMM yyyy");
+}
 
 interface Student {
   id: string;
@@ -22,6 +28,7 @@ interface Student {
   joinDate: string;
   totalPaid: number;
   totalDue: number;
+  batchName?: string;
 }
 
 interface StudentTableProps {
@@ -35,6 +42,11 @@ interface StudentTableProps {
   allVisibleSelected?: boolean;
   onToggleAll?: () => void;
   disableActions?: boolean;
+  columnMode?: "class" | "batch";
+  hideEditDelete?: boolean;
+  hideStatus?: boolean;
+  emptyMessage?: string;
+  keepLayoutOnEmpty?: boolean;
 }
 
 export default function StudentTable({
@@ -48,19 +60,37 @@ export default function StudentTable({
   allVisibleSelected = false,
   onToggleAll,
   disableActions = false,
+  columnMode = "class",
+  hideEditDelete = false,
+  hideStatus = false,
+  emptyMessage = "No students added yet",
+  keepLayoutOnEmpty = false,
 }: StudentTableProps) {
-  if (students.length === 0) {
+  const totalColumns =
+    (selectionMode ? 1 : 0) + 4 + (hideStatus ? 0 : 1) + 1 + 2;
+
+  if (students.length === 0 && !keepLayoutOnEmpty) {
     return (
       <div className="border rounded-md p-8 text-center text-muted-foreground">
-        No students added yet
+        {emptyMessage}
       </div>
     );
   }
+
+  const isEmpty = students.length === 0;
 
   return (
     <>
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
+        {isEmpty && (
+          <Card
+            className="min-h-[240px] flex items-center justify-center p-8 text-center text-muted-foreground"
+            data-testid="text-no-results"
+          >
+            {emptyMessage}
+          </Card>
+        )}
         {students.map((student) => {
           const isSelected = selectedIds.has(student.id);
           const isPaid = student.totalDue === 0;
@@ -90,7 +120,7 @@ export default function StudentTable({
                       </h3>
                       <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                         <GraduationCap className="w-4 h-4" />
-                        <span>Class {student.standard}</span>
+                        <span>{columnMode === "batch" ? student.batchName : `Class ${student.standard}`}</span>
                       </div>
                     </div>
                   </div>
@@ -118,7 +148,7 @@ export default function StudentTable({
                   )}
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>Joined {student.joinDate}</span>
+                    <span>Joined {formatJoinDate(student.joinDate)}</span>
                   </div>
                 </div>
 
@@ -144,24 +174,28 @@ export default function StudentTable({
                     <Eye className="w-4 h-4 mr-2" />
                     View Payments
                   </Button>
-                  <Button
-                    onClick={() => onEditStudent(student.id)}
-                    variant="outline"
-                    size="icon"
-                    disabled={disableActions}
-                    data-testid={`button-edit-student-${student.id}`}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={() => onDeleteStudent(student.id)}
-                    variant="outline"
-                    size="icon"
-                    disabled={disableActions}
-                    data-testid={`button-delete-student-${student.id}`}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
+                  {!hideEditDelete && (
+                    <>
+                      <Button
+                        onClick={() => onEditStudent(student.id)}
+                        variant="outline"
+                        size="icon"
+                        disabled={disableActions}
+                        data-testid={`button-edit-student-${student.id}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={() => onDeleteStudent(student.id)}
+                        variant="outline"
+                        size="icon"
+                        disabled={disableActions}
+                        data-testid={`button-delete-student-${student.id}`}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
@@ -185,15 +219,28 @@ export default function StudentTable({
               )}
               <TableHead className="font-semibold">Name</TableHead>
               <TableHead className="font-semibold">Contact</TableHead>
-              <TableHead className="font-semibold">Class</TableHead>
+              <TableHead className="font-semibold">{columnMode === "batch" ? "Batch" : "Class"}</TableHead>
               <TableHead className="font-semibold">Join Date</TableHead>
               <TableHead className="text-right font-semibold">Paid</TableHead>
               <TableHead className="text-right font-semibold">Due</TableHead>
-              <TableHead className="text-right font-semibold">Status</TableHead>
+              {!hideStatus && (
+                <TableHead className="text-right font-semibold">Status</TableHead>
+              )}
               <TableHead className="text-right font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
+            {isEmpty && (
+              <TableRow>
+                <TableCell
+                  colSpan={totalColumns}
+                  className="h-[240px] text-center text-muted-foreground align-middle"
+                  data-testid="text-no-results"
+                >
+                  {emptyMessage}
+                </TableCell>
+              </TableRow>
+            )}
             {students.map((student) => {
               const isSelected = selectedIds.has(student.id);
               const isPaid = student.totalDue === 0;
@@ -231,10 +278,11 @@ export default function StudentTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{student.standard}</TableCell>
-                  <TableCell>{student.joinDate}</TableCell>
+                  <TableCell>{columnMode === "batch" ? student.batchName : student.standard}</TableCell>
+                  <TableCell>{formatJoinDate(student.joinDate)}</TableCell>
                   <TableCell className="text-right font-mono text-chart-2">{formatCurrency(student.totalPaid)}</TableCell>
                   <TableCell className="text-right font-mono text-chart-3">{formatCurrency(student.totalDue)}</TableCell>
+                  {!hideStatus && (
                   <TableCell className="text-right">
                     {isPaid ? (
                       <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2/20 rounded-full">
@@ -246,6 +294,7 @@ export default function StudentTable({
                       </Badge>
                     )}
                   </TableCell>
+                  )}
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -258,24 +307,28 @@ export default function StudentTable({
                         <Eye className="w-4 h-4 mr-1" />
                         Payments
                       </Button>
-                      <Button
-                        onClick={() => onEditStudent(student.id)}
-                        variant="ghost"
-                        size="icon"
-                        disabled={disableActions}
-                        data-testid={`button-edit-student-${student.id}`}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => onDeleteStudent(student.id)}
-                        variant="ghost"
-                        size="icon"
-                        disabled={disableActions}
-                        data-testid={`button-delete-student-${student.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
+                      {!hideEditDelete && (
+                        <>
+                          <Button
+                            onClick={() => onEditStudent(student.id)}
+                            variant="ghost"
+                            size="icon"
+                            disabled={disableActions}
+                            data-testid={`button-edit-student-${student.id}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            onClick={() => onDeleteStudent(student.id)}
+                            variant="ghost"
+                            size="icon"
+                            disabled={disableActions}
+                            data-testid={`button-delete-student-${student.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

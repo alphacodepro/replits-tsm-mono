@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useFinancePin } from "@/context/FinancePinContext";
@@ -30,11 +30,15 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { batchApi, dashboardApi, authApi, whatsappApi, waBusinessApi, type AppNotification } from "@/lib/api";
+import { batchApi, dashboardApi, authApi, whatsappApi, waBusinessApi, searchApi, type AppNotification } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import WhatsappUsageWidget from "@/components/WhatsappUsageWidget";
 import NotificationBell from "@/components/NotificationBell";
 import NotificationDrawer from "@/components/NotificationDrawer";
+import StudentTable from "@/components/StudentTable";
+import PaymentHistoryDialog from "@/components/PaymentHistoryDialog";
+
+const SEARCH_MIN_CHARS = 3;
 
 function TeacherDashboardSkeleton() {
   return (
@@ -167,6 +171,30 @@ export default function TeacherDashboard() {
   const [showBatchDetails, setShowBatchDetails] = useState(true);
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [searchPaymentDialogOpen, setSearchPaymentDialogOpen] = useState(false);
+  const [searchSelectedStudent, setSearchSelectedStudent] = useState<{
+    id: string;
+    name: string;
+    batchFee: number;
+    feePeriod: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const isSearching = debouncedSearchQuery.length >= SEARCH_MIN_CHARS;
+
+  const { data: searchData, isFetching: searchLoading } = useQuery({
+    queryKey: ["/api/search", debouncedSearchQuery],
+    queryFn: () => searchApi.search(debouncedSearchQuery),
+    enabled: isSearching,
+    placeholderData: (previousData) => previousData,
+  });
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -289,11 +317,20 @@ export default function TeacherDashboard() {
     totalPending: 0,
   };
 
-  const filteredBatches = batches.filter(
-    (batch) =>
-      batch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (batch.subject?.toLowerCase() || "").includes(searchQuery.toLowerCase()),
-  );
+  const filteredBatches = isSearching ? (searchData?.batches || []) : batches;
+  const searchStudents = isSearching ? (searchData?.students || []) : [];
+
+  const handleSearchViewPayments = (studentId: string) => {
+    const student = searchStudents.find((s) => s.id === studentId);
+    if (!student) return;
+    setSearchSelectedStudent({
+      id: student.id,
+      name: student.fullName,
+      batchFee: student.batchFee ?? 0,
+      feePeriod: student.batchFeePeriod ?? "month",
+    });
+    setSearchPaymentDialogOpen(true);
+  };
 
   const handleShowQR = (batch: any) => {
     setSelectedBatch(batch);
@@ -460,7 +497,7 @@ export default function TeacherDashboard() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-4 px-1">
               <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                Dashboard Overview
+                {isSearching ? "Search Results" : "Dashboard Overview"}
               </h2>
               <Button
                 onClick={() => {
@@ -492,105 +529,153 @@ export default function TeacherDashboard() {
             </div>
             <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mb-6"></div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatCard
-                title="Total Batches"
-                value={stats.batchCount}
-                icon={BookOpen}
-              />
-              <StatCard
-                title="Total Students"
-                value={stats.studentCount}
-                icon={Users}
-              />
-              <StatCard
-                title="Fees Collected"
-                value={
-                  pinIsSet && !financeUnlocked
-                    ? "₹ ••••••"
-                    : formatCurrency(stats.totalCollected)
-                }
-                icon={IndianRupee}
-                valueColor="text-chart-2"
-                tooltip={
-                  pinIsSet && !financeUnlocked
-                    ? undefined
-                    : formatCurrencyFull(stats.totalCollected)
-                }
-              />
-              <StatCard
-                title="Pending Fees"
-                value={
-                  pinIsSet && !financeUnlocked
-                    ? "₹ ••••••"
-                    : formatCurrency(stats.totalPending)
-                }
-                icon={Clock}
-                valueColor="text-chart-3"
-                tooltip={
-                  pinIsSet && !financeUnlocked
-                    ? undefined
-                    : formatCurrencyFull(stats.totalPending)
-                }
-              />
-            </div>
+            {!isSearching && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatCard
+                  title="Total Batches"
+                  value={stats.batchCount}
+                  icon={BookOpen}
+                />
+                <StatCard
+                  title="Total Students"
+                  value={stats.studentCount}
+                  icon={Users}
+                />
+                <StatCard
+                  title="Fees Collected"
+                  value={
+                    pinIsSet && !financeUnlocked
+                      ? "₹ ••••••"
+                      : formatCurrency(stats.totalCollected)
+                  }
+                  icon={IndianRupee}
+                  valueColor="text-chart-2"
+                  tooltip={
+                    pinIsSet && !financeUnlocked
+                      ? undefined
+                      : formatCurrencyFull(stats.totalCollected)
+                  }
+                />
+                <StatCard
+                  title="Pending Fees"
+                  value={
+                    pinIsSet && !financeUnlocked
+                      ? "₹ ••••••"
+                      : formatCurrency(stats.totalPending)
+                  }
+                  icon={Clock}
+                  valueColor="text-chart-3"
+                  tooltip={
+                    pinIsSet && !financeUnlocked
+                      ? undefined
+                      : formatCurrencyFull(stats.totalPending)
+                  }
+                />
+              </div>
+            )}
 
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  My Batches
+                  {isSearching ? "Search Results" : "My Batches"}
                 </h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => setShowBatchDetails(!showBatchDetails)}
-                    variant="outline"
-                    size="icon"
-                    data-testid="button-toggle-batch-details"
-                  >
-                    {showBatchDetails ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => setCreateBatchOpen(true)}
-                    className="shadow-md"
-                    data-testid="button-create-batch"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Batch
-                  </Button>
-                </div>
+                {!isSearching && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => setShowBatchDetails(!showBatchDetails)}
+                      variant="outline"
+                      size="icon"
+                      data-testid="button-toggle-batch-details"
+                    >
+                      {showBatchDetails ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => setCreateBatchOpen(true)}
+                      className="shadow-md"
+                      data-testid="button-create-batch"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Batch
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <Input
-                  placeholder="Search batches..."
+                  placeholder="Search students, phone number or batches..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 transition-all duration-200"
-                  data-testid="input-search-batches"
+                  data-testid="input-search-dashboard"
                 />
               </div>
             </div>
 
-            {filteredBatches.length === 0 ? (
-              searchQuery ? (
-                <EmptyState
-                  icon={Search}
-                  title="No batches found"
-                  description={`No batches match "${searchQuery}"`}
-                />
+            {isSearching ? (
+              searchLoading && !searchData ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full rounded-md" />
+                  <Skeleton className="h-10 w-full rounded-md" />
+                  <Skeleton className="h-10 w-full rounded-md" />
+                </div>
               ) : (
-                <EmptyState
-                  icon={BookOpen}
-                  title="No batches yet"
-                  description="Get started by creating your first batch to organize your students and manage their fees"
-                  actionLabel="Create First Batch"
-                  onAction={() => setCreateBatchOpen(true)}
-                />
+                <div className="space-y-8">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                      Student Results
+                    </h3>
+                    <StudentTable
+                      students={searchStudents.map((s) => ({
+                        ...s,
+                        totalPaid: s.totalPaid ?? 0,
+                        totalDue: s.totalDue ?? 0,
+                      }))}
+                      onViewPayments={handleSearchViewPayments}
+                      onEditStudent={() => {}}
+                      onDeleteStudent={() => {}}
+                      columnMode="batch"
+                      hideEditDelete
+                      hideStatus
+                      keepLayoutOnEmpty
+                      emptyMessage={`No results found for "${debouncedSearchQuery}"`}
+                    />
+                  </div>
+
+                  {filteredBatches.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                        Batch Results
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredBatches.map((batch) => (
+                          <BatchCard
+                            key={batch.id}
+                            {...batch}
+                            showDetails={showBatchDetails}
+                            onViewDetails={() => handleViewDetails(batch.id)}
+                            onShowQR={() => handleShowQR(batch)}
+                            onCopyLink={() => handleCopyLink(batch)}
+                            onDelete={() => handleDeleteClick(batch)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )
+            ) : filteredBatches.length === 0 ? (
+              <EmptyState
+                icon={BookOpen}
+                title="No batches yet"
+                description="Get started by creating your first batch to organize your students and manage their fees"
+                actionLabel="Create First Batch"
+                onAction={() => setCreateBatchOpen(true)}
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredBatches.map((batch) => (
@@ -631,6 +716,8 @@ export default function TeacherDashboard() {
           batchName={selectedBatch.name}
           registrationUrl={`${window.location.origin}/register/${selectedBatch.registrationToken}`}
           registrationEnabled={selectedBatch.registrationEnabled}
+          instituteName={userData?.user?.instituteName || userData?.user?.fullName}
+          subject={selectedBatch.subject}
         />
       )}
 
@@ -660,6 +747,17 @@ export default function TeacherDashboard() {
         open={notificationDrawerOpen}
         onClose={() => setNotificationDrawerOpen(false)}
       />
+
+      {searchSelectedStudent && (
+        <PaymentHistoryDialog
+          open={searchPaymentDialogOpen}
+          onOpenChange={setSearchPaymentDialogOpen}
+          studentId={searchSelectedStudent.id}
+          studentName={searchSelectedStudent.name}
+          batchFee={searchSelectedStudent.batchFee}
+          feePeriod={searchSelectedStudent.feePeriod}
+        />
+      )}
     </div>
   );
 }

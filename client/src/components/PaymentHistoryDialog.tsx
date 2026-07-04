@@ -173,6 +173,7 @@ export default function PaymentHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payments/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/search"] });
 
       setAmount("");
       setAmountError("");
@@ -222,6 +223,7 @@ export default function PaymentHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/search"] });
 
       setEditingFee(false);
       setCustomFeeError("");
@@ -250,6 +252,7 @@ export default function PaymentHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/stats/teacher"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payments/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/search"] });
 
       setEditingPaymentId(null);
       setEditAmount("");

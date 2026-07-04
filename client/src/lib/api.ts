@@ -105,6 +105,9 @@ export interface Student {
   joinDate: string;
   totalPaid?: number;
   totalDue?: number;
+  batchName?: string;
+  batchFee?: number;
+  batchFeePeriod?: string;
 }
 
 export interface Payment {
@@ -234,6 +237,12 @@ export const feeCollectionApi = {
       method: "PATCH",
       body: JSON.stringify({ enabled }),
     }),
+};
+
+// Universal Search API
+export const searchApi = {
+  search: (query: string) =>
+    apiRequest<{ students: Student[]; batches: Batch[] }>(`/api/search?q=${encodeURIComponent(query)}`),
 };
 
 // Batch API
