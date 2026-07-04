@@ -105,6 +105,7 @@ export interface Student {
   joinDate: string;
   totalPaid?: number;
   totalDue?: number;
+  totalFee?: number;
   batchName?: string;
   batchFee?: number;
   batchFeePeriod?: string;

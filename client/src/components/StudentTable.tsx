@@ -28,6 +28,7 @@ interface Student {
   joinDate: string;
   totalPaid: number;
   totalDue: number;
+  totalFee?: number;
   batchName?: string;
 }
 
@@ -45,6 +46,7 @@ interface StudentTableProps {
   columnMode?: "class" | "batch";
   hideEditDelete?: boolean;
   hideStatus?: boolean;
+  showFee?: boolean;
   emptyMessage?: string;
   keepLayoutOnEmpty?: boolean;
 }
@@ -63,6 +65,7 @@ export default function StudentTable({
   columnMode = "class",
   hideEditDelete = false,
   hideStatus = false,
+  showFee = false,
   emptyMessage = "No students added yet",
   keepLayoutOnEmpty = false,
 }: StudentTableProps) {
@@ -146,13 +149,21 @@ export default function StudentTable({
                       <span>{student.email}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>Joined {formatJoinDate(student.joinDate)}</span>
-                  </div>
+                  {!showFee && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      <span>Joined {formatJoinDate(student.joinDate)}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-3 border-t">
+                <div className={`grid ${showFee ? "grid-cols-3" : "grid-cols-2"} gap-4 pt-3 border-t`}>
+                  {showFee && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Fee</p>
+                      <p className="font-semibold" data-testid={`text-fee-${student.id}`}>{formatCurrency(student.totalFee ?? 0)}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Fees Paid</p>
                     <p className="font-semibold text-chart-2">{formatCurrency(student.totalPaid)}</p>
@@ -220,7 +231,11 @@ export default function StudentTable({
               <TableHead className="font-semibold">Name</TableHead>
               <TableHead className="font-semibold">Contact</TableHead>
               <TableHead className="font-semibold">{columnMode === "batch" ? "Batch" : "Class"}</TableHead>
-              <TableHead className="font-semibold">Join Date</TableHead>
+              {showFee ? (
+                <TableHead className="text-right font-semibold">Fee</TableHead>
+              ) : (
+                <TableHead className="font-semibold">Join Date</TableHead>
+              )}
               <TableHead className="text-right font-semibold">Paid</TableHead>
               <TableHead className="text-right font-semibold">Due</TableHead>
               {!hideStatus && (
@@ -279,7 +294,11 @@ export default function StudentTable({
                     </div>
                   </TableCell>
                   <TableCell>{columnMode === "batch" ? student.batchName : student.standard}</TableCell>
-                  <TableCell>{formatJoinDate(student.joinDate)}</TableCell>
+                  {showFee ? (
+                    <TableCell className="text-right font-mono" data-testid={`text-fee-${student.id}`}>{formatCurrency(student.totalFee ?? 0)}</TableCell>
+                  ) : (
+                    <TableCell>{formatJoinDate(student.joinDate)}</TableCell>
+                  )}
                   <TableCell className="text-right font-mono text-chart-2">{formatCurrency(student.totalPaid)}</TableCell>
                   <TableCell className="text-right font-mono text-chart-3">{formatCurrency(student.totalDue)}</TableCell>
                   {!hideStatus && (

@@ -497,7 +497,7 @@ export default function TeacherDashboard() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-4 px-1">
               <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                {isSearching ? "Search Results" : "Dashboard Overview"}
+                Dashboard Overview
               </h2>
               <Button
                 onClick={() => {
@@ -577,7 +577,7 @@ export default function TeacherDashboard() {
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {isSearching ? "Search Results" : "My Batches"}
+                  {isSearching ? "Quick Search" : "My Batches"}
                 </h2>
                 {!isSearching && (
                   <div className="flex items-center gap-2">
@@ -627,13 +627,14 @@ export default function TeacherDashboard() {
                 <div className="space-y-8">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                      Student Results
+                      Students ({searchStudents.length})
                     </h3>
                     <StudentTable
                       students={searchStudents.map((s) => ({
                         ...s,
                         totalPaid: s.totalPaid ?? 0,
                         totalDue: s.totalDue ?? 0,
+                        totalFee: s.totalFee ?? 0,
                       }))}
                       onViewPayments={handleSearchViewPayments}
                       onEditStudent={() => {}}
@@ -641,6 +642,7 @@ export default function TeacherDashboard() {
                       columnMode="batch"
                       hideEditDelete
                       hideStatus
+                      showFee
                       keepLayoutOnEmpty
                       emptyMessage={`No results found for "${debouncedSearchQuery}"`}
                     />
