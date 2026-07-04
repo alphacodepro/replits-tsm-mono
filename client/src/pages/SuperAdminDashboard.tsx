@@ -13,7 +13,7 @@ import TeacherDetailsDialog from "@/components/TeacherDetailsDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Plus, Search, Users, BookOpen, GraduationCap, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { teacherApi, statsApi, authApi, whatsappApi, waBusinessApi } from "@/lib/api";
+import { teacherApi, statsApi, authApi, whatsappApi, waBusinessApi, feeCollectionApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
 function SuperAdminSkeleton() {
@@ -160,6 +160,21 @@ export default function SuperAdminDashboard() {
     },
   });
 
+  const toggleFeeCollectionMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      feeCollectionApi.toggleEnabled(id, enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating fee collection assistance",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteTeacherMutation = useMutation({
     mutationFn: teacherApi.delete,
     onSuccess: () => {
@@ -224,6 +239,15 @@ export default function SuperAdminDashboard() {
     toast({
       title: newStatus ? "WhatsApp enabled" : "WhatsApp disabled",
       description: `WhatsApp notifications have been ${newStatus ? 'enabled' : 'disabled'}`,
+    });
+  };
+
+  const handleToggleFeeCollection = (id: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    toggleFeeCollectionMutation.mutate({ id, enabled: newStatus });
+    toast({
+      title: newStatus ? "Fee Collection Assistance enabled" : "Fee Collection Assistance disabled",
+      description: `Fee Collection Assistance has been ${newStatus ? 'enabled' : 'disabled'} for this teacher`,
     });
   };
 
@@ -331,10 +355,12 @@ export default function SuperAdminDashboard() {
                 {...teacher}
                 whatsappEnabled={teacher.whatsappEnabled ?? false}
                 waBusinessEnabled={teacher.waBusinessEnabled ?? false}
+                feeCollectionEnabled={(teacher as any).feeCollectionEnabled ?? false}
                 onViewDetails={() => setDetailsTeacherId(teacher.id)}
                 onToggleStatus={() => handleToggleStatus(teacher.id, teacher.isActive)}
                 onToggleWhatsapp={() => handleToggleWhatsapp(teacher.id, teacher.whatsappEnabled ?? false)}
                 onToggleWaBusiness={() => handleToggleWaBusiness(teacher.id, teacher.waBusinessEnabled ?? false)}
+                onToggleFeeCollection={() => handleToggleFeeCollection(teacher.id, (teacher as any).feeCollectionEnabled ?? false)}
                 onDelete={() => handleDelete(teacher.id, teacher.fullName)}
               />
             ))}

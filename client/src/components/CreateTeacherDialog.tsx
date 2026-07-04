@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { teacherApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -32,6 +33,7 @@ export default function CreateTeacherDialog({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [studentLimit, setStudentLimit] = useState("");
+  const [feeCollectionEnabled, setFeeCollectionEnabled] = useState(false);
 
   const [errors, setErrors] = useState({
     fullName: "",
@@ -90,6 +92,7 @@ export default function CreateTeacherDialog({
     setEmail("");
     setPhone("");
     setStudentLimit("");
+    setFeeCollectionEnabled(false);
     setErrors({
       fullName: "",
       username: "",
@@ -153,6 +156,7 @@ export default function CreateTeacherDialog({
       email,
       phone,
       studentLimit: studentLimit ? parseInt(studentLimit, 10) : undefined,
+      feeCollectionEnabled,
     });
   };
 
@@ -284,6 +288,22 @@ export default function CreateTeacherDialog({
                 data-testid="input-student-limit"
               />
               <p className="text-xs text-muted-foreground">Leave blank for unlimited students.</p>
+            </div>
+
+            {/* Fee Collection Assistance */}
+            <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="fee-collection-toggle">Fee Collection Assistance</Label>
+                <p className="text-xs text-muted-foreground">
+                  Allow this teacher to request our ops team's help following up on pending fees.
+                </p>
+              </div>
+              <Switch
+                id="fee-collection-toggle"
+                checked={feeCollectionEnabled}
+                onCheckedChange={setFeeCollectionEnabled}
+                data-testid="switch-fee-collection"
+              />
             </div>
           </div>
 

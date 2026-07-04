@@ -11,7 +11,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
 export const users = pgTable("users", {
   id: varchar("id")
     .primaryKey()
@@ -26,6 +25,7 @@ export const users = pgTable("users", {
   isActive: boolean("is_active").notNull().default(true),
   whatsappEnabled: boolean("whatsapp_enabled").notNull().default(false),
   waBusinessEnabled: boolean("wa_business_enabled").notNull().default(false),
+  feeCollectionEnabled: boolean("fee_collection_enabled").notNull().default(false),
   hasAcceptedTerms: boolean("has_accepted_terms").notNull().default(false),
   acceptedAt: timestamp("accepted_at"),
   acceptedVersion: text("accepted_version"),
@@ -146,6 +146,30 @@ export const payments = pgTable("payments", {
   studentIdIdx: index("payments_student_id_idx").on(table.studentId),
   paidAtIdx: index("payments_paid_at_idx").on(table.paidAt),
 }));
+
+export const feeCollectionRequests = pgTable(
+  "fee_collection_requests",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    teacherId: varchar("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    batchId: varchar("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("submitted"), // 'submitted' | 'in_progress' | 'completed'
+    reportSnapshot: text("report_snapshot").notNull(), // JSON stringified report at time of request
+    requestedAt: timestamp("requested_at").notNull().default(sql`now()`),
+  },
+  (table) => ({
+    teacherRequestedAtIdx: index("fee_collection_requests_teacher_requested_at_idx").on(
+      table.teacherId,
+      table.requestedAt,
+    ),
+  }),
+);
 
 export const notifications = pgTable("notifications", {
   id: varchar("id")
@@ -323,6 +347,37 @@ export type Payment = typeof payments.$inferSelect;
 
 export type WhatsappUsage = typeof whatsappUsage.$inferSelect;
 export type WaBusinessUsage = typeof waBusinessUsage.$inferSelect;
+
+export type FeeCollectionRequest = typeof feeCollectionRequests.$inferSelect;
+
+export interface FeeCollectionStudentEntry {
+  studentId: string;
+  fullName: string;
+  phone: string;
+  standard: string;
+  expectedTotalFee: number;
+  totalPaid: number;
+  pendingAmount: number;
+  recentPayments: Array<{
+    amount: number;
+    paidAt: string;
+    paymentMethod: string | null;
+  }>;
+}
+
+export interface FeeCollectionReport {
+  generatedAt: string;
+  instituteName: string | null;
+  teacherName: string;
+  teacherUsername: string;
+  teacherPhone: string | null;
+  teacherEmail: string | null;
+  batchId: string;
+  batchName: string;
+  batchSubject: string | null;
+  totalPendingAmount: number;
+  students: FeeCollectionStudentEntry[];
+}
 
 export type Notification = typeof notifications.$inferSelect;
 

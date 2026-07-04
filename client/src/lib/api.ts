@@ -179,6 +179,7 @@ export const teacherApi = {
     email?: string;
     phone?: string;
     studentLimit?: number;
+    feeCollectionEnabled?: boolean;
   }) =>
     apiRequest<{ teacher: User }>("/api/teachers", {
       method: "POST",
@@ -210,6 +211,28 @@ export const teacherApi = {
   delete: (id: string) =>
     apiRequest<{ success: boolean }>(`/api/teachers/${id}`, {
       method: "DELETE",
+    }),
+};
+
+// Fee Collection Assistance API
+export interface FeeCollectionStatus {
+  enabled: boolean;
+  canRequest: boolean;
+  nextAvailableAt: string | null;
+}
+
+export const feeCollectionApi = {
+  getStatus: () => apiRequest<FeeCollectionStatus>("/api/fee-collection/status"),
+
+  requestAssistance: (batchId: string) =>
+    apiRequest<{ success: boolean }>(`/api/batches/${batchId}/fee-collection-request`, {
+      method: "POST",
+    }),
+
+  toggleEnabled: (teacherId: string, enabled: boolean) =>
+    apiRequest<{ success: boolean }>(`/api/teachers/${teacherId}/fee-collection`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
     }),
 };
 

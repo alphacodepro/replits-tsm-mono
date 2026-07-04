@@ -43,9 +43,10 @@ import {
   FileUp,
   Bell,
   X,
+  HandCoins,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { batchApi, studentApi, dashboardApi, Student as ApiStudent } from "@/lib/api";
+import { batchApi, studentApi, dashboardApi, feeCollectionApi, Student as ApiStudent } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
 interface StudentWithPaymentInfo extends Omit<ApiStudent, 'customFee'> {
@@ -187,11 +188,20 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [remindMode, setRemindMode] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [feeCollectionConfirmOpen, setFeeCollectionConfirmOpen] = useState(false);
+  const [feeCollectionCooldownOpen, setFeeCollectionCooldownOpen] = useState(false);
 
   const { data: paginatedData, isLoading: batchLoading } = useQuery({
     queryKey: ["/api/batches", batchId, "students", currentPage],
     queryFn: () => dashboardApi.studentsPaginated(batchId, currentPage, pageSize),
     placeholderData: (previousData) => previousData,
+  });
+
+  const { data: userData } = useQuery({ queryKey: ["/api/auth/me"] });
+
+  const { data: feeCollectionStatus } = useQuery({
+    queryKey: ["/api/fee-collection/status"],
+    queryFn: () => feeCollectionApi.getStatus(),
   });
 
   const showSkeleton = useDelayedLoading(batchLoading);
@@ -367,6 +377,30 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
       toast({ title: "Failed to send reminders", description: error.message, variant: "destructive" });
     },
   });
+
+  const feeCollectionRequestMutation = useMutation({
+    mutationFn: () => feeCollectionApi.requestAssistance(batchId),
+    onSuccess: () => {
+      setFeeCollectionConfirmOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/fee-collection/status"] });
+      toast({
+        title: "Request sent",
+        description: "Our team will follow up on pending fees for this batch shortly.",
+      });
+    },
+    onError: (error: Error) => {
+      setFeeCollectionConfirmOpen(false);
+      toast({ title: "Failed to send request", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleRequestFeeCollection = () => {
+    if (feeCollectionStatus?.canRequest === false) {
+      setFeeCollectionCooldownOpen(true);
+      return;
+    }
+    setFeeCollectionConfirmOpen(true);
+  };
 
   const handleCopyLink = () => {
     if (!batch) return;
@@ -585,6 +619,18 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 <FileUp className="w-4 h-4 mr-2" />
                 Import Excel
               </Button>
+              {feeCollectionStatus?.enabled && (
+                <Button
+                  onClick={handleRequestFeeCollection}
+                  variant="outline"
+                  disabled={remindMode || feeCollectionRequestMutation.isPending}
+                  className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
+                  data-testid="button-request-fee-collection"
+                >
+                  <HandCoins className="w-4 h-4 mr-2" />
+                  Request Fee Collection
+                </Button>
+              )}
               <Button 
                 onClick={() => setAddStudentOpen(true)}
                 disabled={remindMode}
@@ -816,6 +862,8 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
         batchName={batch.name}
         registrationUrl={`${window.location.origin}/register/${batch.registrationToken}`}
         registrationEnabled={batch.registrationEnabled}
+        instituteName={(userData as any)?.user?.instituteName || (userData as any)?.user?.fullName}
+        subject={batch.subject}
       />
 
       <ConfirmDialog
@@ -843,6 +891,48 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
               disabled={remindBulkMutation.isPending}
             >
               {remindBulkMutation.isPending ? "Sending..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={feeCollectionConfirmOpen} onOpenChange={setFeeCollectionConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request fee collection assistance?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Our team will reach out and follow up with students in "{batch.name}" who have pending fees. You can send one request per batch every 24 hours.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-fee-collection">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => feeCollectionRequestMutation.mutate()}
+              disabled={feeCollectionRequestMutation.isPending}
+              data-testid="button-confirm-fee-collection"
+            >
+              {feeCollectionRequestMutation.isPending ? "Sending..." : "Send Request"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={feeCollectionCooldownOpen} onOpenChange={setFeeCollectionCooldownOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request already in progress</AlertDialogTitle>
+            <AlertDialogDescription>
+              {feeCollectionStatus?.nextAvailableAt
+                ? `You can send another request for this once it's been 24 hours since your last one, on ${format(new Date(feeCollectionStatus.nextAvailableAt), "MMM d, yyyy 'at' h:mm a")}.`
+                : "You can only send one fee collection request every 24 hours. Please try again later."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => setFeeCollectionCooldownOpen(false)}
+              data-testid="button-close-fee-collection-cooldown"
+            >
+              Got it
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
