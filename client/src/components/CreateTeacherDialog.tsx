@@ -34,6 +34,7 @@ export default function CreateTeacherDialog({
   const [phone, setPhone] = useState("");
   const [studentLimit, setStudentLimit] = useState("");
   const [feeCollectionEnabled, setFeeCollectionEnabled] = useState(false);
+  const [dailyBackupEnabled, setDailyBackupEnabled] = useState(false);
 
   const [errors, setErrors] = useState({
     fullName: "",
@@ -93,6 +94,7 @@ export default function CreateTeacherDialog({
     setPhone("");
     setStudentLimit("");
     setFeeCollectionEnabled(false);
+    setDailyBackupEnabled(false);
     setErrors({
       fullName: "",
       username: "",
@@ -134,6 +136,11 @@ export default function CreateTeacherDialog({
       isValid = false;
     }
 
+    if (dailyBackupEnabled && !email.trim()) {
+      newErrors.email = "Email is required when Daily TMS Backup is enabled";
+      isValid = false;
+    }
+
     if (phone && !/^\d{10}$/.test(phone)) {
       newErrors.phone = "Phone number must be exactly 10 digits";
       isValid = false;
@@ -157,6 +164,7 @@ export default function CreateTeacherDialog({
       phone,
       studentLimit: studentLimit ? parseInt(studentLimit, 10) : undefined,
       feeCollectionEnabled,
+      dailyBackupEnabled,
     });
   };
 
@@ -303,6 +311,22 @@ export default function CreateTeacherDialog({
                 checked={feeCollectionEnabled}
                 onCheckedChange={setFeeCollectionEnabled}
                 data-testid="switch-fee-collection"
+              />
+            </div>
+
+            {/* Daily TMS Backup */}
+            <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="daily-backup-toggle">Daily TMS Backup</Label>
+                <p className="text-xs text-muted-foreground">
+                  Email a complete Excel backup every day. Requires the institute email above.
+                </p>
+              </div>
+              <Switch
+                id="daily-backup-toggle"
+                checked={dailyBackupEnabled}
+                onCheckedChange={setDailyBackupEnabled}
+                data-testid="switch-daily-backup"
               />
             </div>
           </div>

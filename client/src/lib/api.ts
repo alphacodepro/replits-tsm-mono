@@ -75,6 +75,7 @@ export interface User {
   isActive: boolean;
   whatsappEnabled: boolean;
   waBusinessEnabled: boolean;
+  dailyBackupEnabled: boolean;
   hasAcceptedTerms: boolean;
   acceptedAt?: string | null;
   acceptedVersion?: string | null;
@@ -133,6 +134,16 @@ export interface SystemStats {
   studentCount: number;
 }
 
+export interface DailyBackupStatus {
+  backupDate: string;
+  status: "processing" | "generated" | "sending" | "sent" | "failed";
+  generatedAt?: string | null;
+  emailSentAt?: string | null;
+  errorMessage?: string | null;
+  retryScheduled: boolean;
+  nextRetryAt?: string | null;
+}
+
 // Auth API
 export const authApi = {
   login: async (username: string, password: string) => {
@@ -184,13 +195,14 @@ export const teacherApi = {
     phone?: string;
     studentLimit?: number;
     feeCollectionEnabled?: boolean;
+    dailyBackupEnabled?: boolean;
   }) =>
     apiRequest<{ teacher: User }>("/api/teachers", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  list: () => apiRequest<{ teachers: (User & { batchCount: number; studentCount: number })[] }>("/api/teachers"),
+  list: () => apiRequest<{ teachers: (User & { batchCount: number; studentCount: number; lastBackup: DailyBackupStatus | null })[] }>("/api/teachers"),
 
   get: (id: string) =>
     apiRequest<{ teacher: User; batches: Batch[]; stats: { batchCount: number; studentCount: number } }>(`/api/teachers/${id}`),
@@ -215,6 +227,23 @@ export const teacherApi = {
   delete: (id: string) =>
     apiRequest<{ success: boolean }>(`/api/teachers/${id}`, {
       method: "DELETE",
+    }),
+};
+
+export const dailyBackupApi = {
+  toggleEnabled: (teacherId: string, enabled: boolean) =>
+    apiRequest<{ success: boolean }>(`/api/teachers/${teacherId}/daily-backup`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
+
+  runNow: (teacherId: string) =>
+    apiRequest<{
+      success: boolean;
+      result: "started" | "already-running" | "already-completed" | "retry-scheduled" | "failed";
+      message: string;
+    }>(`/api/teachers/${teacherId}/daily-backup/run`, {
+      method: "POST",
     }),
 };
 

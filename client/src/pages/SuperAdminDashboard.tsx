@@ -13,7 +13,7 @@ import TeacherDetailsDialog from "@/components/TeacherDetailsDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Plus, Search, Users, BookOpen, GraduationCap, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { teacherApi, statsApi, authApi, whatsappApi, waBusinessApi, feeCollectionApi } from "@/lib/api";
+import { teacherApi, statsApi, authApi, whatsappApi, waBusinessApi, feeCollectionApi, dailyBackupApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
 function SuperAdminSkeleton() {
@@ -175,6 +175,35 @@ export default function SuperAdminDashboard() {
     },
   });
 
+  const toggleDailyBackupMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      dailyBackupApi.toggleEnabled(id, enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating Daily TMS Backup",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const runDailyBackupMutation = useMutation({
+    mutationFn: (id: string) => dailyBackupApi.runNow(id),
+    onSuccess: (response) => {
+      toast({
+        title: response.result === "started" ? "Backup started" : "Daily backup",
+        description: response.message,
+      });
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ["/api/teachers"] }), 2500);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not start backup", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteTeacherMutation = useMutation({
     mutationFn: teacherApi.delete,
     onSuccess: () => {
@@ -248,6 +277,17 @@ export default function SuperAdminDashboard() {
     toast({
       title: newStatus ? "Fee Collection Assistance enabled" : "Fee Collection Assistance disabled",
       description: `Fee Collection Assistance has been ${newStatus ? 'enabled' : 'disabled'} for this teacher`,
+    });
+  };
+
+  const handleToggleDailyBackup = (id: string, currentStatus: boolean) => {
+    const enabled = !currentStatus;
+    toggleDailyBackupMutation.mutate({ id, enabled });
+    toast({
+      title: enabled ? "Daily TMS Backup enabled" : "Daily TMS Backup disabled",
+      description: enabled
+        ? "This institute will receive daily Excel backups."
+        : "Future daily backups have been stopped.",
     });
   };
 
@@ -356,11 +396,15 @@ export default function SuperAdminDashboard() {
                 whatsappEnabled={teacher.whatsappEnabled ?? false}
                 waBusinessEnabled={teacher.waBusinessEnabled ?? false}
                 feeCollectionEnabled={(teacher as any).feeCollectionEnabled ?? false}
+                dailyBackupEnabled={teacher.dailyBackupEnabled ?? false}
+                lastBackup={teacher.lastBackup ?? null}
                 onViewDetails={() => setDetailsTeacherId(teacher.id)}
                 onToggleStatus={() => handleToggleStatus(teacher.id, teacher.isActive)}
                 onToggleWhatsapp={() => handleToggleWhatsapp(teacher.id, teacher.whatsappEnabled ?? false)}
                 onToggleWaBusiness={() => handleToggleWaBusiness(teacher.id, teacher.waBusinessEnabled ?? false)}
                 onToggleFeeCollection={() => handleToggleFeeCollection(teacher.id, (teacher as any).feeCollectionEnabled ?? false)}
+                onToggleDailyBackup={() => handleToggleDailyBackup(teacher.id, teacher.dailyBackupEnabled ?? false)}
+                onRunDailyBackup={() => runDailyBackupMutation.mutate(teacher.id)}
                 onDelete={() => handleDelete(teacher.id, teacher.fullName)}
               />
             ))}

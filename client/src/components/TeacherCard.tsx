@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Phone, BookOpen, Users, MoreVertical, MessageCircle } from "lucide-react";
+import { User, Mail, Phone, BookOpen, Users, MoreVertical, MessageCircle, DatabaseBackup } from "lucide-react";
+import type { DailyBackupStatus } from "@/lib/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,8 @@ interface TeacherCardProps {
   whatsappEnabled: boolean;
   waBusinessEnabled: boolean;
   feeCollectionEnabled: boolean;
+  dailyBackupEnabled: boolean;
+  lastBackup: DailyBackupStatus | null;
   batchCount: number;
   studentCount: number;
   onViewDetails: () => void;
@@ -28,6 +31,8 @@ interface TeacherCardProps {
   onToggleWhatsapp: () => void;
   onToggleWaBusiness: () => void;
   onToggleFeeCollection: () => void;
+  onToggleDailyBackup: () => void;
+  onRunDailyBackup: () => void;
   onDelete: () => void;
 }
 
@@ -41,6 +46,8 @@ export default function TeacherCard({
   whatsappEnabled,
   waBusinessEnabled,
   feeCollectionEnabled,
+  dailyBackupEnabled,
+  lastBackup,
   batchCount,
   studentCount,
   onViewDetails,
@@ -48,6 +55,8 @@ export default function TeacherCard({
   onToggleWhatsapp,
   onToggleWaBusiness,
   onToggleFeeCollection,
+  onToggleDailyBackup,
+  onRunDailyBackup,
   onDelete,
 }: TeacherCardProps) {
   return (
@@ -99,12 +108,55 @@ export default function TeacherCard({
                 {feeCollectionEnabled ? 'Disable Fee Collection Assistance' : 'Enable Fee Collection Assistance'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onToggleDailyBackup} data-testid="button-toggle-daily-backup">
+                {dailyBackupEnabled ? 'Disable Daily Backup' : 'Enable Daily Backup'}
+              </DropdownMenuItem>
+              {dailyBackupEnabled && (
+                <DropdownMenuItem onClick={onRunDailyBackup} data-testid="button-run-daily-backup">
+                  Run Backup Now
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDelete} className="text-destructive">
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {dailyBackupEnabled && (
+          <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1" data-testid="daily-backup-status">
+            <div className="flex items-center gap-2 font-medium">
+              <DatabaseBackup className="w-4 h-4" />
+              Daily Backup
+            </div>
+            <div className="text-muted-foreground">
+              Last Backup: {lastBackup
+                ? new Date(lastBackup.emailSentAt || lastBackup.generatedAt || `${lastBackup.backupDate}T00:00:00`).toLocaleString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Not run yet"}
+            </div>
+            {lastBackup && (
+              <div className={lastBackup.status === "sent" ? "text-green-700 dark:text-green-400" : lastBackup.status === "failed" ? "text-destructive" : "text-amber-700 dark:text-amber-400"}>
+                Status: {lastBackup.status === "sent"
+                  ? "✓ Generated & Email Sent"
+                  : lastBackup.status === "failed"
+                    ? `✕ Failed — ${lastBackup.errorMessage || "Backup failed"}`
+                    : lastBackup.status === "generated"
+                      ? "Generated — Email pending"
+                      : "Generating"}
+              </div>
+            )}
+            {lastBackup?.retryScheduled && (
+              <div className="text-amber-700 dark:text-amber-400">Retry: Scheduled</div>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2 text-sm flex-1">
           {email && (
@@ -159,6 +211,10 @@ export default function TeacherCard({
               Fee Collection
             </Badge>
           )}
+          <Badge variant="outline" className={dailyBackupEnabled ? "text-xs bg-chart-2/10 text-chart-2 border-chart-2/20" : "text-xs bg-muted text-muted-foreground"}>
+            <DatabaseBackup className="w-3 h-3 mr-1" />
+            {dailyBackupEnabled ? "Backup" : "Backup Off"}
+          </Badge>
         </div>
 
         <Button 

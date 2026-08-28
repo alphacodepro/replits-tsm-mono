@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   whatsappEnabled: boolean("whatsapp_enabled").notNull().default(false),
   waBusinessEnabled: boolean("wa_business_enabled").notNull().default(false),
   feeCollectionEnabled: boolean("fee_collection_enabled").notNull().default(false),
+  dailyBackupEnabled: boolean("daily_backup_enabled").notNull().default(false),
   hasAcceptedTerms: boolean("has_accepted_terms").notNull().default(false),
   acceptedAt: timestamp("accepted_at"),
   acceptedVersion: text("accepted_version"),
@@ -146,6 +147,40 @@ export const payments = pgTable("payments", {
   studentIdIdx: index("payments_student_id_idx").on(table.studentId),
   paidAtIdx: index("payments_paid_at_idx").on(table.paidAt),
 }));
+
+export const dailyBackupRuns = pgTable(
+  "daily_backup_runs",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    teacherId: varchar("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    backupDate: varchar("backup_date", { length: 10 }).notNull(),
+    status: text("status").notNull().default("processing"),
+    attemptToken: text("attempt_token").notNull(),
+    recipientEmail: text("recipient_email").notNull(),
+    fileName: text("file_name"),
+    errorMessage: text("error_message"),
+    retryCount: integer("retry_count").notNull().default(0),
+    nextRetryAt: timestamp("next_retry_at"),
+    generatedAt: timestamp("generated_at"),
+    emailSentAt: timestamp("email_sent_at"),
+    createdAt: timestamp("created_at").notNull().default(sql`now()`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+  },
+  (table) => ({
+    teacherDateUnique: uniqueIndex("daily_backup_runs_teacher_date_unique").on(
+      table.teacherId,
+      table.backupDate,
+    ),
+    retryIdx: index("daily_backup_runs_retry_idx").on(
+      table.status,
+      table.nextRetryAt,
+    ),
+  }),
+);
 
 export const feeCollectionRequests = pgTable(
   "fee_collection_requests",
@@ -349,6 +384,7 @@ export type WhatsappUsage = typeof whatsappUsage.$inferSelect;
 export type WaBusinessUsage = typeof waBusinessUsage.$inferSelect;
 
 export type FeeCollectionRequest = typeof feeCollectionRequests.$inferSelect;
+export type DailyBackupRun = typeof dailyBackupRuns.$inferSelect;
 
 export interface FeeCollectionStudentEntry {
   studentId: string;
