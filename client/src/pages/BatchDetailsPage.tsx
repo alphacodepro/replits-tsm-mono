@@ -46,10 +46,21 @@ import {
   X,
   HandCoins,
   Pencil,
+  MessageCircle,
+  ChevronDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, studentApi, dashboardApi, feeCollectionApi, Student as ApiStudent } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import type { WhatsappLanguage } from "@shared/schema";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface StudentWithPaymentInfo extends Omit<ApiStudent, 'customFee'> {
   customFee: number | null;
@@ -477,6 +488,29 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     );
   }
 
+  const whatsappLanguageLabel =
+    batch.whatsappLanguage === "mr"
+      ? "Marathi"
+      : batch.whatsappLanguage === "hi"
+        ? "Hindi"
+        : batch.whatsappLanguage === "en"
+          ? "English"
+          : "English";
+
+  const handleWhatsappLanguageChange = (language: WhatsappLanguage) => {
+    updateBatchMutation.mutate({
+      id: batch.id,
+      data: {
+        name: batch.name,
+        subject: batch.subject ?? null,
+        standard: batch.standard,
+        fee: batch.fee,
+        feePeriod: batch.feePeriod,
+        whatsappLanguage: language,
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
       <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
@@ -515,10 +549,34 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
                 <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center">
                   <span>{formatCurrency(batch.fee)}<span className="ml-1">/ {batch.feePeriod}</span></span>
                 </Badge>
-                <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{batchTotals.studentCount} Students</span>
-                </Badge>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                      disabled={updateBatchMutation.isPending}
+                      aria-label="Change WhatsApp language"
+                      data-testid="button-whatsapp-language"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>WhatsApp: {whatsappLanguageLabel}</span>
+                      <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuLabel>Change WhatsApp language</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => handleWhatsappLanguageChange("mr")}>
+                      Marathi
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleWhatsappLanguageChange("hi")}>
+                      Hindi
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleWhatsappLanguageChange("en")}>
+                      English
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {batch.createdAt && (
                   <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 flex-shrink-0" />
