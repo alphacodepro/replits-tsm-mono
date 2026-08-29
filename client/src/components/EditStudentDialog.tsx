@@ -13,6 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -22,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Pencil, Phone, Mail, Cake, CalendarDays, MapPin, School, User, StickyNote } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import type { WhatsappLanguage } from "@shared/schema";
 
 interface Student {
   id: string;
@@ -37,6 +45,7 @@ interface Student {
   city?: string | null;
   dateOfBirth?: string | null;
   notes?: string | null;
+  whatsappLanguage?: WhatsappLanguage | null;
 }
 
 interface EditStudentDialogProps {
@@ -55,6 +64,7 @@ interface EditStudentDialogProps {
     city?: string | null;
     dateOfBirth?: string | null;
     notes?: string | null;
+    whatsappLanguage?: WhatsappLanguage | null;
   }) => void;
 }
 
@@ -125,6 +135,9 @@ export default function EditStudentDialog({
 
   // Notes
   const [notes, setNotes] = useState(student.notes || "");
+  const [whatsappLanguage, setWhatsappLanguage] = useState<WhatsappLanguage | null>(
+    student.whatsappLanguage ?? null,
+  );
 
   const [joinDate, setJoinDate] = useState<Date>(
     parseDate(student.joinDate) || new Date(),
@@ -156,6 +169,7 @@ export default function EditStudentDialog({
     setSchoolName(student.schoolName || "");
     setCity(student.city || "");
     setNotes(student.notes || "");
+    setWhatsappLanguage(student.whatsappLanguage ?? null);
     setJoinDate(parseDate(student.joinDate) || new Date());
     setDateOfBirth(formatDobForInput(student.dateOfBirth));
     setErrors({ fullName: "", phone: "", email: "", standard: "", guardianPhone: "", dateOfBirth: "" });
@@ -256,6 +270,7 @@ export default function EditStudentDialog({
       city: city.trim() || null,
       dateOfBirth: dobISO,
       notes: notes.trim() || null,
+      whatsappLanguage,
     });
 
     // Switch back to view mode after save
@@ -675,6 +690,41 @@ export default function EditStudentDialog({
                   {errors.dateOfBirth && (
                     <p className="text-destructive text-xs">{errors.dateOfBirth}</p>
                   )}
+                </div>
+              </div>
+
+              {/* Section: Notes */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pb-2 border-b">
+                  WhatsApp Preference
+                </h3>
+
+                <div className="space-y-1">
+                  <Label htmlFor="student-whatsapp-language" className="text-sm">
+                    Language Override
+                  </Label>
+                  <Select
+                    value={whatsappLanguage ?? "not-set"}
+                    onValueChange={(value) =>
+                      setWhatsappLanguage(value === "not-set" ? null : value as WhatsappLanguage)
+                    }
+                  >
+                    <SelectTrigger
+                      id="student-whatsapp-language"
+                      data-testid="select-student-whatsapp-language"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not-set">Not Set (use batch language)</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="hi">Hindi (हिंदी)</SelectItem>
+                      <SelectItem value="mr">Marathi (मराठी)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Use only when this student needs a different language.
+                  </p>
                 </div>
               </div>
 
