@@ -457,6 +457,19 @@ function formatBackupDateTime(value: string | Date) {
     .replace(/\b(am|pm)\b/gi, (period) => period.toUpperCase());
 }
 
+function formatSubscriptionDate(value?: string | null) {
+  if (!value) return "Not set";
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return "Not set";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 function getNextBackupAt(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Kolkata",
@@ -522,6 +535,19 @@ function SubscriptionSection({
     stats?.studentCount == null
       ? "Not available"
       : stats.studentCount.toLocaleString("en-IN");
+  const formattedBuffer = !hasUser
+    ? "Not available"
+    : user?.studentBuffer == null
+      ? "Not set"
+      : user.studentBuffer.toLocaleString("en-IN");
+  const formattedTotalAllowed = !hasUser
+    ? "Not available"
+    : studentLimit == null
+      ? "Unlimited"
+      : (studentLimit + (user?.studentBuffer ?? 0)).toLocaleString("en-IN");
+  const formattedSubscriptionEndDate = !hasUser
+    ? "Not available"
+    : formatSubscriptionDate(user?.subscriptionEndDate);
   const backupEnabled = backupInfo?.enabled ?? user?.dailyBackupEnabled ?? false;
   const lastBackupAt =
     backupInfo?.lastBackup?.emailSentAt ?? backupInfo?.lastBackup?.generatedAt;
@@ -530,9 +556,9 @@ function SubscriptionSection({
     { label: "Billing cycle", value: "Yearly" },
     { label: "Student Allowed", value: formattedStudentLimit },
     { label: "Current Usage", value: formattedUsage },
-    { label: "Buffer", value: "Not set" },
-    { label: "Total Allowed", value: formattedStudentLimit },
-    { label: "Subscription End Date", value: "Not set" },
+    { label: "Buffer", value: formattedBuffer },
+    { label: "Total Allowed", value: formattedTotalAllowed },
+    { label: "Subscription End Date", value: formattedSubscriptionEndDate },
   ];
 
   return (
@@ -552,8 +578,7 @@ function SubscriptionSection({
           columns="sm:grid-cols-2 lg:grid-cols-3"
         />
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          Buffer and subscription end date are reserved for future subscription
-          management and are not currently editable.
+          Subscription allowances and dates are managed by your administrator.
         </p>
       </Card>
 

@@ -74,6 +74,8 @@ export interface User {
   phone?: string;
   isActive: boolean;
   studentLimit?: number | null;
+  studentBuffer?: number | null;
+  subscriptionEndDate?: string | null;
   whatsappEnabled: boolean;
   waBusinessEnabled: boolean;
   feeCollectionEnabled?: boolean;
@@ -208,7 +210,12 @@ export const teacherApi = {
   list: () => apiRequest<{ teachers: (User & { batchCount: number; studentCount: number; lastBackup: DailyBackupStatus | null })[] }>("/api/teachers"),
 
   get: (id: string) =>
-    apiRequest<{ teacher: User; batches: Batch[]; stats: { batchCount: number; studentCount: number } }>(`/api/teachers/${id}`),
+    apiRequest<{
+      teacher: User;
+      batches: Batch[];
+      stats: { batchCount: number; studentCount: number };
+      lastBackup: DailyBackupStatus | null;
+    }>(`/api/teachers/${id}`),
 
   updateInformation: (id: string, data: {
     instituteName: string;
@@ -235,6 +242,18 @@ export const teacherApi = {
     apiRequest<{ success: boolean }>(`/api/teachers/${id}/student-limit`, {
       method: "PATCH",
       body: JSON.stringify({ studentLimit }),
+    }),
+
+  updateSubscription: (
+    id: string,
+    data: {
+      studentBuffer: number | null;
+      subscriptionEndDate: string | null;
+    },
+  ) =>
+    apiRequest<{ success: boolean }>(`/api/teachers/${id}/subscription`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
     }),
 
   delete: (id: string) =>
