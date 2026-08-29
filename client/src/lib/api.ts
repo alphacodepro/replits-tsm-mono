@@ -73,12 +73,15 @@ export interface User {
   email?: string;
   phone?: string;
   isActive: boolean;
+  studentLimit?: number | null;
   whatsappEnabled: boolean;
   waBusinessEnabled: boolean;
+  feeCollectionEnabled?: boolean;
   dailyBackupEnabled: boolean;
   hasAcceptedTerms: boolean;
   acceptedAt?: string | null;
   acceptedVersion?: string | null;
+  createdAt?: string | null;
 }
 
 export interface Batch {
@@ -241,6 +244,12 @@ export const teacherApi = {
 };
 
 export const dailyBackupApi = {
+  getStatus: () =>
+    apiRequest<{
+      enabled: boolean;
+      lastBackup: DailyBackupStatus | null;
+    }>("/api/profile/daily-backup"),
+
   toggleEnabled: (teacherId: string, enabled: boolean) =>
     apiRequest<{ success: boolean }>(`/api/teachers/${teacherId}/daily-backup`, {
       method: "PATCH",

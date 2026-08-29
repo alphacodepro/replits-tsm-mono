@@ -25,6 +25,7 @@ import {
   Building,
   Copy,
   CheckCircle,
+  CreditCard,
   GraduationCap,
   ShieldOff,
   Pencil,
@@ -485,6 +486,57 @@ export default function TeacherDetailsDialog({
                     </div>
                   </div>
                 )}
+              </Card>
+
+              <Card className="p-4">
+                <h3 className="mb-3 flex items-center gap-2 font-semibold">
+                  <CreditCard className="h-4 w-4" />
+                  Subscription
+                </h3>
+                <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground">Billing cycle</div>
+                    <div className="mt-1 font-medium">Yearly</div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground">Student Allowed</div>
+                    <div className="mt-1 font-medium">
+                      {teacher?.studentLimit == null
+                        ? "Unlimited"
+                        : teacher.studentLimit.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground">Current Usage</div>
+                    <div className="mt-1 font-medium">
+                      {stats?.studentCount == null
+                        ? "Not available"
+                        : stats.studentCount.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground">Buffer</div>
+                    <div className="mt-1 font-medium">Not set</div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground">Total Allowed</div>
+                    <div className="mt-1 font-medium">
+                      {teacher?.studentLimit == null
+                        ? "Unlimited"
+                        : teacher.studentLimit.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground">
+                      Subscription End Date
+                    </div>
+                    <div className="mt-1 font-medium">Not set</div>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  Buffer and subscription end date will be managed in a future
+                  subscription update.
+                </p>
               </Card>
 
               {batches.length > 0 && (

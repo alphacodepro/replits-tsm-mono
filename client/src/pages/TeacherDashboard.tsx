@@ -14,7 +14,6 @@ import EmptyState from "@/components/EmptyState";
 import CreateBatchDialog from "@/components/CreateBatchDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import ChangeCredentialsDialog from "@/components/ChangeCredentialsDialog";
 import {
   Plus,
   Search,
@@ -168,7 +167,6 @@ export default function TeacherDashboard() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<any>(null);
   const { financeUnlocked, pinIsSet, openPinDialog, lockFinance } = useFinancePin();
-  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [showBatchDetails, setShowBatchDetails] = useState(true);
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
@@ -416,7 +414,7 @@ export default function TeacherDashboard() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setCredentialsDialogOpen(true)}
+                onClick={() => setLocation("/settings")}
                 className="hover:scale-105 transition-transform duration-200"
                 data-testid="button-settings"
               >
@@ -733,17 +731,6 @@ export default function TeacherDashboard() {
         onConfirm={handleConfirmDelete}
         confirmText="Delete Batch"
         destructive
-      />
-
-      <ChangeCredentialsDialog
-        open={credentialsDialogOpen}
-        onOpenChange={setCredentialsDialogOpen}
-        currentUsername={userData?.user?.username || ""}
-        onSuccess={() => {
-          queryClient.setQueryData(["/api/auth/me"], null);
-          queryClient.clear();
-          setLocation("/");
-        }}
       />
 
       <NotificationDrawer

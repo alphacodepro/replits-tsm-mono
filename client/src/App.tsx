@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { FinancePinProvider } from "@/context/FinancePinContext";
 import LoginPage from "@/pages/LoginPage";
 import TeacherDashboard from "@/pages/TeacherDashboard";
+import SettingsPage from "@/pages/SettingsPage";
 import BatchDetailsPage from "@/pages/BatchDetailsPage";
 import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
 import StudentRegistrationPage from "@/pages/StudentRegistrationPage";
@@ -60,6 +61,22 @@ function Router() {
         {() => {
           if (!user) return <LoginPage onLogin={handleLogin} />;
           return <TermsAcceptancePage />;
+        }}
+      </Route>
+      <Route path="/settings/:section">
+        {(params) => {
+          if (!user) return <LoginPage onLogin={handleLogin} />;
+          if (!user.hasAcceptedTerms) return null;
+          if (user.role !== "teacher") return <NotFound />;
+          return <SettingsPage section={params.section} />;
+        }}
+      </Route>
+      <Route path="/settings">
+        {() => {
+          if (!user) return <LoginPage onLogin={handleLogin} />;
+          if (!user.hasAcceptedTerms) return null;
+          if (user.role !== "teacher") return <NotFound />;
+          return <SettingsPage />;
         }}
       </Route>
       <Route path="/batch/:id">
