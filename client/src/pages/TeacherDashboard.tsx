@@ -37,6 +37,7 @@ import NotificationBell from "@/components/NotificationBell";
 import NotificationDrawer from "@/components/NotificationDrawer";
 import StudentTable from "@/components/StudentTable";
 import PaymentHistoryDialog from "@/components/PaymentHistoryDialog";
+import LiveDateTime from "@/components/LiveDateTime";
 
 const SEARCH_MIN_CHARS = 3;
 
@@ -45,7 +46,7 @@ function TeacherDashboardSkeleton() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
       <header className="border-b bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <Skeleton className="h-12 w-12 rounded-full" />
               <div className="space-y-1.5">
@@ -382,9 +383,9 @@ export default function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950 flex flex-col">
-      <header className="border-b bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+       <header className="border-b bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
+         <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-4">
+           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12 border-2 border-primary/20">
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
@@ -404,7 +405,8 @@ export default function TeacherDashboard() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+              <LiveDateTime />
               <NotificationBell
                 onNotificationClick={(n) => {
                   setSelectedNotificationId(n.id);
