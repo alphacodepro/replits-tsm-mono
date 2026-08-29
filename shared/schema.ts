@@ -362,6 +362,24 @@ export const updateStudentSchema = z.object({
   notes: z.string().max(1000).optional().nullable().or(z.literal("")),
 });
 
+// Super Admin-only update for the editable teacher profile fields.
+// Username remains the teacher's login identifier and is intentionally excluded.
+export const updateTeacherInformationSchema = z.object({
+  instituteName: z
+    .string()
+    .trim()
+    .max(200, "Institute name must be 200 characters or less"),
+  email: z
+    .string()
+    .trim()
+    .email("Invalid email format")
+    .or(z.literal("")),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^(\d{10})?$/, "Phone number must be exactly 10 digits or empty"),
+}).strict();
+
 /* -------------------------------------------
    TYPES
 ------------------------------------------- */
@@ -375,6 +393,7 @@ export type Batch = typeof batches.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
 export type UpdateStudent = z.infer<typeof updateStudentSchema>;
+export type UpdateTeacherInformation = z.infer<typeof updateTeacherInformationSchema>;
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type UpdatePayment = z.infer<typeof updatePaymentSchema>;

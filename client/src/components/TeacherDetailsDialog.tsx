@@ -27,6 +27,7 @@ import {
   CheckCircle,
   GraduationCap,
   ShieldOff,
+  Pencil,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -50,6 +51,13 @@ export default function TeacherDetailsDialog({
   const [copiedPassword, setCopiedPassword] = useState(false);
   const [editingLimit, setEditingLimit] = useState(false);
   const [limitInput, setLimitInput] = useState("");
+  const [editingInformation, setEditingInformation] = useState(false);
+  const [informationInput, setInformationInput] = useState({
+    instituteName: "",
+    email: "",
+    phone: "",
+  });
+  const [informationError, setInformationError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["/api/teachers", teacherId],
@@ -78,6 +86,66 @@ export default function TeacherDetailsDialog({
       return;
     }
     updateLimitMutation.mutate(limit);
+  };
+
+  const handleEditInformation = () => {
+    if (!teacher) return;
+    setInformationInput({
+      instituteName: teacher.instituteName ?? "",
+      email: teacher.email ?? "",
+      phone: teacher.phone ?? "",
+    });
+    setInformationError(null);
+    setEditingInformation(true);
+  };
+
+  const handleCancelInformation = () => {
+    setEditingInformation(false);
+    setInformationError(null);
+  };
+
+  const updateInformationMutation = useMutation({
+    mutationFn: (updates: typeof informationInput) =>
+      teacherApi.updateInformation(teacherId!, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers", teacherId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+      setEditingInformation(false);
+      setInformationError(null);
+      toast({ title: "Teacher information updated." });
+    },
+    onError: (error: Error) => {
+      setInformationError(error.message);
+      toast({
+        title: "Failed to update teacher information",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveInformation = () => {
+    const updates = {
+      instituteName: informationInput.instituteName.trim(),
+      email: informationInput.email.trim(),
+      phone: informationInput.phone.trim(),
+    };
+
+    if (updates.instituteName.length > 200) {
+      setInformationError("Institute name must be 200 characters or less");
+      return;
+    }
+    if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+      setInformationError("Enter a valid email address");
+      return;
+    }
+    if (updates.phone && !/^\d{10}$/.test(updates.phone)) {
+      setInformationError("Phone number must be exactly 10 digits");
+      return;
+    }
+
+    setInformationError(null);
+    updateInformationMutation.mutate(updates);
   };
 
   const resetPasswordMutation = useMutation({
@@ -129,6 +197,8 @@ export default function TeacherDetailsDialog({
     setCopiedPassword(false);
     setEditingLimit(false);
     setLimitInput("");
+    setEditingInformation(false);
+    setInformationError(null);
     onOpenChange(false);
   };
 
@@ -187,10 +257,23 @@ export default function TeacherDetailsDialog({
 
             <div className="grid gap-4">
               <Card className="p-4">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Basic Information
-                </h3>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Basic Information
+                  </h3>
+                  {!editingInformation && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditInformation}
+                      data-testid="button-edit-teacher-information"
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                      Edit Information
+                    </Button>
+                  )}
+                </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Full Name:</span>
@@ -200,23 +283,88 @@ export default function TeacherDetailsDialog({
                     <span className="text-muted-foreground">Username:</span>
                     <span className="font-mono" data-testid="text-detail-username">{teacher?.username}</span>
                   </div>
-                  {teacher?.instituteName && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Institute:</span>
-                      <span className="font-medium" data-testid="text-detail-institute">{teacher.instituteName}</span>
+                  {editingInformation ? (
+                    <div className="space-y-3 pt-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="teacher-institute-name">Institute Name</Label>
+                        <Input
+                          id="teacher-institute-name"
+                          value={informationInput.instituteName}
+                          onChange={(event) => setInformationInput((current) => ({
+                            ...current,
+                            instituteName: event.target.value,
+                          }))}
+                          maxLength={200}
+                          data-testid="input-teacher-institute-name"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="teacher-email">Email</Label>
+                        <Input
+                          id="teacher-email"
+                          type="email"
+                          value={informationInput.email}
+                          onChange={(event) => setInformationInput((current) => ({
+                            ...current,
+                            email: event.target.value,
+                          }))}
+                          data-testid="input-teacher-email"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="teacher-phone">Phone Number</Label>
+                        <Input
+                          id="teacher-phone"
+                          inputMode="numeric"
+                          value={informationInput.phone}
+                          onChange={(event) => setInformationInput((current) => ({
+                            ...current,
+                            phone: event.target.value,
+                          }))}
+                          maxLength={10}
+                          data-testid="input-teacher-phone"
+                        />
+                      </div>
+                      {informationError && (
+                        <p className="text-sm text-destructive" role="alert" data-testid="text-teacher-information-error">
+                          {informationError}
+                        </p>
+                      )}
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={handleSaveInformation}
+                          disabled={updateInformationMutation.isPending}
+                          data-testid="button-save-teacher-information"
+                        >
+                          {updateInformationMutation.isPending ? "Saving..." : "Save Changes"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelInformation}
+                          disabled={updateInformationMutation.isPending}
+                          data-testid="button-cancel-teacher-information"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                  {teacher?.email && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Email:</span>
-                      <span data-testid="text-detail-email">{teacher.email}</span>
-                    </div>
-                  )}
-                  {teacher?.phone && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span data-testid="text-detail-phone">{teacher.phone}</span>
-                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Institute:</span>
+                        <span className="font-medium" data-testid="text-detail-institute">{teacher?.instituteName || "—"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Email:</span>
+                        <span data-testid="text-detail-email">{teacher?.email || "—"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Phone:</span>
+                        <span data-testid="text-detail-phone">{teacher?.phone || "—"}</span>
+                      </div>
+                    </>
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Created:</span>

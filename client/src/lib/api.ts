@@ -207,6 +207,16 @@ export const teacherApi = {
   get: (id: string) =>
     apiRequest<{ teacher: User; batches: Batch[]; stats: { batchCount: number; studentCount: number } }>(`/api/teachers/${id}`),
 
+  updateInformation: (id: string, data: {
+    instituteName: string;
+    email: string;
+    phone: string;
+  }) =>
+    apiRequest<{ success: boolean; teacher: User }>(`/api/teachers/${id}/information`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   resetPassword: (id: string) =>
     apiRequest<{ success: boolean; newPassword: string; username: string }>(`/api/teachers/${id}/reset-password`, {
       method: "POST",
