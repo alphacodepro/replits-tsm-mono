@@ -1,3 +1,5 @@
+import type { WhatsappLanguage } from "@shared/schema";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Token storage utilities - using sessionStorage for temporary sessions
@@ -96,6 +98,7 @@ export interface Batch {
   feePeriod: string;
   registrationToken: string;
   registrationEnabled: boolean;
+  whatsappLanguage?: WhatsappLanguage | null;
   createdAt?: string;
   studentCount?: number;
 }
@@ -115,6 +118,7 @@ export interface Student {
   batchName?: string;
   batchFee?: number;
   batchFeePeriod?: string;
+  whatsappLanguage?: WhatsappLanguage | null;
 }
 
 export interface Payment {
@@ -323,7 +327,14 @@ export const searchApi = {
 
 // Batch API
 export const batchApi = {
-  create: (data: { name: string; subject?: string; fee: number; feePeriod: string }) =>
+  create: (data: {
+    name: string;
+    subject?: string;
+    standard: string;
+    fee: number;
+    feePeriod: string;
+    whatsappLanguage?: WhatsappLanguage | null;
+  }) =>
     apiRequest<{ batch: Batch }>("/api/batches", {
       method: "POST",
       body: JSON.stringify(data),
@@ -332,6 +343,19 @@ export const batchApi = {
   list: () => apiRequest<{ batches: Batch[] }>("/api/batches"),
 
   get: (id: string) => apiRequest<{ batch: Batch; students: Student[] }>(`/api/batches/${id}`),
+
+  update: (id: string, data: {
+    name: string;
+    subject?: string | null;
+    standard: string;
+    fee: number;
+    feePeriod: string;
+    whatsappLanguage?: WhatsappLanguage | null;
+  }) =>
+    apiRequest<{ batch: Batch }>(`/api/batches/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
 
   toggleRegistration: (id: string, enabled: boolean) =>
     apiRequest<{ batch: Batch }>(`/api/batches/${id}/toggle-registration`, {
@@ -359,6 +383,7 @@ export const studentApi = {
     city?: string | null;
     dateOfBirth?: string | null;
     notes?: string | null;
+    whatsappLanguage?: WhatsappLanguage | null;
   }) =>
     apiRequest<{ student: Student }>("/api/students", {
       method: "POST",
@@ -385,6 +410,7 @@ export const studentApi = {
     city?: string | null;
     dateOfBirth?: string | null;
     notes?: string | null;
+    whatsappLanguage?: WhatsappLanguage | null;
   }) =>
     apiRequest<{ student: Student }>(`/api/students/${id}`, {
       method: "PATCH",

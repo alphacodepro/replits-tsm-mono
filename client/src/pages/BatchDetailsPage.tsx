@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import StudentTable from "@/components/StudentTable";
 import AddStudentDialog from "@/components/AddStudentDialog";
+import EditBatchDialog from "@/components/EditBatchDialog";
 import EditStudentDialog from "@/components/EditStudentDialog";
 import PaymentHistoryDialog from "@/components/PaymentHistoryDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
@@ -44,6 +45,7 @@ import {
   Bell,
   X,
   HandCoins,
+  Pencil,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { batchApi, studentApi, dashboardApi, feeCollectionApi, Student as ApiStudent } from "@/lib/api";
@@ -175,6 +177,7 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [editBatchOpen, setEditBatchOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [selectedStudentName, setSelectedStudentName] = useState<string>("");
   const [studentToEdit, setStudentToEdit] = useState<StudentWithPaymentInfo | null>(null);
@@ -322,6 +325,28 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+    },
+  });
+
+  const updateBatchMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof batchApi.update>[1] }) =>
+      batchApi.update(id, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
+      setEditBatchOpen(false);
+      toast({
+        title: "Batch updated!",
+        description: `${data.batch.name} has been updated successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating batch",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -504,6 +529,15 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditBatchOpen(true)}
+                  className="hover:scale-105 transition-transform duration-200"
+                  data-testid="button-edit-batch"
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Batch
+                </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleCopyLink}
@@ -820,6 +854,13 @@ export default function BatchDetailsPage({ batchId }: BatchDetailsPageProps) {
             ...data,
           });
         }}
+      />
+
+      <EditBatchDialog
+        open={editBatchOpen}
+        onOpenChange={setEditBatchOpen}
+        batch={batch}
+        onSubmit={(data) => updateBatchMutation.mutate({ id: batch.id, data })}
       />
 
       {studentToEdit && (

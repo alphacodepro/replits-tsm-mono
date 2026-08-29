@@ -12,6 +12,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const WHATSAPP_LANGUAGES = ["en", "hi", "mr"] as const;
+export type WhatsappLanguage = (typeof WHATSAPP_LANGUAGES)[number];
+const whatsappLanguageSchema = z.enum(WHATSAPP_LANGUAGES).nullable().optional();
+
 export const users = pgTable("users", {
   id: varchar("id")
     .primaryKey()
@@ -86,6 +91,7 @@ export const batches = pgTable("batches", {
   feePeriod: text("fee_period").notNull(),
   registrationToken: text("registration_token").notNull().unique(),
   registrationEnabled: boolean("registration_enabled").notNull().default(true),
+  whatsappLanguage: text("whatsapp_language"),
   createdAt: timestamp("created_at")
     .notNull()
     .default(sql`now()`),
@@ -118,6 +124,7 @@ export const students = pgTable(
     city: text("city"),
     dateOfBirth: timestamp("date_of_birth"),
     notes: text("notes"),
+    whatsappLanguage: text("whatsapp_language"),
   },
   (table) => ({
     batchPhoneUnique: uniqueIndex("students_batch_phone_unique").on(
@@ -277,7 +284,17 @@ export const insertBatchSchema = createInsertSchema(batches)
   })
   .extend({
     fee: positiveAmount,
+    whatsappLanguage: whatsappLanguageSchema,
   });
+
+export const updateBatchSchema = z.object({
+  name: z.string().trim().min(1, "Batch name is required"),
+  subject: z.string().optional().nullable(),
+  standard: z.string().trim().min(1, "Class/Standard is required"),
+  fee: positiveAmount,
+  feePeriod: z.string().trim().min(1, "Fee period is required"),
+  whatsappLanguage: whatsappLanguageSchema,
+});
 
 // ------------------- STUDENTS -------------------
 
@@ -299,6 +316,7 @@ export const insertStudentSchema = createInsertSchema(students)
     city: z.string().max(100).optional().nullable(),
     dateOfBirth: z.string().datetime().optional().nullable(),
     notes: z.string().max(1000).optional().nullable(),
+    whatsappLanguage: whatsappLanguageSchema,
   });
 
 // ------------------- PAYMENTS -------------------
@@ -363,6 +381,7 @@ export const updateStudentSchema = z.object({
   city: z.string().max(100).optional().nullable().or(z.literal("")),
   dateOfBirth: z.string().datetime().optional().nullable(),
   notes: z.string().max(1000).optional().nullable().or(z.literal("")),
+  whatsappLanguage: whatsappLanguageSchema,
 });
 
 // Super Admin-only update for the editable teacher profile fields.
@@ -392,6 +411,7 @@ export type User = typeof users.$inferSelect;
 
 export type InsertBatch = z.infer<typeof insertBatchSchema>;
 export type Batch = typeof batches.$inferSelect;
+export type UpdateBatch = z.infer<typeof updateBatchSchema>;
 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;

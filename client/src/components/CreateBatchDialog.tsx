@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { WhatsappLanguage } from "@shared/schema";
 
 interface CreateBatchDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface CreateBatchDialogProps {
     standard: string;
     fee: number;
     feePeriod: string;
+    whatsappLanguage: WhatsappLanguage | null;
   }) => void;
 }
 
@@ -40,6 +42,7 @@ export default function CreateBatchDialog({
   const [standard, setStandard] = useState("");
   const [fee, setFee] = useState("");
   const [feePeriod, setFeePeriod] = useState("month");
+  const [whatsappLanguage, setWhatsappLanguage] = useState<WhatsappLanguage | null>(null);
 
   // ❗ Validation errors
   const [errors, setErrors] = useState({
@@ -83,6 +86,7 @@ export default function CreateBatchDialog({
       standard,
       fee: Number(fee),
       feePeriod,
+      whatsappLanguage,
     });
 
     setName("");
@@ -90,6 +94,7 @@ export default function CreateBatchDialog({
     setStandard("");
     setFee("");
     setFeePeriod("month");
+    setWhatsappLanguage(null);
     onOpenChange(false);
   };
 
@@ -180,6 +185,29 @@ export default function CreateBatchDialog({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp-language">WhatsApp Language</Label>
+              <Select
+                value={whatsappLanguage ?? "not-set"}
+                onValueChange={(value) =>
+                  setWhatsappLanguage(value === "not-set" ? null : value as WhatsappLanguage)
+                }
+              >
+                <SelectTrigger id="whatsapp-language" data-testid="select-batch-whatsapp-language">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not-set">Not Set (English default)</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="hi">Hindi (हिंदी)</SelectItem>
+                  <SelectItem value="mr">Marathi (मराठी)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Students use this language unless they have an individual override.
+              </p>
             </div>
           </div>
 

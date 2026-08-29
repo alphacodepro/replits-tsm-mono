@@ -11,7 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import type { WhatsappLanguage } from "@shared/schema";
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -29,6 +37,7 @@ interface AddStudentDialogProps {
     city?: string | null;
     dateOfBirth?: string | null;
     notes?: string | null;
+    whatsappLanguage?: WhatsappLanguage | null;
   }) => void;
 }
 
@@ -52,6 +61,7 @@ export default function AddStudentDialog({
   const [city, setCity] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [notes, setNotes] = useState("");
+  const [whatsappLanguage, setWhatsappLanguage] = useState<WhatsappLanguage | null>(null);
 
   // Toggle for additional fields
   const [showAdditional, setShowAdditional] = useState(false);
@@ -149,6 +159,7 @@ export default function AddStudentDialog({
       city: city.trim() || null,
       dateOfBirth: dobISO,
       notes: notes.trim() || null,
+      whatsappLanguage,
     });
 
     // Reset all fields
@@ -162,6 +173,7 @@ export default function AddStudentDialog({
     setCity("");
     setDateOfBirth("");
     setNotes("");
+    setWhatsappLanguage(null);
     setShowAdditional(false);
     setErrors({
       fullName: "",
@@ -372,6 +384,35 @@ export default function AddStudentDialog({
                   {errors.dateOfBirth && (
                     <p className="text-red-500 text-xs">{errors.dateOfBirth}</p>
                   )}
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-1">
+                  <Label htmlFor="student-whatsapp-language" className="text-sm">
+                    WhatsApp Language Override
+                  </Label>
+                  <Select
+                    value={whatsappLanguage ?? "not-set"}
+                    onValueChange={(value) =>
+                      setWhatsappLanguage(value === "not-set" ? null : value as WhatsappLanguage)
+                    }
+                  >
+                    <SelectTrigger
+                      id="student-whatsapp-language"
+                      data-testid="select-student-whatsapp-language"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not-set">Not Set (use batch language)</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="hi">Hindi (हिंदी)</SelectItem>
+                      <SelectItem value="mr">Marathi (मराठी)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Use only when this student needs a different language.
+                  </p>
                 </div>
 
                 {/* Notes */}
