@@ -189,6 +189,14 @@ export const authApi = {
   },
 };
 
+export const supportApi = {
+  sendRequest: (data: { subject: string; message: string }) =>
+    apiRequest<{ success: boolean }>("/api/profile/support", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
 // Teacher API
 export const teacherApi = {
   create: (data: {

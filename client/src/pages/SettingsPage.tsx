@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ChangeCredentialsDialog from "@/components/ChangeCredentialsDialog";
+import HelpSupportSection from "@/components/HelpSupportSection";
 import {
   authApi,
   dailyBackupApi,
@@ -82,7 +83,7 @@ const settingsSections: SettingsSectionDefinition[] = [
     title: "Help & Support",
     description: "Find answers and get help when you need it.",
     icon: CircleHelp,
-    badge: "Coming soon",
+    badge: "Available",
   },
 ];
 
@@ -758,9 +759,11 @@ export default function SettingsPage({ section }: SettingsPageProps) {
           )}
           {selectedSection.key !== "institute" &&
             selectedSection.key !== "account" &&
-            selectedSection.key !== "subscription" && (
+            selectedSection.key !== "subscription" &&
+            selectedSection.key !== "help" && (
               <ComingSoonSection section={selectedSection} />
             )}
+          {selectedSection.key === "help" && <HelpSupportSection />}
         </>
       )}
 
