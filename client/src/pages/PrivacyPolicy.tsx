@@ -178,6 +178,12 @@ export default function PrivacyPolicy() {
                   <li>Phone: +91 8788245931</li>
                 </ul>
                 <p className="mt-3">This contact is solely for support and grievance-related communication regarding your privacy and data.</p>
+
+                <h3 className="font-semibold mt-6">Business Contact Information</h3>
+                <ul className="mt-3">
+                  <li>Email: <a href="mailto:tuitionmstutorials@gmail.com">tuitionmstutorials@gmail.com</a></li>
+                  <li>Phone: <a href="tel:+919270761338">+91 9270761338</a></li>
+                </ul>
               </section>
 
             </div>

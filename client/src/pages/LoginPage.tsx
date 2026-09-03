@@ -7,183 +7,162 @@ import { BookOpen, AlertCircle, Loader2, Eye, EyeOff, Info, X } from "lucide-rea
 import { useToast } from "@/hooks/use-toast";
 import { Link, useSearch } from "wouter";
 
-/* -----------------------------------------------------
-   BASE NUMBERS (starting values)
------------------------------------------------------ */
-const BASE = {
-  students: 22140,
-  emails: 97850,
-  whatsapp: 251320,
-  sms: 112480,
-};
-
-/* -----------------------------------------------------
-   ISO YEAR-WEEK KEY  e.g. "2026-W12"
------------------------------------------------------ */
-function getISOWeekKey(): string {
-  const now = new Date();
-  const d = new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-  );
-  const day = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(
-    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-  );
-  return `${d.getUTCFullYear()}-W${week}`;
-}
-
-function randBetween(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/* -----------------------------------------------------
-   WEEKLY ORGANIC GROWTH HOOK
------------------------------------------------------ */
-function useOrganicStats() {
-  const [stats, setStats] = useState(BASE);
-
-  useEffect(() => {
-    const currentWeek = getISOWeekKey();
-    const storedWeek = localStorage.getItem("tsm_v2_week") ?? "";
-
-    const parse = (key: string): number => {
-      const raw = localStorage.getItem(key);
-      if (raw === null) return NaN;
-      const n = parseInt(raw, 10);
-      return isNaN(n) ? NaN : n;
-    };
-
-    let s = parse("tsm_v2_students");
-    let e = parse("tsm_v2_emails");
-    let w = parse("tsm_v2_whatsapp");
-    let m = parse("tsm_v2_sms");
-
-    // First visit or any key missing/corrupt — seed with base numbers, no growth
-    if (!storedWeek || isNaN(s) || isNaN(e) || isNaN(w) || isNaN(m)) {
-      s = BASE.students;
-      e = BASE.emails;
-      w = BASE.whatsapp;
-      m = BASE.sms;
-      localStorage.setItem("tsm_v2_students", s.toString());
-      localStorage.setItem("tsm_v2_emails", e.toString());
-      localStorage.setItem("tsm_v2_whatsapp", w.toString());
-      localStorage.setItem("tsm_v2_sms", m.toString());
-      localStorage.setItem("tsm_v2_week", currentWeek);
-      setStats({ students: s, emails: e, whatsapp: w, sms: m });
-      return;
-    }
-
-    // New week → apply growth once
-    if (storedWeek !== currentWeek) {
-      s += Math.max(15, randBetween(20, 60));
-      e += Math.max(60, randBetween(80, 200));
-      w += Math.max(150, randBetween(200, 500));
-      m += Math.max(60, randBetween(80, 180));
-
-      localStorage.setItem("tsm_v2_students", s.toString());
-      localStorage.setItem("tsm_v2_emails", e.toString());
-      localStorage.setItem("tsm_v2_whatsapp", w.toString());
-      localStorage.setItem("tsm_v2_sms", m.toString());
-      localStorage.setItem("tsm_v2_week", currentWeek);
-    }
-
-    setStats({ students: s, emails: e, whatsapp: w, sms: m });
-  }, []);
-
-  return stats;
-}
-
-/* -----------------------------------------------------
-   ROTATING STATS COMPONENT
------------------------------------------------------ */
-const ANIM_MS = 400;
-const STAT_DURATIONS = [2500, 2500, 2500, 2500, 2500, 5000];
-
-interface StatItem {
-  value: string | null;
-  label: string;
-}
-
-function RotatingStats({ stats }: { stats: typeof BASE }) {
-  const statList: StatItem[] = [
-    {
-      value: stats.students.toLocaleString("en-IN") + "+",
-      label: "Students Managed",
-    },
-    {
-      value: stats.emails.toLocaleString("en-IN") + "+",
-      label: "Emails Delivered",
-    },
-    {
-      value: stats.whatsapp.toLocaleString("en-IN") + "+",
-      label: "WhatsApp Notifications Sent",
-    },
-    {
-      value: stats.sms.toLocaleString("en-IN") + "+",
-      label: "SMS Notifications Sent",
-    },
-    { value: null, label: "Present in 5+ Cities" },
-    { value: null, label: "Growing Every Month" },
-  ];
-
-  const [index, setIndex] = useState(0);
-  const [phase, setPhase] = useState<"entering" | "visible" | "exiting">(
-    "entering",
-  );
-
-  useEffect(() => {
-    if (phase === "entering") {
-      const t = setTimeout(() => setPhase("visible"), ANIM_MS);
-      return () => clearTimeout(t);
-    }
-    if (phase === "visible") {
-      const visibleMs = Math.max(100, STAT_DURATIONS[index] - ANIM_MS * 2);
-      const t = setTimeout(() => setPhase("exiting"), visibleMs);
-      return () => clearTimeout(t);
-    }
-    if (phase === "exiting") {
-      const t = setTimeout(() => {
-        setIndex((i) => (i + 1) % statList.length);
-        setPhase("entering");
-      }, ANIM_MS);
-      return () => clearTimeout(t);
-    }
-  }, [phase, index]);
-
-  const current = statList[index];
-
-  const animClass =
-    phase === "entering"
-      ? "stat-entering"
-      : phase === "exiting"
-        ? "stat-exiting"
-        : "stat-visible";
-
+function DashboardIllustration() {
   return (
-    <div className="flex flex-col gap-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400/90">
-        Platform Usage Across All Institutes
-      </p>
+    <svg
+      viewBox="0 0 520 330"
+      role="img"
+      aria-label="Illustration of a laptop showing a tuition management dashboard"
+      className="w-full max-w-[520px] h-auto text-blue-600 animate-float-slow"
+    >
+      <defs>
+        <linearGradient id="laptop-screen" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#eef4ff" />
+          <stop offset="1" stopColor="#ffffff" />
+        </linearGradient>
+        <linearGradient id="laptop-base" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#dbe6ff" />
+        </linearGradient>
+        <linearGradient id="screen-accent" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#4f7df3" />
+          <stop offset="1" stopColor="#6656e8" />
+        </linearGradient>
+        <linearGradient id="metric-positive" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#dff8ee" />
+          <stop offset="1" stopColor="#b8ebda" />
+        </linearGradient>
+        <filter id="illustration-shadow" x="-20%" y="-20%" width="140%" height="160%">
+          <feDropShadow dx="0" dy="14" stdDeviation="14" floodColor="#7284c8" floodOpacity="0.18" />
+        </filter>
+      </defs>
 
-      <div className={`stat-container ${animClass}`}>
-        {current.value !== null ? (
-          <>
-            <p className="text-[58px] font-extrabold leading-none tracking-tight text-blue-600">
-              {current.value}
-            </p>
-            <p className="text-[17px] font-medium text-gray-500 mt-3 leading-snug">
-              {current.label}
-            </p>
-          </>
-        ) : (
-          <p className="text-[36px] font-bold text-gray-700 leading-snug">
-            {current.label}
-          </p>
-        )}
-      </div>
-    </div>
+      <ellipse cx="263" cy="300" rx="180" ry="15" fill="#cbd6f4" opacity="0.35" />
+
+      <g
+        filter="url(#illustration-shadow)"
+        transform="rotate(-3.5 260 165) skewX(-2)"
+      >
+        <path
+          d="M136 53c0-10 8-18 18-18h226c10 0 18 8 18 18v153H136V53Z"
+          fill="url(#laptop-screen)"
+          stroke="#c8d5f3"
+          strokeWidth="3"
+        />
+        <path d="M151 54h232v137H151z" fill="white" />
+        <rect x="151" y="54" width="232" height="27" fill="#f7f9ff" />
+        <circle cx="164" cy="67.5" r="3" fill="#d7def4" />
+        <circle cx="174" cy="67.5" r="3" fill="#d7def4" />
+        <circle cx="184" cy="67.5" r="3" fill="#d7def4" />
+
+        <rect x="163" y="92" width="40" height="87" rx="3" fill="url(#screen-accent)" />
+        <rect x="171" y="101" width="22" height="5" rx="2.5" fill="white" opacity="0.9" />
+        <rect x="171" y="116" width="17" height="4" rx="2" fill="white" opacity="0.45" />
+        <rect x="171" y="127" width="23" height="4" rx="2" fill="white" opacity="0.45" />
+        <rect x="171" y="138" width="19" height="4" rx="2" fill="white" opacity="0.45" />
+        <rect x="171" y="158" width="23" height="4" rx="2" fill="white" opacity="0.45" />
+
+        <rect x="216" y="93" width="72" height="34" rx="5" fill="#f5f7ff" stroke="#e6ebfb" />
+        <rect x="225" y="102" width="25" height="5" rx="2.5" fill="#1d2f70" opacity="0.7" />
+        <rect x="225" y="113" width="42" height="5" rx="2.5" fill="#a8b7dc" />
+        <rect x="296" y="93" width="72" height="34" rx="5" fill="#f5f7ff" stroke="#e6ebfb" />
+        <rect x="305" y="102" width="27" height="5" rx="2.5" fill="#1d2f70" opacity="0.7" />
+        <rect x="305" y="113" width="37" height="5" rx="2.5" fill="#a8b7dc" />
+
+        <rect x="216" y="139" width="152" height="40" rx="5" fill="#f5f7ff" stroke="#e6ebfb" />
+        <path d="M229 166v-11M243 166v-18M257 166v-8M271 166v-24M285 166v-14" stroke="#6a6be9" strokeWidth="6" strokeLinecap="round" />
+        <circle cx="356" cy="101" r="4" fill="#7d8ef1" opacity="0.7" />
+        <path d="M310 165c0-13 10-23 23-23s23 10 23 23h-23Z" fill="url(#metric-positive)" />
+        <path d="M333 142v23h23" fill="none" stroke="#4f7df3" strokeWidth="3" />
+        <path d="M308 151c11-3 19-7 27-13 7 5 12 9 20 11" fill="none" stroke="#9ba8f6" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
+
+        <path d="M92 208h350l35 20H57l35-20Z" fill="url(#laptop-base)" stroke="#c1cff0" strokeWidth="3" />
+        <path d="M57 228h420l-27 12H84l-27-12Z" fill="#d1dcf5" stroke="#b9c8ec" strokeWidth="2" />
+        <rect x="231" y="216" width="70" height="5" rx="2.5" fill="#b8c7ea" />
+      </g>
+
+      <g opacity="0.9">
+        <rect x="64" y="207" width="49" height="11" rx="2" fill="#9aa9f4" transform="rotate(-5 64 207)" />
+        <rect x="70" y="196" width="47" height="11" rx="2" fill="#b8c3ff" transform="rotate(-5 70 196)" />
+        <rect x="78" y="185" width="42" height="11" rx="2" fill="#d1d8ff" transform="rotate(-5 78 185)" />
+      </g>
+
+      <g transform="translate(100 117)" opacity="0.95">
+        <rect width="78" height="30" rx="15" fill="white" stroke="#e1e7fb" />
+        <circle cx="17" cy="15" r="7" fill="#e4e8ff" />
+        <path d="M13 15h8M17 11v8" stroke="#6576e8" strokeWidth="2" strokeLinecap="round" />
+        <rect x="30" y="11" width="34" height="4" rx="2" fill="#6c7ce8" opacity="0.8" />
+        <rect x="30" y="18" width="24" height="3" rx="1.5" fill="#bdc8e8" />
+      </g>
+
+      <g transform="translate(414 152)">
+        <path d="M28 90c-2-22-3-42-2-65" fill="none" stroke="#9a8be2" strokeWidth="4" strokeLinecap="round" />
+        <path d="M26 52c-18-5-24-17-22-28 15 1 24 10 22 28Z" fill="#a99bea" />
+        <path d="M27 68c17-8 25-20 23-31-14 2-23 14-23 31Z" fill="#8d81dc" />
+        <path d="M26 37C12 29 8 17 12 8c13 4 18 15 14 29Z" fill="#c0b7f3" />
+        <path d="M28 83c16-4 23-12 24-22-13-1-22 7-24 22Z" fill="#b0a4ec" />
+        <ellipse cx="27" cy="92" rx="22" ry="9" fill="#9384de" />
+        <path d="M8 90h39l-6 23H14L8 90Z" fill="#f2cdb7" stroke="#e3b49b" strokeWidth="2" />
+      </g>
+    </svg>
+  );
+}
+
+function CornerDecorations() {
+  return (
+    <>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 360 210"
+        className="pointer-events-none absolute -right-10 -top-8 z-0 h-auto w-64 opacity-90 animate-corner-rhythm sm:-right-6 sm:-top-4 sm:w-80 lg:-right-2 lg:top-0 lg:w-[22rem]"
+      >
+        <path
+          d="M137 0h223v172c-38-8-76-26-108-52-35-29-60-69-75-120L137 0Z"
+          fill="#e9e7ff"
+        />
+        <path
+          d="M225 0h135v116c-38-13-69-34-91-63-17-22-31-40-44-53Z"
+          fill="#d7d3ff"
+          opacity="0.72"
+        />
+        <path
+          d="M302 0h58v65c-18-8-33-19-44-33-7-9-11-19-14-32Z"
+          fill="#c8c4fb"
+          opacity="0.76"
+        />
+        <path
+          d="M94 0h266v12c-55 6-106-1-151-12H94Z"
+          fill="#f4f3ff"
+          opacity="0.95"
+        />
+      </svg>
+
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 360 210"
+        className="pointer-events-none absolute -bottom-10 -left-10 z-0 h-auto w-64 opacity-90 animate-corner-rhythm sm:-bottom-6 sm:-left-6 sm:w-80 lg:bottom-0 lg:left-0 lg:w-[22rem]"
+      >
+        <path
+          d="M0 40c43 8 81 25 113 53 36 31 62 70 78 117H0V40Z"
+          fill="#e9e7ff"
+        />
+        <path
+          d="M0 96c31 8 58 21 80 40 25 21 43 46 54 74H0V96Z"
+          fill="#d7d3ff"
+          opacity="0.72"
+        />
+        <path
+          d="M0 155c19 6 35 15 49 26 10 8 18 18 24 29H0v-55Z"
+          fill="#c8c4fb"
+          opacity="0.76"
+        />
+        <path
+          d="M0 0h116C89 20 54 34 0 39V0Z"
+          fill="#f4f3ff"
+          opacity="0.95"
+        />
+      </svg>
+    </>
   );
 }
 
@@ -191,7 +170,6 @@ function RotatingStats({ stats }: { stats: typeof BASE }) {
    MAIN PAGE
 ----------------------------------------------------- */
 export default function LoginPage({ onLogin }: any) {
-  const stats = useOrganicStats();
   const search = useSearch();
 
   const [username, setUsername] = useState("");
@@ -231,15 +209,17 @@ export default function LoginPage({ onLogin }: any) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4 sm:p-6 lg:p-8">
       {/* BACKGROUND */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-950" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#f8fbff] via-white to-[#eef1ff] dark:from-gray-950 dark:via-gray-900 dark:to-blue-950" />
 
       {/* BLOBS */}
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
         <div className="absolute top-10 left-20 w-96 h-96 bg-blue-300/40 rounded-full blur-3xl animate-float-slow" />
         <div className="absolute top-20 right-20 w-[500px] h-[500px] bg-indigo-400/40 rounded-full blur-3xl animate-float-slower" />
       </div>
+
+      <CornerDecorations />
 
       {/* ANIMATIONS */}
       <style>{`
@@ -252,6 +232,22 @@ export default function LoginPage({ onLogin }: any) {
         .animate-float-slow   { animation: float 6s ease-in-out infinite; }
         .animate-float-slower { animation: float 9s ease-in-out infinite; }
 
+        @keyframes cornerRhythm {
+          0%, 100% {
+            opacity: 0.62;
+            transform: translateY(0);
+            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.08));
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-6px);
+            filter: drop-shadow(0 0 22px rgba(99, 102, 241, 0.24));
+          }
+        }
+        .animate-corner-rhythm {
+          animation: cornerRhythm 4s ease-in-out infinite;
+        }
+
         @keyframes shimmer {
           0%   { opacity: 0.3; }
           50%  { opacity: 1; }
@@ -259,24 +255,44 @@ export default function LoginPage({ onLogin }: any) {
         }
         .animate-shimmer { animation: shimmer 2.4s ease-in-out infinite; }
 
-        @keyframes stat-enter {
-          from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-float,
+          .animate-float-slow,
+          .animate-float-slower,
+          .animate-shimmer,
+          .animate-corner-rhythm {
+            animation: none !important;
+          }
         }
-        @keyframes stat-exit {
-          from { opacity: 1; transform: translateY(0); }
-          to   { opacity: 0; transform: translateY(-8px); }
-        }
-        .stat-entering { animation: stat-enter ${ANIM_MS}ms ease-out forwards; }
-        .stat-visible  { opacity: 1; transform: translateY(0); }
-        .stat-exiting  { animation: stat-exit ${ANIM_MS}ms ease-in forwards; }
-        .stat-container { min-height: 100px; }
+
       `}</style>
 
-      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-20">
-        {/* LEFT — ROTATING STATS */}
-        <div className="hidden md:flex flex-col justify-center w-[45%] pl-6 animate-in fade-in duration-700">
-          <RotatingStats stats={stats} />
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10 lg:gap-16">
+        {/* LEFT — TMS BRANDING */}
+        <div className="hidden md:flex flex-col justify-center w-[50%] pl-2 lg:pl-6 animate-in fade-in duration-700">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600/80">
+            Welcome Back
+          </p>
+          <h1 className="mt-1 text-5xl font-extrabold leading-[1.05] tracking-tight text-slate-950 dark:text-white lg:text-[3.5rem] xl:text-6xl">
+            <span className="bg-gradient-to-r from-slate-950 via-blue-900 to-indigo-700 bg-clip-text text-transparent dark:from-white dark:via-blue-100 dark:to-indigo-200">
+              Tuition
+            </span>
+            <br />
+            <span className="text-slate-900 dark:text-slate-100 lg:whitespace-nowrap">
+              Management System
+            </span>
+          </h1>
+          <div className="w-12 h-1 rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 mt-6" />
+          <p className="text-lg lg:text-xl font-medium text-slate-500 dark:text-gray-400 mt-6 max-w-md leading-relaxed">
+            Smart, simple management for modern tuition institutes.
+          </p>
+          <div className="relative w-full max-w-[480px] mt-8 lg:mt-9">
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-12 bottom-3 h-16 rounded-full bg-blue-200/30 blur-3xl"
+            />
+            <DashboardIllustration />
+          </div>
         </div>
 
         {/* RIGHT — LOGIN CARD */}
@@ -290,15 +306,15 @@ export default function LoginPage({ onLogin }: any) {
                     <BookOpen className="w-10 h-10 text-white" />
                   </div>
                 </div>
-                <h2 className="text-3xl font-extrabold text-gray-900 text-center">
-                  Welcome Back
+                <h2 className="text-2xl font-medium tracking-[-0.02em] text-gray-900 text-center">
+                  Tuition Management System
                 </h2>
                 <p className="text-sm text-gray-500 mt-2">
                   Sign in to access your dashboard
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 {sessionExpired && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-800">
                     <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
@@ -331,6 +347,7 @@ export default function LoginPage({ onLogin }: any) {
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={isLoading}
                     required
+                    autoComplete="username"
                   />
                 </div>
 
@@ -344,6 +361,7 @@ export default function LoginPage({ onLogin }: any) {
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
                       required
+                      autoComplete="current-password"
                       className="pr-10"
                       data-testid="input-password"
                     />
