@@ -2,6 +2,7 @@ import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import ConnectionStatus from "@/components/ConnectionStatus";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { authApi } from "@/lib/api";
 import { useEffect } from "react";
@@ -121,6 +122,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <ConnectionStatus />
         <AppWithProvider />
       </TooltipProvider>
     </QueryClientProvider>

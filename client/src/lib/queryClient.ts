@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { createNetworkError } from "./networkStatus";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -54,14 +55,19 @@ export async function apiRequest(
   const fullUrl = `${API_BASE_URL}${url}`;
   const token = getToken();
   
-  const res = await fetch(fullUrl, {
-    method,
-    headers: {
-      ...(data ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: data ? JSON.stringify(data) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(fullUrl, {
+      method,
+      headers: {
+        ...(data ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  } catch {
+    throw createNetworkError();
+  }
 
   await throwIfResNotOk(res);
   return res;
@@ -76,11 +82,16 @@ export function getQueryFn<T>({ on401: unauthorizedBehavior }: {
     const fullUrl = `${API_BASE_URL}${url}`;
     const token = getToken();
 
-    const res = await fetch(fullUrl, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
+    let res: Response;
+    try {
+      res = await fetch(fullUrl, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+    } catch {
+      throw createNetworkError();
+    }
 
     if (res.status === 401) {
       if (unauthorizedBehavior === "returnNull") {

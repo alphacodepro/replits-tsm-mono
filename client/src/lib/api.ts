@@ -1,4 +1,5 @@
 import type { WhatsappLanguage } from "@shared/schema";
+import { createNetworkError } from "./networkStatus";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -14,14 +15,19 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const fullUrl = `${API_BASE_URL}${url}`;
   const token = tokenStorage.get();
   
-  const res = await fetch(fullUrl, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(fullUrl, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+    });
+  } catch {
+    throw createNetworkError();
+  }
 
   if (!res.ok) {
     const text = await res.text();
