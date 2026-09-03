@@ -166,6 +166,58 @@ function CornerDecorations() {
   );
 }
 
+function AmbientSideDecorations() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 1280 720"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+    >
+      <defs>
+        <linearGradient id="sideLineFade" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stopColor="#aaa6ef" stopOpacity="0.4" />
+          <stop offset="0.8" stopColor="#c9c6f5" stopOpacity="0.16" />
+          <stop offset="1" stopColor="#d8d6f7" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      <g fill="none" stroke="url(#sideLineFade)" strokeWidth="1.5">
+        <path d="M-36-20C116 82 126 178 28 272s-2 204 92 286 76 130 20 184" />
+        <path d="M-21-20C131 82 141 178 43 272s-2 204 92 286 76 130 20 184" />
+        <path d="M-6-20C146 82 156 178 58 272s-2 204 92 286 76 130 20 184" />
+        <path d="M9-20C161 82 171 178 73 272s-2 204 92 286 76 130 20 184" />
+        <path d="M24-20C176 82 186 178 88 272s-2 204 92 286 76 130 20 184" />
+      </g>
+
+      <g fill="#aaa6ef">
+        <circle cx="86" cy="88" r="4" opacity="0.28" />
+        <circle cx="43" cy="207" r="2.5" opacity="0.24" />
+        <circle cx="104" cy="365" r="5" opacity="0.22" />
+        <circle cx="61" cy="526" r="3" opacity="0.25" />
+        <circle cx="124" cy="646" r="2.5" opacity="0.22" />
+      </g>
+
+      <g transform="translate(1280 0) scale(-1 1)">
+        <g fill="none" stroke="url(#sideLineFade)" strokeWidth="1.5">
+          <path d="M-36-20C116 82 126 178 28 272s-2 204 92 286 76 130 20 184" />
+          <path d="M-21-20C131 82 141 178 43 272s-2 204 92 286 76 130 20 184" />
+          <path d="M-6-20C146 82 156 178 58 272s-2 204 92 286 76 130 20 184" />
+          <path d="M9-20C161 82 171 178 73 272s-2 204 92 286 76 130 20 184" />
+          <path d="M24-20C176 82 186 178 88 272s-2 204 92 286 76 130 20 184" />
+        </g>
+        <g fill="#aaa6ef">
+          <circle cx="86" cy="88" r="4" opacity="0.28" />
+          <circle cx="43" cy="207" r="2.5" opacity="0.24" />
+          <circle cx="104" cy="365" r="5" opacity="0.22" />
+          <circle cx="61" cy="526" r="3" opacity="0.25" />
+          <circle cx="124" cy="646" r="2.5" opacity="0.22" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 /* -----------------------------------------------------
    MAIN PAGE
 ----------------------------------------------------- */
@@ -218,6 +270,8 @@ export default function LoginPage({ onLogin }: any) {
         <div className="absolute top-10 left-20 w-96 h-96 bg-blue-300/40 rounded-full blur-3xl animate-float-slow" />
         <div className="absolute top-20 right-20 w-[500px] h-[500px] bg-indigo-400/40 rounded-full blur-3xl animate-float-slower" />
       </div>
+
+      <AmbientSideDecorations />
 
       <CornerDecorations />
 
